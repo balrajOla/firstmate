@@ -123,7 +123,10 @@ class ProcessContract(unittest.TestCase):
         (scripts/"fm-control.sh").write_text('#!/bin/sh\nexit 0\n')
         (scripts/'fm-fleet-snapshot.sh').write_text('#!/bin/sh\nprintf \'{"schema":"fm-fleet-snapshot.v1","tasks":[]}\\n\'\n')
         repository=Path(self.area.name)/"repository";repository.mkdir()
-        with sqlite3.connect(self.home/"olympus.db") as db:db.execute("UPDATE projects SET repository=? WHERE id=?",(str(repository),project))
+        db=sqlite3.connect(self.home/"olympus.db")
+        try:
+            with db:db.execute("UPDATE projects SET repository=? WHERE id=?",(str(repository),project))
+        finally:db.close()
         self.children[0].terminate();self.children[0].wait()
         self.environment={**os.environ,"PATH":str(fakebin)+os.pathsep+os.environ["PATH"]};self.launch()
         self.request("task.claim",task=task,agent=worker["agent"])
@@ -195,7 +198,15 @@ class ProcessContract(unittest.TestCase):
             os.write(master,b"2");read_until(b"PROJECT / STATUS / CHARTER")
             fcntl.ioctl(master,termios.TIOCSWINSZ,struct.pack("HHHH",28,80,0,0));proc.send_signal(signal.SIGWINCH)
             os.write(master,b"7");read_until(b"RESPONSES /")
-            os.write(master,b"q");self.assertEqual(proc.wait(timeout=5),0)
+            os.write(master,b"q")
+            # Keep acting as a terminal reader while the child flushes its final frame.
+            # macOS PTYs have smaller buffers than Linux and wait() alone can deadlock.
+            until=time.monotonic()+5
+            while proc.poll() is None and time.monotonic()<until:
+                if select.select([master],[],[],.05)[0]:
+                    try:os.read(master,65536)
+                    except OSError:break
+            self.assertEqual(proc.wait(timeout=1),0)
             self.assertEqual(self.request("task.get",task=task)["task"]["state"],"ready")
         finally:os.close(master)
 
