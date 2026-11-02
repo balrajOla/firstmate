@@ -2,7 +2,11 @@ use crate::*;
 
 pub fn search(db: &Connection, actor: &Principal, r: &Value) -> Result<Value> {
     let q = format!("%{}%", optional(r, "query"));
-    Ok(json!(rows(db,"SELECT * FROM knowledge WHERE status!='superseded' AND (? OR project=? OR project IS NULL) AND (title LIKE ? OR body LIKE ?) ORDER BY created DESC LIMIT 50",params![actor.global(),actor.project,q,q])?))
+    let project = optional(r, "project");
+    if !project.is_empty() {
+        actor.scope(&project)?;
+    }
+    Ok(json!(rows(db,"SELECT * FROM knowledge WHERE status!='superseded' AND (? OR project=? OR project IS NULL) AND (?='' OR project=? OR project IS NULL) AND (title LIKE ? OR body LIKE ?) ORDER BY created DESC LIMIT 50",params![actor.global(),actor.project,project,project,q,q])?))
 }
 
 fn manifest(db: &Connection, actor: &Principal, tid: &str) -> Result<Value> {

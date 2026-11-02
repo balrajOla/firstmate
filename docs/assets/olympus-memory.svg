@@ -1,44 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="864" viewBox="0 0 1440 864">
-<rect width="1440" height="864" fill="#10151f"/>
-<g font-family="DejaVu Sans Mono,monospace" font-size="16">
-<text x="24" y="34" fill="#64ddec" font-weight="bold" xml:space="preserve">OLYMPUS / Memory  |  SIMULATOR - SAMPLE DATA                                                                                                    </text>
-<text x="24" y="55" fill="#d7dce5" xml:space="preserve">1 Live  2 Projects  3 Crew  4 Queue  5 [Memory]  6 Health  7 History                                                                            </text>
-<text x="24" y="76" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="97" fill="#d7dce5" xml:space="preserve">[.o.] 12 working  1 recovering  3 blocked  3 need you  Chief: idle</text>
-<text x="24" y="118" fill="#d7dce5" xml:space="preserve">Verified 0s ago | History retained | Motion indicates activity; checkpoints establish progress</text>
-<text x="24" y="139" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="160" fill="#d7dce5" xml:space="preserve">KNOWLEDGE / STATUS / PROVENANCE</text>
-<text x="24" y="181" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="202" fill="#d7dce5" xml:space="preserve">No records in this view.</text>
-<text x="24" y="223" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="244" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="265" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="286" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="307" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="328" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="349" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="370" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="391" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="412" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="433" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="454" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="475" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="496" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="517" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="538" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="559" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="580" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="601" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="622" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="643" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="664" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="685" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="706" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="727" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="748" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="769" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="790" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="811" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="832" fill="#d7dce5" xml:space="preserve">Tab pane  j/k select  Enter detail  PgUp older  End live  : request  N project  n task  ? help  q exit</text>
-<text x="24" y="853" fill="#d7dce5" xml:space="preserve">Synthetic fixtures. No model calls. No live reliability claims.</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1648" height="1060" viewBox="0 0 1648 1060"><rect width="1648" height="1060" rx="16" fill="#101827"/><g font-family="DejaVu Sans Mono,monospace" font-size="16" xml:space="preserve"><text x="24" y="36" fill="#75c4ff">OLYMPUS / Memory  |  SIMULATOR - SAMPLE DATA                                                                                                                    </text>
+<text x="24" y="59" fill="#d8e2f0">1 Live  2 Projects  3 Crew  4 Queue  5 [Memory]  6 Health  7 History                                                                                            </text>
+<text x="24" y="82" fill="#d8e2f0">8 Today  9 Week  0 Recurring | All projects                                                                                                                     </text>
+<text x="24" y="105" fill="#ffb66c">[..o] 12 working  1 recovering  3 blocked  3 need you  Chief: idle</text>
+<text x="24" y="128" fill="#d8e2f0">Verified 0s ago | History retained | Motion indicates activity; checkpoints establish progress</text>
+<text x="24" y="151" fill="#d8e2f0"></text>
+<text x="24" y="174" fill="#d8e2f0">KNOWLEDGE / STATUS / PROVENANCE</text>
+<text x="24" y="197" fill="#d8e2f0"></text>
+<text x="24" y="220" fill="#8ddbb3">&gt; Accepted: Browser Workspaces accepted milestone 1  verified  [&quot;A-ba978c16fc6f42f4&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="243" fill="#8ddbb3">  Accepted: Browser Workspaces accepted milestone 2  verified  [&quot;A-1782850c8c614a2f&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="266" fill="#8ddbb3">  Accepted: LinkedIn Workflow accepted milestone 1  verified  [&quot;A-20706b09b8c74d48&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="289" fill="#8ddbb3">  Accepted: LinkedIn Workflow accepted milestone 2  verified  [&quot;A-6e640e15d8924f2e&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="312" fill="#8ddbb3">  Accepted: Travel Planner accepted milestone 1  verified  [&quot;A-0174ef19f1774c19&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="335" fill="#8ddbb3">  Accepted: Travel Planner accepted milestone 2  verified  [&quot;A-a903b65eb05148be&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="358" fill="#8ddbb3">  Accepted: Model Evaluation accepted milestone 1  verified  [&quot;A-d6bd9fef815040fb&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="381" fill="#8ddbb3">  Accepted: Model Evaluation accepted milestone 2  verified  [&quot;A-59ac45e0c4e14833&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="404" fill="#8ddbb3">  Accepted: Quality Platform accepted milestone 1  verified  [&quot;A-79cee75e99564fba&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="427" fill="#8ddbb3">  Accepted: Quality Platform accepted milestone 2  verified  [&quot;A-1841793466894176&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="450" fill="#8ddbb3">  Accepted: Learning Portal accepted milestone 1  verified  [&quot;A-5f93b0be96854eb5&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="473" fill="#8ddbb3">  Accepted: Learning Portal accepted milestone 2  verified  [&quot;A-df5694d4c6bd4656&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="496" fill="#8ddbb3">  Accepted: Portfolio Site accepted milestone 1  verified  [&quot;A-353d5682c26e4d6c&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="519" fill="#8ddbb3">  Accepted: Portfolio Site accepted milestone 2  verified  [&quot;A-49ae7adaf5e44c79&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="542" fill="#8ddbb3">  Accepted: Hosting Ops accepted milestone 1  verified  [&quot;A-0f6b8cc731bb47dc&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="565" fill="#8ddbb3">  Accepted: Hosting Ops accepted milestone 2  verified  [&quot;A-65d6cbc084fa42dd&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="588" fill="#8ddbb3">  Accepted: Test Reliability accepted milestone 1  verified  [&quot;A-2ce638fd32134a18&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="611" fill="#8ddbb3">  Accepted: Test Reliability accepted milestone 2  verified  [&quot;A-c44adc917fc04e29&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="634" fill="#8ddbb3">  Accepted: Second Brain accepted milestone 1  verified  [&quot;A-cfa43c7333f14253&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="657" fill="#8ddbb3">  Accepted: Second Brain accepted milestone 2  verified  [&quot;A-efa8bf718ec542a4&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="680" fill="#8ddbb3">  Accepted: Home Projects accepted milestone 1  verified  [&quot;A-cbbf9cd428f4486d&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="703" fill="#8ddbb3">  Accepted: Home Projects accepted milestone 2  verified  [&quot;A-3e35b4b126234e26&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="726" fill="#8ddbb3">  Accepted: Data Pipeline accepted milestone 1  verified  [&quot;A-5c7a153e6124443e&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="749" fill="#8ddbb3">  Accepted: Data Pipeline accepted milestone 2  verified  [&quot;A-3370a83c6f964b7e&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="772" fill="#8ddbb3">  Accepted: Experiment Lab accepted milestone 1  verified  [&quot;A-1e41c4e71cfc47cd&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="795" fill="#8ddbb3">  Accepted: Experiment Lab accepted milestone 2  verified  [&quot;A-6a24e6cc846b420d&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="818" fill="#8ddbb3">  Accepted: WebCraft accepted milestone 1  verified  [&quot;A-b4bbcde7bf884950&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="841" fill="#8ddbb3">  Accepted: WebCraft accepted milestone 2  verified  [&quot;A-fe579e7f6e7f4071&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="864" fill="#8ddbb3">  Accepted: Evaluation Lab accepted milestone 1  verified  [&quot;A-2cde4333c0eb4363&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="887" fill="#8ddbb3">  Accepted: Evaluation Lab accepted milestone 2  verified  [&quot;A-bdeb0defed8a412a&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="910" fill="#8ddbb3">  Accepted: Release Tools accepted milestone 1  verified  [&quot;A-6ebecad90b194f66&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="933" fill="#d8e2f0"></text>
+<text x="24" y="956" fill="#d8e2f0"></text>
+<text x="24" y="979" fill="#d8e2f0"></text>
+<text x="24" y="1002" fill="#d8e2f0">Tab pane  j/k select  Enter detail  PgUp older  End live  : request  N project  n task  ? help  q exit</text>
+<text x="24" y="1025" fill="#d8e2f0">Synthetic fixtures. No model calls. No live reliability claims.</text></g></svg>

@@ -7,6 +7,501 @@ use std::{
 };
 use tempfile::TempDir;
 
+fn calendar_stamp(s: &str) -> i64 {
+    chrono::DateTime::parse_from_rfc3339(s).unwrap().timestamp()
+}
+fn enable_contract_automation(l: &mut Lab) {
+    // Synthetic domain attestation only. This test never launches a vendor CLI.
+    for (pid, role) in [("contract-rust", "rust"), ("contract-review", "quality")] {
+        send(&mut l.store,json!({"action":"profile.register","profile":pid,"harness":"codex","model":"contract-fixture","version":"contract-fixture","capabilities":{"roles":[role]}})).unwrap();
+        send(&mut l.store,json!({"action":"profile.verify","profile":pid,"evidence":{"harness":"codex","version":"contract-fixture","real_harness":true,"command":"Synthetic domain test; not a live verification","observed_result":"Synthetic domain test only","checks":{"launch":true,"message":true,"interrupt":true,"resume":true,"stop":true}}})).unwrap();
+    }
+    send(
+        &mut l.store,
+        json!({"action":"system.configure","dispatch_enabled":true,"global_cap":4,"project_cap":4}),
+    )
+    .unwrap();
+    send(&mut l.store,json!({"action":"automation.configure","project":l.project,"enabled":true,"progress_timeout":60})).unwrap();
+}
+
+#[test]
+fn calendar_observes_london_dst_and_never_duplicates_the_repeated_hour() {
+    use chrono_tz::Europe::London;
+    use olympus_core::scheduling::next;
+    assert_eq!(
+        next(
+            "daily",
+            London,
+            "01:30",
+            0,
+            calendar_stamp("2026-03-28T12:00:00Z")
+        )
+        .unwrap(),
+        calendar_stamp("2026-03-29T01:00:00Z")
+    );
+    let first = next(
+        "daily",
+        London,
+        "01:30",
+        0,
+        calendar_stamp("2026-10-24T12:00:00Z"),
+    )
+    .unwrap();
+    assert_eq!(first, calendar_stamp("2026-10-25T00:30:00Z"));
+    assert_eq!(
+        next("daily", London, "01:30", 0, first).unwrap(),
+        calendar_stamp("2026-10-26T01:30:00Z")
+    );
+    assert_eq!(
+        next(
+            "weekdays",
+            London,
+            "09:00",
+            0,
+            calendar_stamp("2026-11-06T10:00:00Z")
+        )
+        .unwrap(),
+        calendar_stamp("2026-11-09T09:00:00Z")
+    );
+}
+
+#[test]
+fn recurring_work_survives_restart_coalesces_missed_runs_and_waits_for_overlap() {
+    let mut l = Lab::new();
+    let s=send(&mut l.store,json!({"action":"schedule.create","project":l.project,"title":"Daily integrity check","requirements":"Verify imported counts","role":"rust","cadence":"daily","time":"09:00","timezone":"Europe/London"})).unwrap();
+    l.store
+        .db
+        .execute(
+            "UPDATE schedules SET next_run=? WHERE id=?",
+            rusqlite::params![now() - 86400 * 3, s["schedule"].as_str()],
+        )
+        .unwrap();
+    l.store.tick().unwrap();
+    let jobs = send(&mut l.store, json!({"action":"agenda","view":"today"})).unwrap();
+    assert_eq!(jobs["jobs"].as_array().unwrap().len(), 1);
+    let tid = jobs["jobs"][0]["id"].as_str().unwrap().to_string();
+    l.store
+        .db
+        .execute("UPDATE schedules SET next_run=?", [now() - 1])
+        .unwrap();
+    drop(l.store);
+    l.store = Store::open(l.dir.path()).unwrap();
+    l.store.tick().unwrap();
+    assert_eq!(
+        l.store
+            .db
+            .query_row("SELECT COUNT(*) FROM schedule_runs", [], |r| r
+                .get::<_, i64>(0))
+            .unwrap(),
+        1
+    );
+    send(
+        &mut l.store,
+        json!({"action":"task.cancel","task":tid,"reason":"Occurrence reconciled"}),
+    )
+    .unwrap();
+    l.store.tick().unwrap();
+    l.store.tick().unwrap();
+    assert_eq!(
+        l.store
+            .db
+            .query_row("SELECT COUNT(*) FROM schedule_runs", [], |r| r
+                .get::<_, i64>(0))
+            .unwrap(),
+        2
+    );
+}
+
+#[test]
+fn completed_project_followup_restores_context_without_rewriting_old_results() {
+    let mut l = Lab::new();
+    let old = l.task("Importer");
+    l.claim(&old);
+    let art = l.result(&old, 1);
+    l.accept(&art);
+    send(&mut l.store,json!({"action":"memory.put","project":l.project,"title":"Importer contract","body":"Retain invalid rows","sources":["design-decision"],"status":"verified"})).unwrap();
+    send(
+        &mut l.store,
+        json!({"action":"project.state","project":l.project,"state":"completed"}),
+    )
+    .unwrap();
+    let input = json!({"action":"intake.submit","text":"WebCraft importer now needs CSV support","role":"rust"});
+    let new = send(&mut l.store, input.clone()).unwrap();
+    assert_eq!(new["reopened"], true);
+    assert!(new["context"]["knowledge"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|k| k["title"] == "Importer contract"));
+    assert_eq!(send(&mut l.store, input).unwrap()["duplicate"], true);
+    assert_eq!(
+        send(&mut l.store, json!({"action":"task.get","task":old})).unwrap()["task"]["state"],
+        "accepted"
+    );
+    assert_ne!(new["task"], old);
+}
+
+#[test]
+fn ambiguous_topic_routing_does_not_modify_projects() {
+    let mut l = Lab::new();
+    send(
+        &mut l.store,
+        json!({"action":"project.create","name":"WebCraft Mobile","charter":"Mobile importer"}),
+    )
+    .unwrap();
+    let before = send(&mut l.store, json!({"action":"snapshot"})).unwrap();
+    assert!(send(
+        &mut l.store,
+        json!({"action":"intake.submit","text":"WebCraft Mobile importer update"})
+    )
+    .is_err());
+    assert_eq!(
+        send(&mut l.store, json!({"action":"snapshot"})).unwrap()["tasks"],
+        before["tasks"]
+    );
+    assert!(send(&mut l.store,json!({"action":"intake.submit","text":"WebCraft Mobile importer update","project":l.project})).is_ok());
+}
+
+#[test]
+fn project_outcomes_and_history_are_separate_and_scoped() {
+    let mut l = Lab::new();
+    let t = l.task("Importer");
+    l.claim(&t);
+    l.result(&t, 1);
+    let other = send(
+        &mut l.store,
+        json!({"action":"project.create","name":"Other","charter":"Another project"}),
+    )
+    .unwrap();
+    assert_eq!(
+        send(
+            &mut l.store,
+            json!({"action":"project.outcomes","project":other["project"]})
+        )
+        .unwrap()["outputs"],
+        json!([])
+    );
+    assert_eq!(
+        send(
+            &mut l.store,
+            json!({"action":"history","project":other["project"]})
+        )
+        .unwrap(),
+        json!([])
+    );
+    assert_eq!(
+        send(
+            &mut l.store,
+            json!({"action":"project.outcomes","project":l.project})
+        )
+        .unwrap()["outputs"]
+            .as_array()
+            .unwrap()
+            .len(),
+        1
+    );
+    assert!(as_agent(
+        &mut l.store,
+        &l.worker,
+        json!({"action":"project.context","project":other["project"]})
+    )
+    .is_err());
+}
+
+#[test]
+fn cross_project_agents_exchange_messages_only_after_a_dependency_is_linked() {
+    let mut l = Lab::new();
+    let t = l.task("Producer");
+    let p = send(
+        &mut l.store,
+        json!({"action":"project.create","name":"Consumer","charter":"Consume shared API"}),
+    )
+    .unwrap();
+    let agent = send(
+        &mut l.store,
+        json!({"action":"agent.create","project":p["project"],"role":"engineer"}),
+    )
+    .unwrap();
+    let task=send(&mut l.store,json!({"action":"task.create","project":p["project"],"title":"Consume API","requirements":"Wait for producer"})).unwrap();
+    let request = json!({"action":"message.send","recipient":agent["agent"],"task":t,"thread":"shared-api","body":"Contract version 2"});
+    assert!(as_agent(&mut l.store, &l.worker, request.clone()).is_err());
+    send(
+        &mut l.store,
+        json!({"action":"task.link","task":task["task"],"depends_on":t}),
+    )
+    .unwrap();
+    let message = as_agent(&mut l.store, &l.worker, request).unwrap();
+    for state in ["delivered", "read", "acted"] {
+        as_agent(
+            &mut l.store,
+            &agent,
+            json!({"action":"message.ack","message":message["message"],"state":state}),
+        )
+        .unwrap();
+    }
+    let reply=as_agent(&mut l.store,&agent,json!({"action":"message.send","recipient":l.worker["agent"],"task":task["task"],"thread":"shared-api","body":"Consumer aligned"})).unwrap();
+    assert_eq!(
+        as_agent(
+            &mut l.store,
+            &l.worker,
+            json!({"action":"message.get","message":reply["message"]})
+        )
+        .unwrap()["body"],
+        "Consumer aligned"
+    );
+}
+
+#[test]
+fn automatic_dispatch_reserves_review_capacity_and_review_accepts_exact_result() {
+    let mut l = Lab::new();
+    enable_contract_automation(&mut l);
+    let t = l.task("Ship importer");
+    l.store.tick().unwrap();
+    l.store.tick().unwrap();
+    let state = send(&mut l.store, json!({"action":"task.get","task":t})).unwrap();
+    assert_eq!(state["task"]["state"], "running");
+    assert_eq!(state["attempts"][0]["reserved_children"], 1);
+    assert_eq!(
+        l.store
+            .db
+            .query_row("SELECT COUNT(*) FROM operations", [], |r| r
+                .get::<_, i64>(0))
+            .unwrap(),
+        1
+    );
+    let a = l.result(&t, 1);
+    l.store.tick().unwrap();
+    let review: String = l
+        .store
+        .db
+        .query_row(
+            "SELECT task FROM review_jobs WHERE artifact=?",
+            [a["artifact"].as_str()],
+            |r| r.get(0),
+        )
+        .unwrap();
+    let record = send(&mut l.store, json!({"action":"task.get","task":review})).unwrap();
+    assert_eq!(record["task"]["state"], "running");
+    let reviewer = json!({"credential_file":l.dir.path().join("credentials").join(format!("{}.token",record["task"]["owner"].as_str().unwrap()))});
+    as_agent(&mut l.store,&reviewer,json!({"action":"review.submit","task":review,"generation":1,"passed":true,"code_revision":"abc123","evidence":"Independent exact-revision contract test"})).unwrap();
+    assert_eq!(
+        send(&mut l.store, json!({"action":"task.get","task":t})).unwrap()["task"]["state"],
+        "accepted"
+    );
+}
+
+#[test]
+fn automatic_recovery_waits_for_exact_fresh_stopped_evidence() {
+    let mut l = Lab::new();
+    enable_contract_automation(&mut l);
+    let t = l.task("Recover import");
+    l.store.tick().unwrap();
+    l.store
+        .db
+        .execute("UPDATE operations SET state='confirmed'", [])
+        .unwrap();
+    l.store.db.execute("UPDATE attempts SET runtime_id='exact-runtime',runtime_generation='g1',progress_at=?,heartbeat=?",[now()-120,now()-120]).unwrap();
+    l.store.tick().unwrap();
+    assert_eq!(
+        send(&mut l.store, json!({"action":"task.get","task":t})).unwrap()["task"]["state"],
+        "recovering"
+    );
+    l.store.tick().unwrap();
+    assert_eq!(
+        send(&mut l.store, json!({"action":"task.get","task":t})).unwrap()["task"]["generation"],
+        1
+    );
+    l.store
+        .db
+        .execute(
+            "UPDATE operations SET state='confirmed' WHERE verb='exit'",
+            [],
+        )
+        .unwrap();
+    let stamp = chrono::DateTime::from_timestamp(now(), 0)
+        .unwrap()
+        .to_rfc3339();
+    let snapshot = json!({"schema":"fm-fleet-snapshot.v1","tasks":[{"id":"exact-runtime","spawn_gen":"g1","remote":null,"current_state":{"state":"unknown","freshness":"fresh","observed_at":stamp},"endpoint":{"exists":false,"agent_alive":"not_checked","freshness":"fresh","observed_at":stamp}}]});
+    send(
+        &mut l.store,
+        json!({"action":"runtime.observe","snapshot":snapshot}),
+    )
+    .unwrap();
+    l.store.tick().unwrap();
+    let state = send(&mut l.store, json!({"action":"task.get","task":t})).unwrap();
+    assert_eq!(state["task"]["generation"], 2);
+    assert_eq!(state["attempts"][0]["state"], "fenced");
+    assert!(send(
+        &mut l.store,
+        json!({"action":"task.result","task":t,"generation":1,"body":"Late","code_revision":"old"})
+    )
+    .is_err());
+}
+
+#[test]
+fn restores_pause_schedules_and_automation_until_reconciliation() {
+    let mut l = Lab::new();
+    enable_contract_automation(&mut l);
+    send(&mut l.store,json!({"action":"schedule.create","project":l.project,"title":"Daily","requirements":"Check","cadence":"daily"})).unwrap();
+    let snap = l.dir.path().join("copy");
+    backup::create(&l.store, &snap).unwrap();
+    let dest = l.dir.path().join("restore");
+    backup::restore(&snap, &dest).unwrap();
+    let restored = Store::open(&dest).unwrap();
+    assert_eq!(
+        restored
+            .db
+            .query_row("SELECT state FROM schedules", [], |r| r.get::<_, String>(0))
+            .unwrap(),
+        "paused"
+    );
+    assert_eq!(
+        restored
+            .db
+            .query_row("SELECT enabled FROM autonomy", [], |r| r.get::<_, i64>(0))
+            .unwrap(),
+        0
+    );
+}
+
+#[test]
+fn automation_never_restarts_a_human_decision_block() {
+    let mut l = Lab::new();
+    enable_contract_automation(&mut l);
+    let t = l.task("Budget decision");
+    l.store.tick().unwrap();
+    send(&mut l.store,json!({"action":"task.block","task":t,"generation":1,"reason":"Need the owner to choose a production migration date","owner":"operator","next_check":now()+3600})).unwrap();
+    l.store
+        .db
+        .execute("UPDATE operations SET state='confirmed'", [])
+        .unwrap();
+    l.store
+        .db
+        .execute(
+            "UPDATE attempts SET progress_at=?,runtime_id='decision-worker'",
+            [now() - 3600],
+        )
+        .unwrap();
+    l.store.tick().unwrap();
+    assert_eq!(
+        send(&mut l.store, json!({"action":"task.get","task":t})).unwrap()["task"]["state"],
+        "blocked"
+    );
+    assert_eq!(
+        l.store
+            .db
+            .query_row(
+                "SELECT COUNT(*) FROM operations WHERE verb='exit'",
+                [],
+                |r| r.get::<_, i64>(0)
+            )
+            .unwrap(),
+        0
+    );
+}
+
+#[test]
+fn automation_waiting_for_capacity_does_not_create_orphan_credentials() {
+    let mut l = Lab::new();
+    enable_contract_automation(&mut l);
+    send(
+        &mut l.store,
+        json!({"action":"system.configure","global_cap":2,"project_cap":2}),
+    )
+    .unwrap();
+    l.task("First");
+    l.task("Second");
+    l.store.tick().unwrap();
+    let count = fs::read_dir(l.dir.path().join("credentials"))
+        .unwrap()
+        .count();
+    for _ in 0..4 {
+        l.store.tick().unwrap();
+    }
+    assert_eq!(
+        fs::read_dir(l.dir.path().join("credentials"))
+            .unwrap()
+            .count(),
+        count
+    );
+}
+
+#[test]
+fn legacy_schema_upgrade_preserves_tasks_and_rejects_unknown_future_schema() {
+    let mut l = Lab::new();
+    let tid = l.task("Legacy durable work");
+    l.store
+        .db
+        .execute("UPDATE settings SET value='1' WHERE key='schema'", [])
+        .unwrap();
+    l.store
+        .db
+        .execute_batch("DROP TABLE schedule_runs; DROP TABLE schedules;")
+        .unwrap();
+    drop(l.store);
+    l.store = Store::open(l.dir.path()).unwrap();
+    assert_eq!(
+        send(&mut l.store, json!({"action":"task.get","task":tid})).unwrap()["task"]["title"],
+        "Legacy durable work"
+    );
+    assert_eq!(
+        l.store
+            .db
+            .query_row("SELECT value FROM settings WHERE key='schema'", [], |r| {
+                r.get::<_, String>(0)
+            })
+            .unwrap(),
+        "2"
+    );
+    l.store
+        .db
+        .execute("UPDATE settings SET value='999' WHERE key='schema'", [])
+        .unwrap();
+    assert!(Store::open(l.dir.path()).is_err());
+}
+
+#[test]
+fn accepted_child_notifies_parent_once_and_waiting_does_not_restart_parent() {
+    let mut l = Lab::new();
+    enable_contract_automation(&mut l);
+    let parent = l.task("Coordinate importer");
+    l.claim(&parent);
+    let child=send(&mut l.store,json!({"action":"child.reserve","task":parent,"generation":1,"role":"rust","title":"Bounded parser check","requirements":"Verify malformed records"})).unwrap();
+    l.store
+        .db
+        .execute(
+            "UPDATE attempts SET progress_at=?,runtime_id='parent-runtime' WHERE task=?",
+            rusqlite::params![now() - 120, parent],
+        )
+        .unwrap();
+    l.store.tick().unwrap();
+    assert_eq!(
+        l.store
+            .db
+            .query_row(
+                "SELECT COUNT(*) FROM operations WHERE task=? AND verb='exit'",
+                [&parent],
+                |r| r.get::<_, i64>(0)
+            )
+            .unwrap(),
+        0
+    );
+    let art = l.result(child["task"].as_str().unwrap(), 1);
+    l.accept(&art);
+    l.store.tick().unwrap();
+    l.store.tick().unwrap();
+    let inbox = as_agent(&mut l.store, &l.worker, json!({"action":"message.inbox"})).unwrap();
+    assert_eq!(
+        inbox
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|m| m["thread"].as_str().unwrap().starts_with("dependency-"))
+            .count(),
+        1
+    );
+}
+
 struct Lab {
     dir: TempDir,
     store: Store,

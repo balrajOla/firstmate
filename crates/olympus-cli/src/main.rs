@@ -41,6 +41,27 @@ enum Cmd {
     },
     /// Inspect durable portfolio state.
     Status,
+    /// Route a request, recover related project context and queue a follow-up.
+    Submit {
+        text: String,
+        #[arg(long)]
+        project: Option<String>,
+        #[arg(long, default_value = "engineer")]
+        role: String,
+    },
+    /// Today's or this week's work in the configured local timezone.
+    Agenda {
+        #[arg(default_value="today",value_parser=["today","week"])]
+        view: String,
+    },
+    /// Enable/disable automatic dispatch and review for an existing project.
+    Auto {
+        project: String,
+        #[arg(long)]
+        off: bool,
+    },
+    /// Show one project's outcomes and retained responses.
+    Outcomes { project: String },
     /// Open the interactive terminal interface.
     Ui {
         #[arg(long)]
@@ -80,6 +101,8 @@ enum Cmd {
     Service {
         #[arg(value_parser=["launchd","systemd"])]
         platform: String,
+        #[arg(long)]
+        install: bool,
     },
 }
 #[derive(Subcommand)]
@@ -134,6 +157,47 @@ fn run() -> Result<()> {
             &token()?,
             &json!({"action":"snapshot"}),
         )?),
+        Cmd::Submit {
+            text,
+            project,
+            role,
+        } => print(protocol::call(
+            &home,
+            &token()?,
+            &json!({"action":"intake.submit","text":text,"project":project,"role":role,"request_id":id("intake")}),
+        )?),
+        Cmd::Agenda { view } => print(protocol::call(
+            &home,
+            &token()?,
+            &json!({"action":"agenda","view":view}),
+        )?),
+        Cmd::Outcomes { project } => print(protocol::call(
+            &home,
+            &token()?,
+            &json!({"action":"project.outcomes","project":project}),
+        )?),
+        Cmd::Auto { project, off } => {
+            start(&home)?;
+            if !off {
+                let cfg: Value = serde_json::from_slice(
+                    &fs::read(home.join("firstmate.json"))
+                        .context("Connect an execution-enabled Firstmate home first")?,
+                )?;
+                if cfg["execute"] != true {
+                    bail!("Firstmate connection is observation-only; reconnect with --enable-execution")
+                }
+                protocol::call(
+                    &home,
+                    &token()?,
+                    &json!({"action":"system.configure","dispatch_enabled":true,"request_id":id("enable")}),
+                )?;
+            }
+            print(protocol::call(
+                &home,
+                &token()?,
+                &json!({"action":"automation.configure","project":project,"enabled":!off,"request_id":id("auto")}),
+            )?);
+        }
         Cmd::Request { json: input } => {
             let body = if input == "-" {
                 let mut s = String::new();
@@ -288,22 +352,35 @@ fn run() -> Result<()> {
                 bail!("terminal exited with {status}")
             }
         }
-        Cmd::Service { platform } => {
+        Cmd::Service { platform, install } => {
+            Store::open(&home)?;
+            let home = home.canonicalize()?;
             let daemon = std::env::current_exe()?.parent().unwrap().join("olympusd");
             let h = home.to_string_lossy();
             let b = daemon.to_string_lossy();
+            let service_path =
+                std::env::var("PATH").unwrap_or_else(|_| "/usr/local/bin:/usr/bin:/bin".into());
+            if service_path.contains(['\n', '\r', '"', '%']) || h.contains('%') || b.contains('%') {
+                bail!("unsupported service environment characters")
+            }
+
             if h.contains(['\n', '\r', '"']) || b.contains(['\n', '\r', '"']) {
                 bail!("unsupported service path characters")
             }
-            if platform == "systemd" {
-                println!("[Unit]\nDescription=Olympus durable agent coordinator\nAfter=network.target\n\n[Service]\nType=simple\nExecStart=\"{b}\" --home \"{h}\"\nRestart=on-failure\nRestartSec=3\nUMask=0077\n\n[Install]\nWantedBy=default.target");
+            let definition = if platform == "systemd" {
+                format!("[Unit]\nDescription=Olympus durable agent coordinator\nAfter=network.target\n\n[Service]\nType=simple\nEnvironment=\"PATH={service_path}\"\nExecStart=\"{b}\" --home \"{h}\"\nRestart=on-failure\nRestartSec=3\nUMask=0077\n\n[Install]\nWantedBy=default.target")
             } else {
                 let xml = |s: &str| {
                     s.replace('&', "&amp;")
                         .replace('<', "&lt;")
                         .replace('>', "&gt;")
                 };
-                println!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict><key>Label</key><string>com.olympus.coordinator</string><key>ProgramArguments</key><array><string>{}</string><string>--home</string><string>{}</string></array><key>KeepAlive</key><true/><key>RunAtLoad</key><true/><key>ThrottleInterval</key><integer>3</integer></dict></plist>",xml(&b),xml(&h));
+                format!("<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE plist PUBLIC \"-//Apple//DTD PLIST 1.0//EN\" \"http://www.apple.com/DTDs/PropertyList-1.0.dtd\">\n<plist version=\"1.0\"><dict><key>Label</key><string>com.olympus.coordinator</string><key>ProgramArguments</key><array><string>{}</string><string>--home</string><string>{}</string></array><key>EnvironmentVariables</key><dict><key>PATH</key><string>{}</string></dict><key>KeepAlive</key><true/><key>RunAtLoad</key><true/><key>ThrottleInterval</key><integer>3</integer></dict></plist>",xml(&b),xml(&h),xml(&service_path))
+            };
+            if install {
+                install_service(&platform, &home, &definition, &token()?)?;
+            } else {
+                println!("{definition}");
             }
         }
     }
@@ -376,4 +453,54 @@ fn terminal_assets(exe: &Path) -> Result<PathBuf> {
         bail!("terminal assets missing; reinstall Olympus")
     }
     Ok(path)
+}
+
+fn install_service(platform: &str, home: &Path, definition: &str, token: &str) -> Result<()> {
+    let user_home =
+        PathBuf::from(std::env::var_os("HOME").context("HOME required for a user service")?);
+    let destination = if platform == "systemd" {
+        user_home.join(".config/systemd/user/olympus.service")
+    } else {
+        user_home.join("Library/LaunchAgents/com.olympus.coordinator.plist")
+    };
+    private_dir(destination.parent().unwrap())?;
+    private_write(&destination, definition.as_bytes())?;
+    if protocol::call(home, token, &json!({"action":"snapshot"})).is_ok() {
+        protocol::call(home, token, &json!({"action":"system.shutdown"}))?;
+        let until = Instant::now() + Duration::from_secs(6);
+        while home.join("endpoint.json").exists() && Instant::now() < until {
+            thread::sleep(Duration::from_millis(50));
+        }
+        if home.join("endpoint.json").exists() {
+            bail!("coordinator has not stopped; service file saved, activation deferred")
+        }
+    }
+    let checked = |command: &mut Command| -> Result<()> {
+        let status = command.status()?;
+        if !status.success() {
+            bail!(
+                "user service command failed: {status}; definition retained at {}",
+                destination.display()
+            )
+        }
+        Ok(())
+    };
+    if platform == "systemd" {
+        checked(Command::new("systemctl").args(["--user", "daemon-reload"]))?;
+        checked(Command::new("systemctl").args(["--user", "enable", "--now", "olympus.service"]))?;
+    } else {
+        let domain = format!("gui/{}", unsafe { libc::getuid() });
+        let _ = Command::new("launchctl")
+            .args(["bootout", &format!("{domain}/com.olympus.coordinator")])
+            .stdout(Stdio::null())
+            .stderr(Stdio::null())
+            .status();
+        checked(
+            Command::new("launchctl")
+                .args(["bootstrap", &domain])
+                .arg(&destination),
+        )?;
+    }
+    print(json!({"installed":destination,"automatic_restart":true,"scope":"current user"}));
+    Ok(())
 }

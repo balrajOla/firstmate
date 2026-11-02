@@ -1,37 +1,6 @@
 use crate::*;
 
-pub fn preview(db: &Connection, actor: &Principal, req: &Value) -> Result<Value> {
-    let text = required(req, "text")?;
-    let lower = text.to_lowercase();
-    let explicit = optional(req, "project");
-    let candidates = rows(
-        db,
-        "SELECT id,name,aliases,charter FROM projects WHERE state!='completed' AND (? OR id=?)",
-        params![actor.global(), actor.project],
-    )?
-    .into_iter()
-    .filter(|p| {
-        if !explicit.is_empty() {
-            return p["id"] == explicit;
-        }
-        let names: Vec<String> =
-            serde_json::from_str(p["aliases"].as_str().unwrap_or("[]")).unwrap_or_default();
-        std::iter::once(p["name"].as_str().unwrap_or("").to_string())
-            .chain(names)
-            .any(|n| n.len() >= 3 && lower.contains(&n.to_lowercase()))
-    })
-    .collect::<Vec<_>>();
-    let related = if candidates.len() == 1 {
-        rows(db,"SELECT id,title,version,state FROM tasks WHERE project=? AND state NOT IN ('accepted','cancelled') ORDER BY updated DESC LIMIT 12",[candidates[0]["id"].as_str()])?
-    } else {
-        vec![]
-    };
-    Ok(
-        json!({"input":text,"route":if candidates.len()==1{"existing_project"}else if candidates.is_empty(){"needs_project_or_new_charter"}else{"needs_clarification"},"candidates":candidates,"related_tasks":related,"mutated":false,"next":"Choose a task amendment, new task, or new project charter explicitly. Similarity alone never rewrites existing requirements."}),
-    )
-}
-
-pub fn mutate(db: &Connection, actor: &Principal, r: &Value) -> Result<Value> {
+pub fn mutate(db: &Connection, actor: &Principal, r: &Value, home: &Path) -> Result<Value> {
     let action = required(r, "action")?;
     match action.as_str() {
         "task.create" => {
@@ -293,6 +262,12 @@ pub fn mutate(db: &Connection, actor: &Principal, r: &Value) -> Result<Value> {
                 ],
             )?;
             if passed {
+                super::memory::mutate(
+                    db,
+                    &Principal::operator(),
+                    &json!({"action":"memory.put","project":t["project"],"title":format!("Accepted: {}",t["title"].as_str().unwrap()),"body":format!("Outcome: {}\n\nRevision: {}\nIndependent evidence: {}",art["body"].as_str().unwrap().chars().take(8000).collect::<String>(),art["code_revision"].as_str().unwrap(),evidence.chars().take(2000).collect::<String>()),"sources":[artifact.clone(),art["code_revision"].as_str().unwrap().to_string()],"status":"verified"}),
+                    home,
+                )?;
                 db.execute("UPDATE incidents SET state='resolved',resolution='Current acceptance contract satisfied' WHERE task=? AND state='open'",[t["id"].as_str()])?;
             }
             let body = format!(

@@ -131,8 +131,16 @@ pub fn mutate(db: &Connection, actor: &Principal, r: &Value, home: &Path) -> Res
                     [parent_attempt["id"].as_str()],
                 )?;
             }
-            let reservation =
-                super::tasks::claim(db, &Principal::operator(), &json!({"task":tid,"agent":aid}))?;
+            let automatic: bool = db.query_row(
+                "SELECT EXISTS(SELECT 1 FROM autonomy WHERE project=? AND enabled=1)",
+                [parent_task["project"].as_str()],
+                |r| r.get(0),
+            )?;
+            let reservation = super::tasks::claim(
+                db,
+                &Principal::operator(),
+                &json!({"task":tid,"agent":aid,"reserve_children":if automatic{1}else{0}}),
+            )?;
             db.execute(
                 "INSERT INTO dependencies VALUES(?,?)",
                 params![parent_task["id"].as_str(), tid],

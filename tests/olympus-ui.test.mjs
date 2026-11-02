@@ -53,3 +53,33 @@ test("chief blocks direct shell and file tools but permits broker coordination",
   assert.equal(chiefToolPolicy("olympus_help", true), undefined);
   assert.equal(chiefToolPolicy("bash", false), undefined);
 });
+
+test("calendar tabs refresh daily and weekly work and render recurring jobs", async () => {
+  const {d,calls}=view(); const base=d.request;
+  d.request=async r=>{
+    if(r.action==="agenda") {calls.push(r);return {timezone:"Europe/London",jobs:[{id:"J1",project:"P0",project_name:"WebCraft",title:"Morning check",state:"running",bucket:"due",requirements:"Verify",due:1793610000}]};}
+    if(r.action==="schedules.list") return [{id:"S1",project:"P0",project_name:"WebCraft",title:"Morning check",state:"active",cadence:"daily",local_time:"09:00",timezone:"Europe/London",next_run:1793696400,last_state:"accepted"}];
+    return base(r);
+  };
+  await d.key("8");assert.ok(d.render(144,40).join("\n").includes("Morning check"));assert.equal(calls.at(-1).view,"today");
+  await d.key("9");assert.equal(calls.at(-1).view,"week");
+  await d.key("0");const out=d.render(180,40).join("\n");assert.ok(out.includes("RECURRING"));assert.ok(out.includes("daily 09:00 Europe/London"));assert.ok(out.includes("last accepted"));
+});
+
+test("project filtering is sent to history and cleared explicitly",async()=>{
+  const {d,calls}=view();await d.key("2");await d.key("f");assert.equal(d.projectFilter,"P0");await d.key("7");assert.equal(calls.findLast(c=>c.action==="history").project,"P0");await d.key("f");assert.equal(d.projectFilter,"");assert.equal(calls.findLast(c=>c.action==="history").project,undefined);
+});
+
+test("natural language intake uses selected routing without rewriting requirements",async()=>{
+  const {d,calls}=view();const base=d.request;d.request=async r=>{calls.push(r);if(r.action==="intake.preview")return {route:"existing_project",candidates:[{id:"P0"}]};if(r.action==="intake.submit")return {task:"new-followup"};return base(r);};
+  await d.key(":");await d.key("Continue the WebCraft importer");await d.key("\r");assert.ok(calls.some(c=>c.action==="intake.submit"&&c.project==="P0"));assert.ok(!calls.some(c=>c.action==="task.amend"));assert.ok(d.notice.includes("new-followup"));
+});
+
+test("project outcome view keeps full responses and scrolls",async()=>{
+  const {d}=view();const base=d.request;d.request=async r=>r.action==="project.outcomes"?{project:{name:"WebCraft"},counts:[{state:"accepted",count:1}],blockers:[],outputs:[{task_state:"accepted",title:"Importer",body:"Exact retained result\n".repeat(60)}],next_actions:[]}:base(r);
+  await d.key("2");await d.key("o");assert.ok(d.detail.body.includes("WebCraft / PROJECT OUTCOMES"));const before=d.render(80,24).join("\n");await d.key("\x1b[6~");assert.notEqual(d.render(80,24).join("\n"),before);
+});
+
+test("calendar forms preserve timezone and pause only the selected schedule",async()=>{
+  const {d,calls}=view();d.tab=9;d.schedules=[{id:"S1",project:"P0",state:"active"}];await d.key("p");assert.ok(calls.some(c=>c.action==="schedule.state"&&c.schedule==="S1"&&c.state==="paused"));assert.ok(!calls.some(c=>c.action==="task.pause"));
+});

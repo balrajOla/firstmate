@@ -70,16 +70,16 @@ export default function (pi: ExtensionAPI) {
   });
   pi.on("before_agent_start", async (event) => {
     if (!process.env.OLYMPUS_AGENT_TOKEN_FILE) return;
-    return { systemPrompt: event.systemPrompt + "\nYou are the Olympus chief of staff for this session. Keep portfolio state in the durable coordinator. Start with chief.briefing and read olympus_help before unfamiliar mutations. Route new requests using intake.preview, preserve versions, form scoped teams, respect capacity and live capability gates, and delegate independent work through Firstmate. Never treat process exit as task acceptance. Finish a coordination turn with chief.finish. The daemon must remain independent of your conversation. Do not repeatedly retry an unchanged refusal." };
+    return { systemPrompt: event.systemPrompt + "\nYou are the Olympus chief of staff for this session. Keep portfolio state in the durable coordinator. Start with chief.briefing and read olympus_help before unfamiliar mutations. Route new requests using intake.preview then intake.submit for confident matches; ask a short project choice for ambiguity. Use project.context for older work, project.outcomes for separate deliverables, agenda for today/week and schedules.list for recurring work. Preserve versions, form scoped teams, respect capacity and live capability gates, and delegate independent work through Firstmate. Project automation dispatches and reviews ready tasks without keeping this conversation open. Never treat process exit as task acceptance. Finish a coordination turn with chief.finish. The daemon must remain independent of your conversation. Do not repeatedly retry an unchanged refusal." };
   });
   pi.registerTool({
     name: "olympus_help", label: "Olympus action reference",
     description: "Read the installed exact Olympus JSON action contracts before changing work.",
-    parameters: Type.Object({ section: Type.Optional(Type.String({ description: "portfolio, agents, messages or memory; omit for introduction" })) }),
+    parameters: Type.Object({ section: Type.Optional(Type.String({ description: "portfolio, agents, messages, memory, automation or calendar; omit for introduction" })) }),
     async execute(_id, params) {
       const text = await readFile(new URL("./docs/olympus-api.md", import.meta.url), "utf8").catch(() => readFile(new URL("../../docs/olympus-api.md", import.meta.url), "utf8"));
       const sections = text.split(/^## /m);
-      const index = ({ portfolio: 1, agents: 2, messages: 3, memory: 4 } as Record<string,number>)[params.section || ""] || 0;
+      const index = ({ portfolio: 1, agents: 2, messages: 3, memory: 4, automation: 5, calendar: 6 } as Record<string,number>)[params.section || ""] || 0;
       const content = sections[index] || sections[0];
       return { content: [{ type: "text", text: content }], details: { section: params.section || "introduction" } };
     },
@@ -91,7 +91,7 @@ export default function (pi: ExtensionAPI) {
     parameters: Type.Object({ request: Type.String({ description: "JSON object following the Olympus action contract" }) }),
     async execute(_id, params) {
       const request = JSON.parse(params.request);
-      const forbidden = new Set(["system.shutdown", "system.configure", "profile.register", "profile.verify", "runtime.observe", "operation.receipt", "context.transfer", "task.recover"]);
+      const forbidden = new Set(["system.shutdown", "system.configure", "profile.register", "profile.verify", "runtime.observe", "operation.receipt", "context.transfer", "task.recover", "automation.configure", "maintenance.configure"]);
       if (forbidden.has(request.action)) throw new Error("This operation requires the operator CLI.");
       const result = await agent(request);
       return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };

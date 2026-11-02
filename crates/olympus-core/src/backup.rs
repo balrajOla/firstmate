@@ -225,6 +225,15 @@ pub fn restore(source: &Path, target: &Path) -> Result<Value> {
     store.db.execute("UPDATE tasks SET state='unknown',reason='Restored snapshot; reconcile original runtimes before resuming' WHERE state IN ('running','review','paused','recovering')",[])?;
     store.db.execute("UPDATE profiles SET verified=0", [])?;
     store.db.execute(
+        "UPDATE autonomy SET enabled=0,status='Restored; reconcile before enabling'",
+        [],
+    )?;
+    store.db.execute(
+        "UPDATE schedules SET state='paused' WHERE state='active'",
+        [],
+    )?;
+    store.db.execute("DELETE FROM stop_evidence", [])?;
+    store.db.execute(
         "UPDATE operations SET state='uncertain' WHERE state='pending'",
         [],
     )?;

@@ -12,10 +12,13 @@ use std::{
 };
 
 mod actions;
+pub mod automation;
 pub mod backup;
 pub mod bridge;
 pub mod demo;
+mod portfolio;
 pub mod protocol;
+pub mod scheduling;
 
 pub const SCHEMA: &str = "olympus.v1";
 pub const MAX_REQUEST: usize = 1_048_576;
@@ -119,10 +122,11 @@ impl Store {
             })
             .optional()
             .unwrap_or(None);
-        if existing.as_deref().is_some_and(|v| v != "1") {
+        if existing.as_deref().is_some_and(|v| v != "1" && v != "2") {
             bail!("incompatible database schema; use the matching release or restore a backup")
         }
         db.execute_batch(include_str!("schema.sql"))?;
+        db.execute_batch(include_str!("schema-v2.sql"))?;
         fs::set_permissions(home.join("olympus.db"), fs::Permissions::from_mode(0o600))?;
         if !home.join("operator.token").exists() {
             // create_new prevents two initialisers replacing one another's token.

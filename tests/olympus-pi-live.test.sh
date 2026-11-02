@@ -6,9 +6,10 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 source "$ROOT/tests/lib.sh"
 fm_live_gate default-on OLYMPUS_PI_LIVE node npm cargo python3
 sdk="$(mktemp -d "${TMPDIR:-/tmp}/olympus-pi-sdk.XXXXXX")"
+sdk="$(cd "$sdk" && pwd -P)"
 trap 'rm -rf -- "$sdk"' EXIT
 cp "$ROOT/packages/olympus-pi/"{package.json,package-lock.json,index.ts,client.mjs,view.mjs,wake.mjs,policy.mjs} "$sdk/"
-npm ci --prefix "$sdk" --ignore-scripts --no-audit --no-fund
+(cd "$sdk" && npm ci --ignore-scripts --no-audit --no-fund)
 (cd "$sdk" && npm run typecheck)
 (cd "$ROOT" && cargo build --workspace --locked)
 export OLYMPUS_PI_CLI="$sdk/node_modules/@earendil-works/pi-coding-agent/dist/cli.js"

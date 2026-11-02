@@ -39,12 +39,12 @@ No example enables or launches a model merely by being displayed.
 | `task.progress` | `task`, `generation`, `fingerprint`; optional `checkpoint` | Current owner/operator; distinct progress and loop evidence |
 | `task.result` | `task`, `generation`, `body`, `code_revision` | Current owner/operator; candidate artifact and retained response |
 | `task.review` | `artifact`, `code_revision`, `passed`, `evidence`; operator also supplies `reviewer` | Independent quality/reviewer identity, exact version/revision |
-| `task.block` | `task`, `generation`, `reason`, `next_check` | Current owner/operator; timed block |
+| `task.block` | `task`, `generation`, `reason`, `owner`, `next_check` | Current owner/operator; timed block |
 | `task.pause` / `task.resume` | `task`, `reason` | Manager; changes obligation state, does not assert a process was interrupted |
 | `task.cancel` | `task`, `reason`, `confirmed_stopped` when an attempt exists | Manager; stop proof is a separate runtime obligation |
 | `task.recover` | `task`, `confirmed_stopped: true`, `evidence` | Operator; bounded replacement, old generation fenced |
 | `incident.resolve` | `incident`, `resolution` | Scoped manager; operator resolves operator-owned incidents |
-| `history` | optional `kind`: responses/tasks/projects, `limit`, `before`, `search` | Stable completion/response cursor; use last returned `cursor` for next page |
+| `history` | optional `kind`: responses/tasks/projects, `limit`, `before`, `search`, `project` | Stable completion/response cursor; use last returned `cursor` for next page |
 | `response.get` | `response` | Full retained output |
 
 An accepted task cannot be amended in place; create a follow-up task.
@@ -147,3 +147,47 @@ Only operator credentials can call the transport-level `system.shutdown` control
 The manifest includes task requirements, charter, dependencies, artifacts, pending messages, open incidents, workspace/runtime identity and verified knowledge.
 New relevant evidence invalidates an old manifest.
 Fetching record references incrementally bounds prompt size while preserving access to the complete durable source.
+
+## Automatic operation and retained project context
+
+| Action | Fields | Contract |
+|---|---|---|
+| `intake.submit` | `text`; optional `project`, `title`, `role` | Manager; confident matches create a contextual follow-up, completed projects reopen, identical requests deduplicate; ambiguous routes refuse mutation |
+| `intake.submit` for a new project | `text`, `new_project: true`, `name`, `charter`; optional `repository` | Manager with project-creation authority; creates an explicitly named charter and task |
+| `project.context` | `project` | Bounded project evidence and full-record references, including completed work |
+| `project.outcomes` | `project`; optional `before`, `limit` | Separate project counts, blockers, responses and next actions; responses paginate by cursor |
+| `memory.get` | `knowledge` | Full exact source-backed record with scope enforcement |
+| `automation.configure` | `project`, `enabled`; optional `progress_timeout` in 60..86400 seconds | Operator; enable automatic assignment, independent review, mailbox notifications and bounded recovery; default timeout 900 seconds |
+| `automation.status` | none | Scoped project policies and latest reason for waiting |
+| `review.submit` | Current review `task`, `generation`, `passed`, `code_revision`, `evidence` | Assigned independent quality worker; review the linked artifact and finish the review job atomically |
+| `backups.list` | none | Operator; latest 20 scheduled backup attempts and results |
+| `maintenance.configure` | optional IANA `timezone`, `backup_interval` in seconds | Operator; backup interval is 0 to disable or 300..604800; default 86400 |
+
+Automatic dispatch still requires the global dispatch switch, an execution-enabled Firstmate connection and verified role-capable profiles.
+Each automatic producer reserves an additional slot for its independent review.
+Review reservations are converted atomically; a parent’s admitted children need their own review headroom.
+The portable child route is `child.reserve` followed by coordinator dispatch through Firstmate.
+No vendor-native API is assumed merely because an agent has a parent.
+A second failed review or an exhausted recovery budget becomes a decision instead of another model loop.
+Accepted results produce source-linked verified memory records; long outcome bodies are bounded previews whose artifact references retain the full evidence.
+The matcher uses explicit names, aliases and shared terms; it does not claim universal semantic understanding.
+
+## Calendar
+
+| Action | Fields | Contract |
+|---|---|---|
+| `agenda` | optional `view`: today/week, `timezone`, `project` | Due and overdue jobs, active work and completed results in the selected local calendar window |
+| `schedules.list` | optional `project` | Recurring templates, next occurrence and last task state |
+| `schedule.create` | `project`, `title`, `requirements`, `cadence`: daily/weekdays/weekly; optional `role`, `time`, `timezone`, `weekday` | Manager; defaults engineer, 09:00, configured timezone, Monday=0; Sunday=6 |
+| `schedule.state` | `schedule`, `state`: active/paused/cancelled | Manager; changes future occurrence generation, preserves existing tasks |
+| `task.due` | `task`, positive Unix timestamp `due` | Manager; records the task’s due date independently of requirements |
+
+A unique schedule/occurrence record prevents duplicate jobs across coordinator restarts.
+Missed occurrences coalesce into one outstanding job and the next occurrence advances beyond the current clock.
+If the previous occurrence is still unfinished, the schedule waits without creating overlapping work.
+The first occurrence of an ambiguous clock time is used; a nonexistent clock time moves forward to the next valid local minute.
+Schedules pause on backup restoration until the operator reconciles the restored home.
+
+```json
+{"action":"schedule.create","project":"P-YOUR-PROJECT","title":"Weekly delivery review","requirements":"Return separate project outcomes, blockers and next actions with evidence","role":"researcher","cadence":"weekly","weekday":0,"time":"09:00","timezone":"Europe/London"}
+```

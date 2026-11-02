@@ -148,6 +148,13 @@ class ProcessContract(unittest.TestCase):
         self.assertEqual(records[0]["id"],operation["operation"])
         self.assertEqual((fmhome/"effects").read_text().splitlines(),["call"])
         self.assertEqual(self.request("task.get",task=task)["task"]["state"],"running")
+        # Execute the broker address handed to the worker, including installed
+        # layouts where the wrapper and actual binary live in different folders.
+        import re
+        brief=next((fmhome/"data").glob("*/brief.md")).read_text()
+        connection=json.loads(re.search(r"Connection: (\{[^\n]+?\})\.",brief).group(1))
+        response=subprocess.run([connection["binary"],"--home",connection["home"],"--token-file",connection["credential_file"],"request",json.dumps({"action":"task.get","task":task})],capture_output=True,text=True,check=True)
+        self.assertEqual(json.loads(response.stdout)["task"]["id"],task)
 
     def test_socket_authentication_and_concurrent_reads(self):
         bad = Path(self.area.name) / "bad.token"; bad.write_text("invalid")
@@ -155,6 +162,45 @@ class ProcessContract(unittest.TestCase):
         with concurrent.futures.ThreadPoolExecutor(max_workers=8) as pool:
             states = list(pool.map(lambda _: self.cli("status"), range(64)))
         self.assertTrue(all(s["schema"]=="olympus.v1" for s in states))
+
+    def test_calendar_restarts_without_duplicate_jobs_and_cli_groups_project_outcomes(self):
+        project,_,_,_=self.fixture()
+        schedule=self.request("schedule.create",project=project,title="Daily count audit",requirements="Check source and imported row counts",role="rust",cadence="daily",time="09:00",timezone="Europe/London")
+        db=sqlite3.connect(self.home/"olympus.db")
+        try:
+            with db:db.execute("UPDATE schedules SET next_run=? WHERE id=?",(int(time.time())-1,schedule["schedule"]))
+        finally:db.close()
+        until=time.monotonic()+5
+        while time.monotonic()<until:
+            jobs=self.cli("agenda","today")["jobs"]
+            if any(j.get("schedule")==schedule["schedule"] for j in jobs):break
+            time.sleep(.1)
+        self.assertEqual(sum(j.get("schedule")==schedule["schedule"] for j in jobs),1)
+        self.children[0].kill();self.children[0].wait();self.launch()
+        self.assertEqual(sum(j.get("schedule")==schedule["schedule"] for j in self.cli("agenda","today")["jobs"]),1)
+        self.assertEqual(self.cli("outcomes",project)["project"]["id"],project)
+        first=self.cli("submit","Importer follow-up with CSV","--project",project,"--role","rust")
+        second=self.cli("submit","Importer follow-up with CSV","--project",project,"--role","rust")
+        self.assertEqual(first["task"],second["task"]);self.assertTrue(second["duplicate"])
+
+    def test_scheduled_backup_is_verified_and_operator_can_inspect_it(self):
+        until=time.monotonic()+5;backups=[]
+        while time.monotonic()<until:
+            backups=self.request("backups.list")
+            if backups and backups[0]["state"]=="verified":break
+            time.sleep(.1)
+        self.assertTrue(backups)
+        self.assertEqual(backups[0]["state"],"verified",backups)
+        self.assertIn("olympus.db",self.cli("backup","verify",backups[0]["destination"])["files"])
+
+    def test_user_service_definitions_preserve_home_path_and_restart_policy(self):
+        import xml.etree.ElementTree as ET
+        systemd=subprocess.run([str(BIN),"--home",str(self.home),"service","systemd"],capture_output=True,text=True,check=True).stdout
+        self.assertIn("Restart=on-failure",systemd);self.assertIn(str(self.home),systemd);self.assertIn('Environment="PATH=',systemd)
+        launchd=subprocess.run([str(BIN),"--home",str(self.home),"service","launchd"],capture_output=True,text=True,check=True).stdout
+        ET.fromstring(launchd)
+        self.assertIn("KeepAlive",launchd);self.assertIn("EnvironmentVariables",launchd)
+        self.assertEqual(self.cli("status")["schema"],"olympus.v1")
 
     def test_messages_persist_across_death_with_distinct_acknowledgements(self):
         _,worker,reviewer,task=self.fixture()
@@ -198,6 +244,9 @@ class ProcessContract(unittest.TestCase):
             os.write(master,b"2");read_until(b"PROJECT / STATUS / CHARTER")
             fcntl.ioctl(master,termios.TIOCSWINSZ,struct.pack("HHHH",28,80,0,0));proc.send_signal(signal.SIGWINCH)
             os.write(master,b"7");read_until(b"RESPONSES /")
+            os.write(master,b"8");read_until(b"TODAY /")
+            os.write(master,b"9");read_until(b"THIS WEEK /")
+            os.write(master,b"0");read_until(b"RECURRING /")
             os.write(master,b"q")
             # Keep acting as a terminal reader while the child flushes its final frame.
             # macOS PTYs have smaller buffers than Linux and wait() alone can deadlock.

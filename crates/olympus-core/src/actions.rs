@@ -5,6 +5,18 @@ mod planning;
 mod tasks;
 
 pub fn is_read(action: &str) -> bool {
+    if matches!(
+        action,
+        "agenda"
+            | "schedules.list"
+            | "project.outcomes"
+            | "project.context"
+            | "memory.get"
+            | "automation.status"
+            | "backups.list"
+    ) {
+        return true;
+    }
     matches!(
         action,
         "snapshot"
@@ -31,6 +43,12 @@ pub fn read(db: &Connection, actor: &Principal, req: &Value) -> Result<Value> {
     let action = required(req, "action")?;
     let scope = actor.project.as_deref().unwrap_or("");
     match action.as_str(){
+        "agenda"|"schedules.list"=>crate::scheduling::read(db,actor,req),
+        "project.outcomes"=>crate::portfolio::outcomes(db,actor,req),
+        "project.context"=>crate::portfolio::context(db,actor,&required(req,"project")?),
+        "memory.get"=>{let item=row(db,"SELECT * FROM knowledge WHERE id=?",[required(req,"knowledge")?])?;if let Some(p)=item["project"].as_str(){actor.scope(p)?;}Ok(item)},
+        "automation.status"=>Ok(json!(rows(db,"SELECT a.*,p.name AS project_name FROM autonomy a JOIN projects p ON p.id=a.project WHERE (? OR a.project=?) ORDER BY p.name",params![actor.global(),scope])?)),
+        "backups.list"=>{require_operator(actor)?;Ok(json!(rows(db,"SELECT * FROM backup_runs ORDER BY created DESC LIMIT 20",[])?))},
         "project.get"=>{let pid=required(req,"project")?;actor.scope(&pid)?;row(db,"SELECT * FROM projects WHERE id=?",[pid])},
         "projects.list"=>Ok(json!(rows(db,"SELECT * FROM projects WHERE (? OR id=?) ORDER BY created,id",params![actor.global(),scope])?)),
         "snapshot"=>{
@@ -53,10 +71,12 @@ pub fn read(db: &Connection, actor: &Principal, req: &Value) -> Result<Value> {
         "task.next"=>Ok(json!(rows(db,"SELECT t.* FROM tasks t JOIN projects p ON p.id=t.project WHERE t.state='ready' AND p.state='active' AND (? OR t.project=?) AND NOT EXISTS(SELECT 1 FROM dependencies d JOIN tasks dep ON dep.id=d.depends_on WHERE d.task=t.id AND dep.state!='accepted') ORDER BY (SELECT COUNT(*) FROM attempts a JOIN tasks z ON z.id=a.task WHERE z.project=t.project AND a.state IN ('running','unknown','paused','review','recovering')), t.priority DESC,t.created,t.id LIMIT 20",params![actor.global(),scope])?)),
         "history"=>{
             let limit=number(req,"limit",10).clamp(1,100);let before=number(req,"before",i64::MAX);
+            let project=optional(req,"project");if !project.is_empty(){actor.scope(&project)?;}
+            let global=actor.global()&&project.is_empty();let scope=if project.is_empty(){scope}else{&project};
             let kind=optional(req,"kind");let search=format!("%{}%",optional(req,"search"));
-            if kind=="projects" {Ok(json!(rows(db,"SELECT completed_seq AS cursor,* FROM projects WHERE state='completed' AND completed_seq<? AND (? OR id=?) AND name LIKE ? ORDER BY completed_seq DESC LIMIT ?",params![before,actor.global(),scope,search,limit])?))}
-            else if kind=="tasks" {Ok(json!(rows(db,"SELECT t.completed_seq AS cursor,t.*,p.name AS project_name FROM tasks t JOIN projects p ON p.id=t.project WHERE t.state='accepted' AND t.completed_seq<? AND (? OR t.project=?) AND (t.title LIKE ? OR t.requirements LIKE ?) ORDER BY t.completed_seq DESC LIMIT ?",params![before,actor.global(),scope,search,search,limit])?))}
-            else {Ok(json!(rows(db,"SELECT r.seq AS cursor,r.*,p.name AS project_name FROM responses r LEFT JOIN projects p ON p.id=r.project WHERE r.seq<? AND (? OR r.project=?) AND r.body LIKE ? ORDER BY r.seq DESC LIMIT ?",params![before,actor.global(),scope,search,limit])?))}
+            if kind=="projects" {Ok(json!(rows(db,"SELECT completed_seq AS cursor,* FROM projects WHERE state='completed' AND completed_seq<? AND (? OR id=?) AND name LIKE ? ORDER BY completed_seq DESC LIMIT ?",params![before,global,scope,search,limit])?))}
+            else if kind=="tasks" {Ok(json!(rows(db,"SELECT t.completed_seq AS cursor,t.*,p.name AS project_name FROM tasks t JOIN projects p ON p.id=t.project WHERE t.state='accepted' AND t.completed_seq<? AND (? OR t.project=?) AND (t.title LIKE ? OR t.requirements LIKE ?) ORDER BY t.completed_seq DESC LIMIT ?",params![before,global,scope,search,search,limit])?))}
+            else {Ok(json!(rows(db,"SELECT r.seq AS cursor,r.*,p.name AS project_name FROM responses r LEFT JOIN projects p ON p.id=r.project WHERE r.seq<? AND (? OR r.project=?) AND r.body LIKE ? ORDER BY r.seq DESC LIMIT ?",params![before,global,scope,search,limit])?))}
         },
         "response.get"=>{
             let r=row(db,"SELECT * FROM responses WHERE id=?",[required(req,"response")?])?;
@@ -77,7 +97,7 @@ pub fn read(db: &Connection, actor: &Principal, req: &Value) -> Result<Value> {
         },
         "dispatch.plan"=>planning::dispatch(db,actor,req),
         "profiles.list"=>Ok(json!(rows(db,"SELECT * FROM profiles ORDER BY id",[])?)),
-        "intake.preview"=>tasks::preview(db,actor,req),
+        "intake.preview"=>crate::portfolio::preview(db,actor,req),
         "memory.search"=>memory::search(db,actor,req),
         "context.get"=>{
             let mut r=row(db,"SELECT * FROM capsules WHERE id=?",[required(req,"capsule")?])?;task(db,actor,r["task"].as_str().unwrap_or(""))?;
@@ -103,6 +123,32 @@ pub fn read(db: &Connection, actor: &Principal, req: &Value) -> Result<Value> {
 pub fn mutate(db: &Connection, actor: &Principal, req: &Value, home: &Path) -> Result<Value> {
     let action = required(req, "action")?;
     let result = match action.as_str() {
+        "intake.submit" => crate::portfolio::submit(db, actor, req, home)?,
+        "schedule.create" | "schedule.state" | "task.due" => {
+            crate::scheduling::mutate(db, actor, req)?
+        }
+        "automation.configure" => crate::automation::configure(db, actor, req)?,
+        "maintenance.configure" => {
+            require_operator(actor)?;
+            if req.get("timezone").is_some() {
+                let zone = crate::scheduling::timezone(db, req)?;
+                db.execute(
+                    "UPDATE settings SET value=? WHERE key='timezone'",
+                    [zone.to_string()],
+                )?;
+            }
+            if let Some(interval) = req["backup_interval"].as_i64() {
+                if interval != 0 && !(300..=604800).contains(&interval) {
+                    bail!("backup_interval must be 0 or 300..604800 seconds")
+                };
+                db.execute(
+                    "UPDATE settings SET value=? WHERE key='backup_interval'",
+                    [interval.to_string()],
+                )?;
+            }
+            json!({"configured":true})
+        }
+        "review.submit" => crate::automation::review(db, actor, req, home)?,
         "team.create" | "evaluation.record" => planning::mutate(db, actor, req, home)?,
         "project.create" => {
             require_manager(actor)?;
@@ -170,7 +216,7 @@ pub fn mutate(db: &Connection, actor: &Principal, req: &Value, home: &Path) -> R
         "task.create" | "task.amend" | "task.ack_version" | "task.link" | "task.claim"
         | "task.heartbeat" | "task.progress" | "task.result" | "task.review" | "task.block"
         | "task.pause" | "task.resume" | "task.cancel" | "task.recover" | "incident.resolve" => {
-            tasks::mutate(db, actor, req)?
+            tasks::mutate(db, actor, req, home)?
         }
         "agent.create" | "agent.retire" | "agent.activity" | "child.reserve" | "message.send"
         | "message.ack" | "profile.register" | "profile.verify" | "system.configure"
@@ -248,7 +294,8 @@ pub fn mutate(db: &Connection, actor: &Principal, req: &Value, home: &Path) -> R
                     "operator",
                 )?;
             }
-            json!({"stale_attempts":stale.len(),"dead_letters":late.len(),"checked_at":now()})
+            let automatic = crate::automation::tick(db, home)?;
+            json!({"stale_attempts":stale.len(),"dead_letters":late.len(),"checked_at":now(),"automatic":automatic})
         }
         _ => bail!("unsupported action: {action}"),
     };
@@ -289,4 +336,8 @@ fn compact(mut records: Vec<Value>) -> Vec<Value> {
         }
     }
     records
+}
+
+pub(crate) fn role_text(role: &str) -> &'static str {
+    agents::role_instruction(role)
 }

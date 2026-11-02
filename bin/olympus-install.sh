@@ -80,7 +80,7 @@ printf '%s\n' "$source_dir" > "$prefix/lib/olympus/source-path"
 if [ "$skip_pi" = 0 ]; then
   mkdir -p "$prefix/lib/olympus/pi-runtime"
   cp "$source_dir/packages/olympus-pi/package.json" "$source_dir/packages/olympus-pi/package-lock.json" "$prefix/lib/olympus/pi-runtime/"
-  npm ci --prefix "$prefix/lib/olympus/pi-runtime" --omit=dev --ignore-scripts --no-audit --no-fund
+  (cd "$prefix/lib/olympus/pi-runtime" && npm ci --omit=dev --ignore-scripts --no-audit --no-fund)
   # Pi loads the extension from its parent directory; expose the same exact dependency tree.
   if [ ! -e "$prefix/lib/olympus/node_modules" ]; then
     ln -s pi-runtime/node_modules "$prefix/lib/olympus/node_modules"

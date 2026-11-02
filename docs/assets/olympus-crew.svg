@@ -1,44 +1,44 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="864" viewBox="0 0 1440 864">
-<rect width="1440" height="864" fill="#10151f"/>
-<g font-family="DejaVu Sans Mono,monospace" font-size="16">
-<text x="24" y="34" fill="#64ddec" font-weight="bold" xml:space="preserve">OLYMPUS / Crew  |  SIMULATOR - SAMPLE DATA                                                                                                      </text>
-<text x="24" y="55" fill="#d7dce5" xml:space="preserve">1 Live  2 Projects  3 [Crew]  4 Queue  5 Memory  6 Health  7 History                                                                            </text>
-<text x="24" y="76" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="97" fill="#d7dce5" xml:space="preserve">[.o.] 12 working  1 recovering  3 blocked  3 need you  Chief: idle</text>
-<text x="24" y="118" fill="#d7dce5" xml:space="preserve">Verified 0s ago | History retained | Motion indicates activity; checkpoints establish progress</text>
-<text x="24" y="139" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="160" fill="#d7dce5" xml:space="preserve">ROLE / HARNESS / PARENT / DEPTH</text>
-<text x="24" y="181" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="202" fill="#64ddec" xml:space="preserve">&gt; chief  pi  parent=root  AG-bdbc8f45ce01490e</text>
-<text x="24" y="223" fill="#d7dce5" xml:space="preserve">  chief  pi  parent=root  AG-a7a27a5dd2254a96</text>
-<text x="24" y="244" fill="#d7dce5" xml:space="preserve">    captain  claude  parent=AG-bdbc8f45ce01490e  AG-147258ac10094620</text>
-<text x="24" y="265" fill="#d7dce5" xml:space="preserve">    captain  codex  parent=AG-bdbc8f45ce01490e  AG-38b577b81c8b4876</text>
-<text x="24" y="286" fill="#d7dce5" xml:space="preserve">    captain  codex  parent=AG-bdbc8f45ce01490e  AG-409a3fb06da24449</text>
-<text x="24" y="307" fill="#d7dce5" xml:space="preserve">    captain  codex  parent=AG-bdbc8f45ce01490e  AG-413e5a73c130475e</text>
-<text x="24" y="328" fill="#d7dce5" xml:space="preserve">    captain  codex  parent=AG-bdbc8f45ce01490e  AG-45ee7837f58043e2</text>
-<text x="24" y="349" fill="#d7dce5" xml:space="preserve">    captain  claude  parent=AG-bdbc8f45ce01490e  AG-48b9ac8b5f654455</text>
-<text x="24" y="370" fill="#d7dce5" xml:space="preserve">    captain  claude  parent=AG-bdbc8f45ce01490e  AG-57977af512f8437a</text>
-<text x="24" y="391" fill="#d7dce5" xml:space="preserve">    captain  claude  parent=AG-bdbc8f45ce01490e  AG-652c6cb7d52946b4</text>
-<text x="24" y="412" fill="#d7dce5" xml:space="preserve">    captain  codex  parent=AG-bdbc8f45ce01490e  AG-6e00b635fd454604</text>
-<text x="24" y="433" fill="#d7dce5" xml:space="preserve">    captain  claude  parent=AG-bdbc8f45ce01490e  AG-775b7d97f7d6458b</text>
-<text x="24" y="454" fill="#d7dce5" xml:space="preserve">    captain  codex  parent=AG-bdbc8f45ce01490e  AG-7817e1e1bb414c7f</text>
-<text x="24" y="475" fill="#d7dce5" xml:space="preserve">    captain  codex  parent=AG-bdbc8f45ce01490e  AG-8320d53be89947ab</text>
-<text x="24" y="496" fill="#d7dce5" xml:space="preserve">    captain  claude  parent=AG-bdbc8f45ce01490e  AG-a25304d35763441f</text>
-<text x="24" y="517" fill="#d7dce5" xml:space="preserve">    captain  claude  parent=AG-bdbc8f45ce01490e  AG-b2c996ebc0d04540</text>
-<text x="24" y="538" fill="#d7dce5" xml:space="preserve">    captain  claude  parent=AG-bdbc8f45ce01490e  AG-ba37d8c9456b49a3</text>
-<text x="24" y="559" fill="#d7dce5" xml:space="preserve">    captain  claude  parent=AG-bdbc8f45ce01490e  AG-c6ca82d153d74b0a</text>
-<text x="24" y="580" fill="#d7dce5" xml:space="preserve">    captain  codex  parent=AG-bdbc8f45ce01490e  AG-cc409712df004ef5</text>
-<text x="24" y="601" fill="#d7dce5" xml:space="preserve">    captain  claude  parent=AG-bdbc8f45ce01490e  AG-e04035b3e0c3471a</text>
-<text x="24" y="622" fill="#d7dce5" xml:space="preserve">    captain  codex  parent=AG-bdbc8f45ce01490e  AG-ecdb92689bf04c09</text>
-<text x="24" y="643" fill="#d7dce5" xml:space="preserve">    captain  codex  parent=AG-bdbc8f45ce01490e  AG-f1d3c5fc4d224e85</text>
-<text x="24" y="664" fill="#d7dce5" xml:space="preserve">      quality  claude  parent=AG-f1d3c5fc4d224e85  AG-006f5ac916134d10</text>
-<text x="24" y="685" fill="#d7dce5" xml:space="preserve">      rust  codex  parent=AG-8320d53be89947ab  AG-00c024e07ae94548</text>
-<text x="24" y="706" fill="#d7dce5" xml:space="preserve">      quality  claude  parent=AG-c6ca82d153d74b0a  AG-04833f3e79514cd4</text>
-<text x="24" y="727" fill="#d7dce5" xml:space="preserve">      rust  muse  parent=AG-409a3fb06da24449  AG-0dec72bb23934e0d</text>
-<text x="24" y="748" fill="#d7dce5" xml:space="preserve">      quality  claude  parent=AG-775b7d97f7d6458b  AG-2103986067084d35</text>
-<text x="24" y="769" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="790" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="811" fill="#d7dce5" xml:space="preserve"></text>
-<text x="24" y="832" fill="#d7dce5" xml:space="preserve">Tab pane  j/k select  Enter detail  PgUp older  End live  : request  N project  n task  ? help  q exit</text>
-<text x="24" y="853" fill="#d7dce5" xml:space="preserve">Synthetic fixtures. No model calls. No live reliability claims.</text>
-</g></svg>
+<svg xmlns="http://www.w3.org/2000/svg" width="1648" height="1060" viewBox="0 0 1648 1060"><rect width="1648" height="1060" rx="16" fill="#101827"/><g font-family="DejaVu Sans Mono,monospace" font-size="16" xml:space="preserve"><text x="24" y="36" fill="#75c4ff">OLYMPUS / Crew  |  SIMULATOR - SAMPLE DATA                                                                                                                      </text>
+<text x="24" y="59" fill="#d8e2f0">1 Live  2 Projects  3 [Crew]  4 Queue  5 Memory  6 Health  7 History                                                                                            </text>
+<text x="24" y="82" fill="#d8e2f0">8 Today  9 Week  0 Recurring | All projects                                                                                                                     </text>
+<text x="24" y="105" fill="#ffb66c">[.o.] 12 working  1 recovering  3 blocked  3 need you  Chief: idle</text>
+<text x="24" y="128" fill="#d8e2f0">Verified 0s ago | History retained | Motion indicates activity; checkpoints establish progress</text>
+<text x="24" y="151" fill="#d8e2f0"></text>
+<text x="24" y="174" fill="#d8e2f0">ROLE / HARNESS / PARENT / DEPTH</text>
+<text x="24" y="197" fill="#d8e2f0"></text>
+<text x="24" y="220" fill="#d8e2f0">&gt; chief  pi  parent=root  AG-482b391857254aeb</text>
+<text x="24" y="243" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-04c76a690c0c47a5</text>
+<text x="24" y="266" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-1ba8eef39d064ac5</text>
+<text x="24" y="289" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-2fcf1500cd4445ea</text>
+<text x="24" y="312" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-490f8a7756e94cdc</text>
+<text x="24" y="335" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-7b6928c6507d46f9</text>
+<text x="24" y="358" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-a7002c152e8a4b94</text>
+<text x="24" y="381" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-bd5107e12a0842e4</text>
+<text x="24" y="404" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-ed8f38212e2d4ae6</text>
+<text x="24" y="427" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-2b34394486854117</text>
+<text x="24" y="450" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-344b4d1470c34a83</text>
+<text x="24" y="473" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-36f67c62107c4eb1</text>
+<text x="24" y="496" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-3ebed7c016494733</text>
+<text x="24" y="519" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-7c053cebf20249b2</text>
+<text x="24" y="542" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-9110c391776e417c</text>
+<text x="24" y="565" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-9b023eae5d4e4d4a</text>
+<text x="24" y="588" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-9b29da9bbb8f4c30</text>
+<text x="24" y="611" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-ab0bd367bcc6436f</text>
+<text x="24" y="634" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-c02a794ac3da4acc</text>
+<text x="24" y="657" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-d1ebc04fb17b4424</text>
+<text x="24" y="680" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-f4b2ad873b34462a</text>
+<text x="24" y="703" fill="#d8e2f0">      quality  claude  parent=AG-bd5107e12a0842e4  AG-0ce8c98da2754391</text>
+<text x="24" y="726" fill="#d8e2f0">      quality  claude  parent=AG-2fcf1500cd4445ea  AG-34e2555fce1e4090</text>
+<text x="24" y="749" fill="#d8e2f0">      quality  claude  parent=AG-7b6928c6507d46f9  AG-389e5c0770d24306</text>
+<text x="24" y="772" fill="#d8e2f0">      rust  muse  parent=AG-04c76a690c0c47a5  AG-448abc2c98d04eb9</text>
+<text x="24" y="795" fill="#d8e2f0">      quality  claude  parent=AG-490f8a7756e94cdc  AG-475b0d8cfd5c407f</text>
+<text x="24" y="818" fill="#d8e2f0">      quality  claude  parent=AG-04c76a690c0c47a5  AG-5d4ef217ee074598</text>
+<text x="24" y="841" fill="#d8e2f0">      rust  muse  parent=AG-490f8a7756e94cdc  AG-61bb615183654b19</text>
+<text x="24" y="864" fill="#d8e2f0">      rust  codex  parent=AG-1ba8eef39d064ac5  AG-6561037a500149be</text>
+<text x="24" y="887" fill="#d8e2f0">      rust  codex  parent=AG-a7002c152e8a4b94  AG-6f326e3adce74702</text>
+<text x="24" y="910" fill="#d8e2f0">      rust  muse  parent=AG-bd5107e12a0842e4  AG-7a71098670c9444d</text>
+<text x="24" y="933" fill="#d8e2f0"></text>
+<text x="24" y="956" fill="#d8e2f0"></text>
+<text x="24" y="979" fill="#d8e2f0"></text>
+<text x="24" y="1002" fill="#d8e2f0">Tab pane  j/k select  Enter detail  PgUp older  End live  : request  N project  n task  ? help  q exit</text>
+<text x="24" y="1025" fill="#d8e2f0">Synthetic fixtures. No model calls. No live reliability claims.</text></g></svg>

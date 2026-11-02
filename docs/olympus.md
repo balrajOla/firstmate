@@ -21,9 +21,10 @@ olympus ui
 
 To install a reviewed local checkout, run `bash bin/olympus-install.sh --source "$PWD" --prefix "$HOME/.local"`.
 For a reproducible revision, check out the desired commit before running the local installer.
-An upgrade replaces application binaries and assets; it does not migrate, erase or silently restart an existing coordinator.
-Take a verified backup, stop the coordinator, install, then start it with the matching schema version.
-The first released schema is version 1; no previous development databases are supported.
+An upgrade replaces application binaries and assets; it does not erase or silently restart an existing coordinator.
+Take a verified backup, stop the coordinator, install, then start it.
+Opening a version 1 database applies the additive version 2 tables transactionally.
+A version 1 binary refuses a version 2 database; rollback uses the pre-upgrade backup in a new home.
 
 Use a separate home for the sample portfolio.
 
@@ -52,11 +53,13 @@ The extension never falls back to the operator credential for model tool request
 `olympus chief` exposes only the broker and action-reference tools to its model and blocks other tool calls, so routine coordination cannot issue a direct shell command to shut down its own service.
 Workers still require separate OS isolation for a strict system-wide security boundary.
 The interactive dashboard uses the operator connection for your own manual actions.
+The chief can submit work and define recurring tasks within its scope, but cannot enable execution policies, change backup settings, forge runtime evidence or shut down the coordinator.
 
 Automatic chief wakes are explicit: `/olympus-auto on`, or `olympus chief --auto`.
 They coalesce unchanged conditions, wait at least 30 seconds between turns, never interrupt a busy turn, and stop after ten automatic turns until you renew the budget.
 The daemon continues when the chief pauses, hits a budget, exits or loses context.
-This preview does not restart a crashed Pi chief session automatically; an OS service keeps the coordinator alive and a reopened `olympus chief` reuses the durable identity.
+Project automation runs in the coordinator and continues after the chief session ends or reaches its wake budget.
+The optional interactive Pi conversation is not restarted automatically; reopening `olympus chief` reuses its durable identity and retrieves current project context.
 
 ## Your daily workflow
 
@@ -76,9 +79,84 @@ This preview does not restart a crashed Pi chief session automatically; an OS se
 | Build a second brain | Record source-backed candidate or verified knowledge; superseded records remain on disk and in SQLite | Memory; local `vault/` Markdown |
 
 The routing preview never silently merges projects or overwrites requirements based on similarity.
-The chief makes the semantic decision using the evidence and your charter.
+The intake matcher uses names, aliases and shared topic terms across active and completed projects.
+A confident `intake.submit` creates a follow-up with retained context, reopens a completed project, and deduplicates an identical existing request.
+Ambiguous matches require an explicit project; existing requirements change only through the versioned amendment action.
+This is explainable lexical retrieval, not a validated semantic embedding model.
 It can form sub-captains with `agent.create`, subject to scope, a maximum depth of four and bounded management spans.
 Native children have a separate maximum depth of six and consume the same admission capacity as independent workers.
+
+## Automatic project operation
+
+After connecting an execution-enabled Firstmate home and verifying the installed worker profiles, enable each project once.
+The project should have role-capable worker and quality-review profiles.
+
+```bash
+olympus auto P-YOUR-PROJECT
+olympus submit "Continue the importer work with CSV support" --project P-YOUR-PROJECT --role rust
+olympus agenda today
+olympus agenda week
+olympus outcomes P-YOUR-PROJECT
+```
+
+The coordinator assigns an eligible specialist, reserves room for independent review, prepares a launch, and advances the dependency graph as accepted results arrive.
+Quality workers use `review.submit` to complete their review and accept or reject the exact producer revision together.
+One failed review returns evidence to the producer; a second failure requires a decision.
+Accepted evidence is captured automatically in the local second brain, with full source references.
+`child.reserve` creates a scoped child identity, dependency and reservation; project automation launches that child as an independent Firstmate worker.
+This portable route works through the selected verified profile and does not require vendor-native subagent APIs.
+Vendor-native launch shims remain outside the verified implementation.
+
+Four bounded bridge workers process runtime effects, prioritizing stop and message operations before launches.
+The broker and observer continue independently when an external operation is slow.
+Accepted dependencies enqueue a durable notification to the waiting owner; waiting on unfinished child work does not trigger a no-progress restart.
+A mailbox notification asks its recipient to retrieve the full persistent message; transport success never impersonates the recipient’s read or acted acknowledgement.
+Project automation does not authorize merging, publishing, changing provider accounts or bypassing Firstmate’s process controls.
+
+Use `olympus auto P-YOUR-PROJECT --off` to stop new automatic assignments for that project.
+Already running work remains visible and must be paused or stopped explicitly.
+
+## Calendar and recurring work
+
+Today and This week show due, overdue, active, recovering, blocked and completed tasks, with project filters and links to full records.
+The week uses Monday through Sunday in the configured timezone.
+Recurring jobs support daily, weekdays and weekly schedules.
+The default timezone is Europe/London, configurable through `maintenance.configure`.
+Create a job with `s` in the terminal or the action reference.
+
+The calendar stores occurrences transactionally, coalesces missed runs after downtime, and waits when a previous occurrence is unfinished.
+A fall-back clock hour runs once; a nonexistent spring-forward time advances to the next valid local minute.
+Pausing a schedule prevents future occurrences without erasing its task history.
+These are local coordinator jobs, not ChatGPT scheduled tasks.
+The coordinator must be running; after downtime it reconciles missed occurrences when restarted.
+
+Install a user service for restart after a coordinator crash and startup on login.
+The service preserves the installing shell’s executable search path.
+
+```bash
+olympus service launchd --install
+# Linux alternative:
+olympus service systemd --install
+```
+
+The command saves a service definition, stops the existing coordinator cleanly, and activates the user service without sudo.
+Omit `--install` to inspect the definition only.
+A logged-out Linux user requires separately configured user-service persistence for work to continue after logout.
+
+## Automatic recovery and backups
+
+Project automation checks meaningful progress separately from contact.
+After the configured no-progress deadline, it requests a stop and waits for fresh, matching process-generation evidence before replacing a worker.
+Missing observations alone never allow replacement.
+Recovery preserves prior workspaces and supplies the replacement with current requirements, previous attempts, results and verified knowledge.
+There are at most two replacement attempts; unresolved external effects and human decision blockers remain visible for reconciliation.
+
+The coordinator attempts a verified local backup daily, records success or failure in Health, and retries a failed attempt after five minutes.
+A full workspace snapshot requires quiescent workspaces; the backup reports failure rather than silently omitting a changing workspace.
+Change the interval or disable scheduled backups through `maintenance.configure`.
+Backups remain under the home’s `backups/` directory and are not automatically deleted.
+Offsite transfer still uses the explicit restic command below; automatic offsite restore has not been validated.
+Restoration pauses schedules, disables automation and dispatch, revokes old credentials and discards stale stop evidence.
 
 ## Current terminal views
 
@@ -87,13 +165,20 @@ They are exact text/layout examples with synthetic tasks, not evidence of live m
 
 ![Olympus live terminal](assets/olympus-live.png)
 
-[Projects](assets/olympus-projects.svg) · [Crew](assets/olympus-crew.svg) · [Queue](assets/olympus-queue.svg) · [Memory](assets/olympus-memory.svg) · [Health](assets/olympus-health.svg) · [History](assets/olympus-history.svg)
+[Animated activity](assets/olympus-live.gif) · [Today PNG](assets/olympus-today.png) · [Recurring PNG](assets/olympus-recurring.png) · [Project outcomes PNG](assets/olympus-outcomes.png)
+
+[Projects](assets/olympus-projects.svg) · [Crew](assets/olympus-crew.svg) · [Queue](assets/olympus-queue.svg) · [Memory](assets/olympus-memory.svg) · [Health](assets/olympus-health.svg) · [History](assets/olympus-history.svg) · [Today](assets/olympus-today.svg) · [This week](assets/olympus-week.svg) · [Recurring](assets/olympus-recurring.svg) · [Project outcomes](assets/olympus-outcomes.svg)
 
 ## Live terminal controls
 
 | Key | Action |
 |---|---|
 | `1` - `7` | Live, Projects, Crew, Queue, Memory, Health, History |
+| `8` / `9` / `0` | Today / This week / Recurring |
+| `f` / `o` | Filter by the selected project / open its separate outcome report |
+| `i` in Crew | Inspect the selected agent’s pending mailbox |
+| `s` / `d` | Create a recurring job / set a task due date |
+| `A` in Projects | Toggle that project’s automation policy |
 | `Tab` | Focus live work, recent responses or completions |
 | `j` / `k`, arrow keys | Select records or scroll a full response |
 | `Enter` | Open the full response or structured record |
@@ -103,8 +188,8 @@ They are exact text/layout examples with synthetic tasks, not evidence of live m
 | `End` | Return to live; clear new-response badge |
 | `N` / `n` | New project / new task wizard |
 | `a` | Amend the selected task with optimistic version checking |
-| `p` / `r` | Pause / resume the selected task obligation |
-| `:` | Preview a new request's project correlation |
+| `p` / `r` | Pause / resume the selected task or recurring schedule |
+| `:` | Route a request; confident matches queue work, ambiguity opens a project choice |
 | `Esc` / `q` | Back / detach |
 
 Any fresh working task animates the fleet indicator even when the chief is idle.

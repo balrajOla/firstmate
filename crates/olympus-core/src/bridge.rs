@@ -63,7 +63,7 @@ pub fn apply_observation(db: &Connection, body: &Value) -> Result<usize> {
         };
         let candidates = rows(
             db,
-            "SELECT * FROM attempts WHERE runtime_id=? AND state IN ('running','unknown')",
+            "SELECT * FROM attempts WHERE runtime_id=? AND state IN ('running','unknown','paused','recovering','review')",
             [runtime],
         )?;
         for a in candidates {
@@ -86,7 +86,29 @@ pub fn apply_observation(db: &Connection, body: &Value) -> Result<usize> {
                 incident(db,a["task"].as_str(),"runtime_generation","Firstmate runtime generation changed; reconcile ownership before using its output","operator")?;
                 continue;
             }
-            if current["state"] == "working" {
+            let endpoint = &observed["endpoint"];
+            let endpoint_stamp = endpoint["observed_at"]
+                .as_str()
+                .and_then(|s| chrono::DateTime::parse_from_rfc3339(s).ok())
+                .map(|d| d.timestamp());
+            let stopped:bool=db.query_row("SELECT EXISTS(SELECT 1 FROM operations WHERE attempt=? AND verb='exit' AND state='confirmed')",[a["id"].as_str()],|r|r.get(0))?;
+            if observed["remote"].is_null()
+                && !old.is_empty()
+                && endpoint["freshness"] == "fresh"
+                && endpoint_stamp.is_some_and(|t| now() - t <= 30 && t <= now() + 5)
+                && (endpoint["agent_alive"] == "dead" || stopped && endpoint["exists"] == false)
+            {
+                db.execute("INSERT INTO stop_evidence VALUES(?,?,?,?,?) ON CONFLICT(attempt) DO UPDATE SET observed=excluded.observed,evidence=excluded.evidence",params![a["id"].as_str(),runtime,generation,now(),observed.to_string()])?;
+                db.execute("UPDATE operations SET state='confirmed',receipt='Exact runtime observed dead' WHERE attempt=? AND verb='exit' AND state='uncertain'",[a["id"].as_str()])?;
+            } else {
+                db.execute(
+                    "DELETE FROM stop_evidence WHERE attempt=?",
+                    [a["id"].as_str()],
+                )?;
+            }
+            if current["state"] == "working"
+                && matches!(a["state"].as_str(), Some("running" | "unknown"))
+            {
                 let workspace = observed["paths"]["worktree"].as_str().unwrap_or("");
                 db.execute("UPDATE attempts SET heartbeat=?,state='running',runtime_generation=?,workspace=CASE WHEN workspace='' THEN ? ELSE workspace END WHERE id=?",params![now(),generation,workspace,a["id"].as_str()])?;
                 db.execute(
@@ -163,6 +185,10 @@ pub fn perform(store: &mut Store, root: &Path, fm_home: &Path, operation: &str) 
     }
     // Commit uncertainty BEFORE any external effect. A daemon crash cannot cause replay.
     if store.db.execute("UPDATE operations SET state='uncertain',receipt='Execution began; reconcile runtime before replay' WHERE id=? AND state='pending'",[operation])?!=1{bail!("operation already claimed; replay is forbidden")};
+    store.db.execute(
+        "UPDATE attempts SET runtime_id=? WHERE id=?",
+        params![runtime_id, a["id"].as_str()],
+    )?;
     let verb = op["verb"].as_str().unwrap();
     let logs = store.home.join("bridge-logs");
     private_dir(&logs)?;
@@ -213,12 +239,30 @@ pub fn perform(store: &mut Store, root: &Path, fm_home: &Path, operation: &str) 
                     .home
                     .join("credentials")
                     .join(format!("{}.token", agent["id"].as_str().unwrap()));
-                let executable = std::env::current_exe()?
-                    .parent()
-                    .context("binary directory")?
-                    .join("olympus");
+                let daemon = std::env::current_exe()?;
+                let binary_dir = daemon.parent().context("binary directory")?;
+                let executable = if binary_dir.join("olympus-real").is_file() {
+                    binary_dir.join("olympus-real")
+                } else {
+                    binary_dir.join("olympus")
+                };
+                if !executable.is_file() {
+                    bail!("worker broker executable is missing")
+                }
+                let reference = if binary_dir.join("docs/olympus-api.md").is_file() {
+                    binary_dir.join("docs/olympus-api.md")
+                } else {
+                    root.join("docs/olympus-api.md")
+                };
                 let connection = json!({"binary":executable,"home":store.home,"credential_file":credential,"task":tid,"generation":t["generation"]});
                 let spec=format!("Olympus task {tid}, requirement version {}, attempt generation {}. Role: {}. Read only this task scope. Preserve the workspace. Report artifacts, code revision and test evidence. Process exit is not task acceptance. Native fan-out is disabled unless every child has a separate Olympus admission reservation. Use the assigned broker credential, never operator credentials. Connection: {connection}. Submit JSON through `olympus --home HOME --token-file CREDENTIAL request -`. Start by reading task.get, acknowledge task messages via message.ack delivered/read/acted, send task.heartbeat every 15 seconds, report distinct task.progress checkpoints, and finish with task.result including body and code_revision. Read docs/olympus-api.md in the Firstmate code root for the exact action contract. Do not reveal credential contents.",t["version"],t["generation"],agent["role"]);
+                let context = crate::portfolio::context(
+                    &store.db,
+                    &Principal::operator(),
+                    project["id"].as_str().unwrap(),
+                )?;
+                let role = crate::actions::role_text(agent["role"].as_str().unwrap());
+                let spec=format!("{spec}\nExact installed action reference: {}. Invoke the absolute binary in Connection when olympus is not on PATH.\nRole contract: {role}\nProject context (retrieve referenced full records as needed): {context}\nRead task.get attempts and preserve/reconcile any earlier workspace before continuing recovered work. For a review job use review.submit, not task.result. For independent bounded help use child.reserve, then message.send; the coordinator launches admitted children when project automation is enabled. Never bypass child admission. Stop repeating an unchanged failure; report task.block with an owner and a future next_check.",reference.display());
                 private_write(
                     &path,
                     template

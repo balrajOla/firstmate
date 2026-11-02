@@ -62,6 +62,7 @@ fn run() -> Result<()> {
     writeln!(lock, "{}", std::process::id())?;
     lock.sync_all()?;
     let mut store = Store::open(&home)?;
+    store.db.execute("UPDATE backup_runs SET state='interrupted',detail='Coordinator restarted before backup receipt' WHERE state='running'",[])?;
     let socket = home.join("olympus.sock");
     if socket.exists() {
         if !socket.symlink_metadata()?.file_type().is_socket() {
@@ -93,8 +94,10 @@ fn run() -> Result<()> {
     let stopping = Arc::new(AtomicBool::new(false));
     let clients = Arc::new(AtomicUsize::new(0));
     let mut checked = Instant::now() - Duration::from_secs(2);
-    let bridge_busy = Arc::new(AtomicBool::new(false));
+    let mut bridge_running = std::collections::HashSet::new();
+    let (bridge_tx, bridge_rx) = std::sync::mpsc::channel::<String>();
     let observer_busy = Arc::new(AtomicBool::new(false));
+    let backup_busy = Arc::new(AtomicBool::new(false));
     let mut observed = Instant::now() - Duration::from_secs(11);
     let simulator: String =
         store
@@ -133,20 +136,101 @@ fn run() -> Result<()> {
             if let Err(e) = store.tick() {
                 eprintln!("supervision error: {e}")
             }
-            // Slow runtime effects use one bounded worker, separate from the socket and supervisor.
-            if home.join("firstmate.json").exists() && !bridge_busy.swap(true, Ordering::SeqCst) {
+            let interval: i64 = store.db.query_row(
+                "SELECT CAST(value AS INTEGER) FROM settings WHERE key='backup_interval'",
+                [],
+                |r| r.get(0),
+            )?;
+            let last: i64 = store.db.query_row(
+                "SELECT CAST(value AS INTEGER) FROM settings WHERE key='backup_last'",
+                [],
+                |r| r.get(0),
+            )?;
+            if simulator != "simulator"
+                && interval > 0
+                && olympus_core::now() - last >= interval
+                && !backup_busy.swap(true, Ordering::SeqCst)
+            {
                 let home = home.clone();
-                let busy = Arc::clone(&bridge_busy);
+                let busy = Arc::clone(&backup_busy);
                 thread::spawn(move || {
                     let result = (|| -> Result<()> {
-                        let cfg: Value =
-                            serde_json::from_slice(&fs::read(home.join("firstmate.json"))?)?;
-                        if cfg["execute"] != true {
-                            return Ok(());
-                        }
-                        let mut worker = Store::open(&home)?;
-                        let pending=worker.db.query_row("SELECT id FROM operations WHERE state='pending' ORDER BY created LIMIT 1",[],|r|r.get::<_,String>(0));
-                        if let Ok(op) = pending {
+                        let worker = Store::open(&home)?;
+                        let bid = olympus_core::id("BACKUP");
+                        let destination = home.join("backups").join(&bid);
+                        private_dir(destination.parent().unwrap())?;
+                        worker.db.execute(
+                            "INSERT INTO backup_runs VALUES(?,?,'running','',?)",
+                            rusqlite::params![
+                                bid,
+                                destination.to_string_lossy(),
+                                olympus_core::now()
+                            ],
+                        )?;
+                        worker.db.execute(
+                            "UPDATE settings SET value=? WHERE key='backup_last'",
+                            [olympus_core::now().to_string()],
+                        )?;
+                        let snapshot = olympus_core::backup::create(&worker, &destination);
+                        let state = if snapshot.is_ok() {
+                            "verified"
+                        } else {
+                            "failed"
+                        };
+                        let detail = match snapshot {
+                            Ok(v) => v.to_string(),
+                            Err(e) => e.to_string(),
+                        };
+                        worker.db.execute(
+                            "UPDATE backup_runs SET state=?,detail=? WHERE id=?",
+                            rusqlite::params![state, detail, bid],
+                        )?;
+                        worker.db.execute(
+                            "UPDATE settings SET value=? WHERE key='backup_last'",
+                            [(olympus_core::now()
+                                - if state == "failed" {
+                                    (interval - 300).max(0)
+                                } else {
+                                    0
+                                })
+                            .to_string()],
+                        )?;
+                        Ok(())
+                    })();
+                    if let Err(e) = result {
+                        eprintln!("scheduled backup: {e}")
+                    }
+                    busy.store(false, Ordering::SeqCst);
+                });
+            }
+            // Bound external effects separately from supervision and message reads.
+            // Exit and message operations precede launches; one slow project cannot
+            // monopolise all communication slots.
+            while let Ok(op) = bridge_rx.try_recv() {
+                bridge_running.remove(&op);
+            }
+            if home.join("firstmate.json").exists() && bridge_running.len() < 4 {
+                let mut query=store.db.prepare("SELECT id FROM operations WHERE state='pending' ORDER BY CASE verb WHEN 'exit' THEN 0 WHEN 'message' THEN 1 ELSE 2 END,created,id LIMIT 20")?;
+                let pending = query
+                    .query_map([], |r| r.get::<_, String>(0))?
+                    .collect::<rusqlite::Result<Vec<_>>>()?;
+                for op in pending {
+                    if bridge_running.len() >= 4 {
+                        break;
+                    }
+                    if !bridge_running.insert(op.clone()) {
+                        continue;
+                    }
+                    let home = home.clone();
+                    let finished = bridge_tx.clone();
+                    thread::spawn(move || {
+                        let result = (|| -> Result<()> {
+                            let cfg: Value =
+                                serde_json::from_slice(&fs::read(home.join("firstmate.json"))?)?;
+                            if cfg["execute"] != true {
+                                return Ok(());
+                            }
+                            let mut worker = Store::open(&home)?;
                             let root = cfg["root"].as_str().context("Firstmate root missing")?;
                             let fm_home = cfg["home"].as_str().context("Firstmate home missing")?;
                             if let Err(e) = bridge::perform(
@@ -155,17 +239,17 @@ fn run() -> Result<()> {
                                 std::path::Path::new(fm_home),
                                 &op,
                             ) {
-                                worker.db.execute("UPDATE operations SET state='refused',receipt=? WHERE id=? AND state='pending'",[e.to_string(),op])?;
+                                worker.db.execute("UPDATE operations SET state='refused',receipt=? WHERE id=? AND state='pending'",[e.to_string(),op.clone()])?;
                                 return Err(e);
                             }
+                            Ok(())
+                        })();
+                        if let Err(e) = result {
+                            eprintln!("runtime bridge: {e}")
                         }
-                        Ok(())
-                    })();
-                    if let Err(e) = result {
-                        eprintln!("runtime bridge: {e}")
-                    }
-                    busy.store(false, Ordering::SeqCst);
-                });
+                        let _ = finished.send(op);
+                    });
+                }
             }
             if home.join("firstmate.json").exists()
                 && observed.elapsed() >= Duration::from_secs(10)

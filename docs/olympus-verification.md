@@ -1,7 +1,7 @@
 # Olympus engineering preview: verification and release gates
 
 Evidence date: 2026-11-02.
-This record owns implementation status and test evidence for the first Olympus fork delivery.
+This record owns implementation status and test evidence for the Olympus automation update.
 The [operator guide](olympus.md) owns installation and current behavior; the [action contract](olympus-api.md) owns the JSON API.
 
 ## What this delivery establishes
@@ -34,9 +34,9 @@ The demonstration portfolio is labelled synthetic throughout.
 
 ## Local measured run
 
-The final local contract run contains 37 Rust tests, 16 terminal/policy tests and nine process acceptance tests, including real Pi extension registration.
+The final local contract run contains 50 Rust tests, 21 terminal/policy tests and twelve process acceptance tests, including real Pi extension registration.
 The [machine-readable evidence](verification/olympus-local-evidence.json) records the toolchain and the separate read-load probe.
-On a 20-project simulated portfolio, 100 snapshot requests from eight concurrent clients had zero failures, a median of 162.34 ms and a 95th percentile of 165.96 ms in this container.
+The earlier 0.1.0 baseline used a 20-project simulated portfolio; 100 snapshot requests from eight concurrent clients had zero failures, a median of 162.34 ms and a 95th percentile of 165.96 ms in this container.
 This is a small local read-path measurement, not a model-worker scaling result or production latency guarantee.
 
 ## Blueprint coverage
@@ -47,34 +47,34 @@ Implemented means the described local behavior exists; it does not imply every p
 | ID | Current implementation | Remaining acceptance or expansion |
 |---|---|---|
 | F01 | Project IDs, aliases, charter, repo binding, completion state | Versioned charter amendment UI |
-| F02 | Non-mutating correlation preview; model uses explicit candidates | Broader semantic evaluation set and ambiguous-choice wizard |
+| F02 | Correlation across active/completed projects, explainable topic matches, contextual follow-ups and exact-request deduplication | Broader semantic evaluation set and ambiguous-choice wizard |
 | F03 | Immutable requirement versions and stale-output rejection | Full impact visualization |
 | F04 | Scoped captain/specialist teams, role instructions and hierarchy limits | Versioned editable role packages and automated team evaluation |
 | F05 | Explicit dispatch shape rules and pre-reserved child capacity | Calibrated judgment across real tasks |
 | F06 | Cycle-checked task dependencies and parent acceptance gates | Rich producer/consumer artifact-contract editor |
-| F07 | Durable threaded messages and separate acknowledgement stages | Full mailbox terminal view and authenticated multi-vendor drills |
+| F07 | Durable threaded messages, mailbox terminal view, bounded automatic notifications and separate acknowledgement stages | Authenticated multi-vendor drills |
 | F08 | Atomic global/project admission, child headroom, load/priority/age queue | Weighted fairness and per-host/account limits |
 | F09 | Exact-version profiles, verified capabilities and evidence-based ranking | Real Claude/Codex/Muse profiles and account-specific routing |
 | F10 | Canonical Firstmate observations, freshness and generation checks | Live backend coverage and measured observation latency |
 | F11 | Deduplicated incidents, owner/reason/next-check queue | Timed operator notification connectors |
 | F12 | Independent reviewer, current revision and version-bound acceptance | Automated execution of project-specific acceptance suites |
-| F13 | Fenced bounded worker recovery, persistent obligations | Automatic chief/manager session restart and multi-host fault drills |
-| F14 | Source-backed Markdown vault, scope and supersession | External second-brain sync and search index adapters |
+| F13 | Automatic deadline-driven stop requests, exact-evidence fenced recovery, persistent obligations | Automatic chief/manager session restart and multi-host fault drills |
+| F14 | Source-backed Markdown vault, automatic accepted-outcome capture, scope and supersession | External second-brain sync and search index adapters |
 | F15 | Exact manifests, per-record retrieval and verified ownership transfer | Automatic provider context-budget detection; semantic continuity evaluation |
-| F16 | Consistent snapshots, worktree evidence, checksum verification and new-home restore | Scheduled snapshots, measured RPO/RTO, encrypted offsite restore drill |
+| F16 | Scheduled verified snapshots, worktree evidence, failure records and new-home restore | Measured RPO/RTO and encrypted offsite restore drill |
 | F17 | Pause/resume/cancel obligations and separate lifecycle effects | Scope-wide process interruption/resumption journey |
 | F18 | Bounded chief briefing and explicit wake budget | Notification delivery/read cursors and quiet-period controls |
 | F19 | Local repository and Firstmate bridge | GitHub, Drive and Make connector execution adapters |
-| F20 | Seven terminal tabs, forms, full output detail, keyboard navigation, stale and reduced-motion views | All 41 designed screens and accessibility validation on target terminals |
-| F21 | Source installer, pinned Pi lockfile, doctor and OS service definitions | Signed binary releases, migration automation and one-command rollback |
+| F20 | Ten terminal tabs, calendar forms, project outcomes, mailbox detail, filtering, scrollback and animation | All 41 designed screens and accessibility validation on target terminals |
+| F21 | Source installer, pinned Pi lockfile, doctor, user-service installation and additive schema migration | Signed binary releases and one-command rollback |
 | F22 | 20-project simulator, concurrent broker reads and admission races | 16/32/64/100 real-worker trials and prolonged soak |
 | F23 | Scoped API authority, operator-only service/recovery controls and audit | Enforced OS isolation, account-specific spend and action-policy engine |
 | F24 | Operator-recorded outcomes and explicit minimum-sample routing | Automatic cost ingestion, task-class calibration and controlled experiments |
-| F25 | Five latest responses, ten completions, cursor paging/search and full output | Rich project completion reports |
+| F25 | Five latest responses, ten completions, project outcome reports, filtered cursor paging/search and full output | Export styling and historical project-cycle reports |
 | F26 | Fleet-wide local animation independent of chief, fresh/stale handling | Real model stream granularity |
-| F27 | Firstmate lifecycle bridge, exact versions, uncertainty before effects | Vendor-native child launch/message/stop interoperability implementation and proof |
+| F27 | Firstmate lifecycle bridge, automatic portable child dispatch, exact versions, uncertainty before effects | Vendor-native child launch/message/stop interoperability implementation and proof |
 | F28 | Mailbox capacity, critical reserve, coalescing and deadline incidents | Cross-host delivery transport and bulk event compaction |
-| F29 | No-progress detection, one replan, two replacements, bounded chief wakes | Long-duration loop detection evaluation and automated manager replacement |
+| F29 | No-progress deadlines, independent review/rework, two replacements, deterministic coordination outside chief sessions | Long-duration loop detection evaluation and automated manager replacement |
 
 No production milestone is declared complete merely because its primitives have been implemented.
 M1's Linux installation is locally testable; macOS requires the matrix result.
@@ -101,3 +101,16 @@ Prove native child control separately before setting that capability.
 Complete a new-machine restore with offsite storage, reconstruct workspaces, reconcile still-running old workers and measure recovery objectives.
 Run staged worker-count trials before increasing capacity, followed by a 72-hour 20-project soak with deliberately injected failures.
 Finish the remaining terminal flows and connectors against the blueprint, then run the repository's full publishing pipeline before merging a production release.
+
+## Automation acceptance additions
+
+The coordinator calendar, automatic dispatch/review policy, cross-project durable messaging and recovery decisions are covered through the public action interface and real SQLite transactions.
+Calendar tests include London daylight-saving gaps and repeated hours, missed occurrences, overlap prevention and process restart.
+Process acceptance includes the Today/Week/Recurring terminal views, request deduplication after routing, scheduled backup verification and the actual installed Pi extension.
+`node tests/olympus-snapshots.mjs` regenerates exact SVG views and their text record from a running isolated 20-project simulator.
+The PNG previews are rasterizations of those SVGs, not generated concept art.
+
+The added recurring calendar is implemented, rather than an external ChatGPT automation.
+The coordinator’s deterministic automation does not require an active chief model conversation.
+Interactive chief/manager model-session replacement, authenticated native subagent lifecycle tests, offsite restore drills and the broader operating-release gates remain incomplete.
+New service installation code emits and activates standard user services, but this container does not establish real launchd behavior on the target Mac.

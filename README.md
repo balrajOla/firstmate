@@ -1,6 +1,10 @@
-> **Olympus fork preview:** This branch adds a durable multi-project coordinator and live Pi terminal on top of Firstmate.
-> Start with the [Olympus installation and workflow guide](docs/olympus.md).
+> **Olympus automation preview:** A durable multi-project coordinator and live Pi terminal on top of Firstmate.
+> It schedules daily and weekly work, routes follow-ups into older projects, dispatches verified workers, requests independent review, retains project outcomes and performs bounded recovery after confirmed stop evidence.
+> Start with the [installation and workflow guide](docs/olympus.md), [action reference](docs/olympus-api.md), and [verified coverage and release gates](docs/olympus-verification.md).
+> Real Claude, Codex and Muse lifecycle compatibility still needs authenticated testing on the target machine.
 > The upstream Firstmate guide continues below.
+
+![Olympus daily command view](docs/assets/olympus-today.png)
 
 <h1 align="center">firstmate</h1>
 <p align="center">
