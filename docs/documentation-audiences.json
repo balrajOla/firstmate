@@ -36,7 +36,8 @@
     "docs/t3code-backend.md",
     "docs/tern-backend.md",
     "docs/hc-backend.md",
-    "docs/remote-secondmates.md"
+    "docs/remote-secondmates.md",
+    "docs/olympus.md"
   ],
   "requiredOwnerPointers": [
     {
@@ -122,6 +123,14 @@
     {
       "source": "docs/trace-context.md",
       "target": "docs/verification/trace-context.md"
+    },
+    {
+      "source": "docs/olympus.md",
+      "target": "docs/olympus-api.md"
+    },
+    {
+      "source": "docs/olympus.md",
+      "target": "docs/olympus-verification.md"
     }
   ],
   "surfaces": [
@@ -676,6 +685,18 @@
     {
       "path": ".agents/skills/validation-supervision/SKILL.md",
       "audience": "agent-runtime"
+    },
+    {
+      "path": "docs/olympus.md",
+      "audience": "operator-current"
+    },
+    {
+      "path": "docs/olympus-api.md",
+      "audience": "agent-runtime"
+    },
+    {
+      "path": "docs/olympus-verification.md",
+      "audience": "maintainer-verification"
     }
   ]
 }

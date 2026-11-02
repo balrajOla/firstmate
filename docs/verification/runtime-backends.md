@@ -3635,3 +3635,10 @@ Real Herdr.app exercise on 2026-11-02: the official herdr-app 0.1.11 bundle (sha
 - A spawn with a real harness rather than the stand-in.
 - `send --wait`'s `started`/`working` proof against a real status-reporting harness; the lab run covered a non-reporting shell, whose verdict falls to the composer screen.
 - Native `status.state` reported by a real harness launched through `bin/fm-spawn.sh`.
+
+## Olympus Pi extension guard, 2026-11-02
+
+`OLYMPUS_PI_LIVE=1 bash tests/olympus-pi-live.test.sh` owns the Olympus extension's pinned Pi 1.4.0 compile and token-free RPC registration guard.
+The guard loads the real SDK and submits no model prompt.
+It does not prove a Claude, Codex or Muse lifecycle or native child interoperability.
+The [Olympus verification record](../olympus-verification.md) owns the broader release gates.

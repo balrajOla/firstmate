@@ -14,3 +14,6 @@ config/
 .claude/settings.local.json
 
 .tools/
+/target/
+/packages/olympus-pi/node_modules
+/dist/

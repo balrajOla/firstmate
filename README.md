@@ -1,3 +1,7 @@
+> **Olympus fork preview:** This branch adds a durable multi-project coordinator and live Pi terminal on top of Firstmate.
+> Start with the [Olympus installation and workflow guide](docs/olympus.md).
+> The upstream Firstmate guide continues below.
+
 <h1 align="center">firstmate</h1>
 <p align="center">
   <a

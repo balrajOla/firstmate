@@ -1,0 +1,73 @@
+name: Olympus contracts
+
+on:
+  push:
+    branches: ["codex/olympus-control-room"]
+  pull_request:
+    paths:
+      - "Cargo.toml"
+      - "Cargo.lock"
+      - "crates/**"
+      - "packages/olympus-pi/**"
+      - "tests/olympus*"
+      - "bin/olympus-install.sh"
+      - ".github/workflows/olympus.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: olympus-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contracts:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Formatting and compiler checks
+        run: |
+          cargo fmt --all -- --check
+          cargo clippy --workspace --all-targets --locked -- -D warnings
+      - name: Domain, transport and terminal acceptance
+        run: bash tests/olympus.test.sh
+      - name: Pinned real Pi extension guard, no model calls
+        env:
+          OLYMPUS_PI_LIVE: "1"
+        run: bash tests/olympus-pi-live.test.sh
+      - name: Build release and test installation
+        run: |
+          cargo build --release --workspace --locked
+          bash bin/olympus-install.sh --source "$PWD" --prefix "$RUNNER_TEMP/olympus" --skip-build --skip-pi
+          "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" demo
+          "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" start
+          "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" ui --reduced-motion
+          "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" stop
+      - name: Package tested binaries and assets
+        run: |
+          mkdir -p dist/olympus/bin dist/olympus/lib/olympus
+          cp target/release/olympus target/release/olympusd dist/olympus/bin/
+          cp packages/olympus-pi/*.mjs packages/olympus-pi/index.ts packages/olympus-pi/package*.json dist/olympus/lib/olympus/
+          mkdir -p dist/olympus/lib/olympus/docs
+          cp docs/olympus*.md dist/olympus/lib/olympus/docs/
+          tar -czf "dist/olympus-${{ runner.os }}-${{ runner.arch }}.tar.gz" -C dist olympus
+          shasum -a 256 dist/*.tar.gz > dist/SHA256SUMS
+      - uses: actions/upload-artifact@v4
+        with:
+          name: olympus-${{ runner.os }}-${{ runner.arch }}
+          path: |
+            dist/*.tar.gz
+            dist/SHA256SUMS
