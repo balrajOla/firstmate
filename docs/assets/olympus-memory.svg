@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1648" height="1060" viewBox="0 0 1648 1060"><rect width="1648" height="1060" rx="16" fill="#101827"/><g font-family="DejaVu Sans Mono,monospace" font-size="16" xml:space="preserve"><text x="24" y="36" fill="#75c4ff">OLYMPUS / Memory  |  SIMULATOR - SAMPLE DATA                                                                                                                    </text>
+<text x="24" y="59" fill="#d8e2f0">1 Live  2 Projects  3 Crew  4 Queue  5 [Memory]  6 Health  7 History                                                                                            </text>
+<text x="24" y="82" fill="#d8e2f0">8 Today  9 Week  0 Recurring | All projects                                                                                                                     </text>
+<text x="24" y="105" fill="#ffb66c">[o..] 12 working  1 recovering  3 blocked  3 need you  Chief: idle</text>
+<text x="24" y="128" fill="#d8e2f0">Verified 0s ago | History retained | Motion indicates activity; checkpoints establish progress</text>
+<text x="24" y="151" fill="#d8e2f0"></text>
+<text x="24" y="174" fill="#d8e2f0">KNOWLEDGE / STATUS / PROVENANCE</text>
+<text x="24" y="197" fill="#d8e2f0"></text>
+<text x="24" y="220" fill="#8ddbb3">&gt; Accepted: WebCraft accepted milestone 1  verified  [&quot;A-36e12ad13747405f&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="243" fill="#8ddbb3">  Accepted: WebCraft accepted milestone 2  verified  [&quot;A-dc049dc929174820&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="266" fill="#8ddbb3">  Accepted: Evaluation Lab accepted milestone 1  verified  [&quot;A-0e0f9e9b24e94c04&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="289" fill="#8ddbb3">  Accepted: Evaluation Lab accepted milestone 2  verified  [&quot;A-1bfb3064ea6247c0&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="312" fill="#8ddbb3">  Accepted: Release Tools accepted milestone 1  verified  [&quot;A-dede4c7c8e6345d5&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="335" fill="#8ddbb3">  Accepted: Release Tools accepted milestone 2  verified  [&quot;A-34330b0b89f648b3&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="358" fill="#8ddbb3">  Accepted: Research Notes accepted milestone 1  verified  [&quot;A-6833e671e2b244dd&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="381" fill="#8ddbb3">  Accepted: Research Notes accepted milestone 2  verified  [&quot;A-6d8c722d5c8d43c8&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="404" fill="#8ddbb3">  Accepted: API Platform accepted milestone 1  verified  [&quot;A-7c72f9a238234dc3&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="427" fill="#8ddbb3">  Accepted: API Platform accepted milestone 2  verified  [&quot;A-97cef815b06e41e8&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="450" fill="#8ddbb3">  Accepted: Agent Skills accepted milestone 1  verified  [&quot;A-5580c5d56f8d4e1f&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="473" fill="#8ddbb3">  Accepted: Agent Skills accepted milestone 2  verified  [&quot;A-0dc1df74dcd34989&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="496" fill="#8ddbb3">  Accepted: Docs Studio accepted milestone 1  verified  [&quot;A-8e35c733493049bf&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="519" fill="#8ddbb3">  Accepted: Docs Studio accepted milestone 2  verified  [&quot;A-0810622d6e0a49ce&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="542" fill="#8ddbb3">  Accepted: Browser Workspaces accepted milestone 1  verified  [&quot;A-7b46ae933e6040a6&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="565" fill="#8ddbb3">  Accepted: Browser Workspaces accepted milestone 2  verified  [&quot;A-7c720fdcb41947dc&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="588" fill="#8ddbb3">  Accepted: LinkedIn Workflow accepted milestone 1  verified  [&quot;A-cdc0727af030423f&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="611" fill="#8ddbb3">  Accepted: LinkedIn Workflow accepted milestone 2  verified  [&quot;A-87a4c0f128204b1a&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="634" fill="#8ddbb3">  Accepted: Travel Planner accepted milestone 1  verified  [&quot;A-0c905f5d12574a3c&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="657" fill="#8ddbb3">  Accepted: Travel Planner accepted milestone 2  verified  [&quot;A-0f5f233327534e2b&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="680" fill="#8ddbb3">  Accepted: Model Evaluation accepted milestone 1  verified  [&quot;A-616653d74fd1467d&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="703" fill="#8ddbb3">  Accepted: Model Evaluation accepted milestone 2  verified  [&quot;A-a9c6881739bb4133&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="726" fill="#8ddbb3">  Accepted: Quality Platform accepted milestone 1  verified  [&quot;A-cf494c2830f1423c&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="749" fill="#8ddbb3">  Accepted: Quality Platform accepted milestone 2  verified  [&quot;A-27b2865dd725414f&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="772" fill="#8ddbb3">  Accepted: Learning Portal accepted milestone 1  verified  [&quot;A-2cf11e31d9b34f38&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="795" fill="#8ddbb3">  Accepted: Learning Portal accepted milestone 2  verified  [&quot;A-be70f8dbc69c4337&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="818" fill="#8ddbb3">  Accepted: Portfolio Site accepted milestone 1  verified  [&quot;A-4faa328282e6406f&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="841" fill="#8ddbb3">  Accepted: Portfolio Site accepted milestone 2  verified  [&quot;A-5a98c83946344492&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="864" fill="#8ddbb3">  Accepted: Hosting Ops accepted milestone 1  verified  [&quot;A-a1fd50d63b034407&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="887" fill="#8ddbb3">  Accepted: Hosting Ops accepted milestone 2  verified  [&quot;A-565ae6d3fe3e40fc&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="910" fill="#8ddbb3">  Accepted: Test Reliability accepted milestone 1  verified  [&quot;A-78708dd2eab941de&quot;,&quot;demo-fixture&quot;]</text>
+<text x="24" y="933" fill="#d8e2f0"></text>
+<text x="24" y="956" fill="#d8e2f0"></text>
+<text x="24" y="979" fill="#d8e2f0"></text>
+<text x="24" y="1002" fill="#d8e2f0">Tab pane  j/k select  Enter detail  PgUp older  End live  : request  N project  n task  ? help  q exit</text>
+<text x="24" y="1025" fill="#d8e2f0">Synthetic fixtures. No model calls. No live reliability claims.</text></g></svg>

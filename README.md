@@ -1,3 +1,12 @@
+> **Olympus automation preview:** A durable multi-project coordinator and live Pi terminal on top of Firstmate.
+> It creates projects for unmatched requests, routes follow-ups into older work, propagates requirement changes, schedules daily and weekly jobs, and dispatches verified workers with independent review.
+> Reviewed outcomes build retained project context and inform model/effort selection; recovery requires confirmed stop evidence before replacement.
+> Start with the [installation and workflow guide](docs/olympus.md), [action reference](docs/olympus-api.md), and [verified coverage and release gates](docs/olympus-verification.md).
+> Real Claude, Codex and Muse lifecycle compatibility still needs authenticated testing on the target machine.
+> The upstream Firstmate guide continues below.
+
+![Olympus daily command view](docs/assets/olympus-today.png)
+
 <h1 align="center">firstmate</h1>
 <p align="center">
   <a

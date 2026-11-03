@@ -1,0 +1,24 @@
+{
+  "name": "@balrajola/olympus-pi",
+  "version": "0.3.0",
+  "private": true,
+  "type": "module",
+  "description": "Pi terminal command view for the Olympus durable coordinator",
+  "pi": {
+    "extensions": [
+      "index.ts"
+    ]
+  },
+  "scripts": {
+    "test": "node --test ../../tests/olympus-ui.test.mjs",
+    "typecheck": "tsc --noEmit --target es2022 --module nodenext --moduleResolution nodenext --skipLibCheck index.ts"
+  },
+  "dependencies": {
+    "@earendil-works/pi-coding-agent": "1.4.0",
+    "typebox": "1.4.3"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "@types/node": "24.19.2"
+  }
+}
