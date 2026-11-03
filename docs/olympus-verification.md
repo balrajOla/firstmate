@@ -1,6 +1,6 @@
 # Olympus engineering preview: verification and release gates
 
-Evidence date: 2026-11-02.
+Evidence date: 2026-11-03.
 This record owns implementation status and test evidence for the Olympus automation update.
 The [operator guide](olympus.md) owns installation and current behavior; the [action contract](olympus-api.md) owns the JSON API.
 
@@ -34,9 +34,9 @@ The demonstration portfolio is labelled synthetic throughout.
 
 ## Local measured run
 
-The final local contract run contains 50 Rust tests, 21 terminal/policy tests and twelve process acceptance tests, including real Pi extension registration.
+The final local contract run contains 60 Rust tests, 23 terminal/policy tests and fifteen process acceptance tests, including real Pi extension registration.
 The [machine-readable evidence](verification/olympus-local-evidence.json) records the toolchain and the separate read-load probe.
-The earlier 0.1.0 baseline used a 20-project simulated portfolio; 100 snapshot requests from eight concurrent clients had zero failures, a median of 162.34 ms and a 95th percentile of 165.96 ms in this container.
+The installed 0.3.0 read-path probe used a 20-project simulated portfolio; 100 snapshot requests from eight concurrent clients had zero failures, a median of 162.36 ms and a 95th percentile of 192.05 ms in this container.
 This is a small local read-path measurement, not a model-worker scaling result or production latency guarantee.
 
 ## Blueprint coverage
@@ -47,14 +47,14 @@ Implemented means the described local behavior exists; it does not imply every p
 | ID | Current implementation | Remaining acceptance or expansion |
 |---|---|---|
 | F01 | Project IDs, aliases, charter, repo binding, completion state | Versioned charter amendment UI |
-| F02 | Correlation across active/completed projects, explainable topic matches, contextual follow-ups and exact-request deduplication | Broader semantic evaluation set and ambiguous-choice wizard |
-| F03 | Immutable requirement versions and stale-output rejection | Full impact visualization |
+| F02 | Correlation across active/completed projects, unmatched-project creation, contextual follow-ups and exact-request deduplication | Broader semantic evaluation set and ambiguous-choice wizard |
+| F03 | Immutable requirement versions, durable change notifications and stale-output rejection | Full impact visualization |
 | F04 | Scoped captain/specialist teams, role instructions and hierarchy limits | Versioned editable role packages and automated team evaluation |
 | F05 | Explicit dispatch shape rules and pre-reserved child capacity | Calibrated judgment across real tasks |
 | F06 | Cycle-checked task dependencies and parent acceptance gates | Rich producer/consumer artifact-contract editor |
 | F07 | Durable threaded messages, mailbox terminal view, bounded automatic notifications and separate acknowledgement stages | Authenticated multi-vendor drills |
 | F08 | Atomic global/project admission, child headroom, load/priority/age queue | Weighted fairness and per-host/account limits |
-| F09 | Exact-version profiles, verified capabilities and evidence-based ranking | Real Claude/Codex/Muse profiles and account-specific routing |
+| F09 | Exact-version profiles, role/complexity/effort capabilities and automatically recorded quality ranking | Real Claude/Codex/Muse profiles and account-specific routing |
 | F10 | Canonical Firstmate observations, freshness and generation checks | Live backend coverage and measured observation latency |
 | F11 | Deduplicated incidents, owner/reason/next-check queue | Timed operator notification connectors |
 | F12 | Independent reviewer, current revision and version-bound acceptance | Automated execution of project-specific acceptance suites |
@@ -69,12 +69,12 @@ Implemented means the described local behavior exists; it does not imply every p
 | F21 | Source installer, pinned Pi lockfile, doctor, user-service installation and additive schema migration | Signed binary releases and one-command rollback |
 | F22 | 20-project simulator, concurrent broker reads and admission races | 16/32/64/100 real-worker trials and prolonged soak |
 | F23 | Scoped API authority, operator-only service/recovery controls and audit | Enforced OS isolation, account-specific spend and action-policy engine |
-| F24 | Operator-recorded outcomes and explicit minimum-sample routing | Automatic cost ingestion, task-class calibration and controlled experiments |
+| F24 | Automatically recorded reviewed outcomes, version-bound failure lessons and minimum-sample routing | Automatic cost ingestion, task-class calibration and controlled experiments |
 | F25 | Five latest responses, ten completions, project outcome reports, filtered cursor paging/search and full output | Export styling and historical project-cycle reports |
 | F26 | Fleet-wide local animation independent of chief, fresh/stale handling | Real model stream granularity |
 | F27 | Firstmate lifecycle bridge, automatic portable child dispatch, exact versions, uncertainty before effects | Vendor-native child launch/message/stop interoperability implementation and proof |
 | F28 | Mailbox capacity, critical reserve, coalescing and deadline incidents | Cross-host delivery transport and bulk event compaction |
-| F29 | No-progress deadlines, independent review/rework, two replacements, deterministic coordination outside chief sessions | Long-duration loop detection evaluation and automated manager replacement |
+| F29 | No-progress deadlines, alternate-profile recovery after repeat review failure, two replacements and deterministic coordination outside chief sessions | Long-duration loop detection evaluation and automated manager replacement |
 
 No production milestone is declared complete merely because its primitives have been implemented.
 M1's Linux installation is locally testable; macOS requires the matrix result.
@@ -114,3 +114,43 @@ The added recurring calendar is implemented, rather than an external ChatGPT aut
 The coordinator’s deterministic automation does not require an active chief model conversation.
 Interactive chief/manager model-session replacement, authenticated native subagent lifecycle tests, offsite restore drills and the broader operating-release gates remain incomplete.
 New service installation code emits and activates standard user services, but this container does not establish real launchd behavior on the target Mac.
+
+## Installed workflow verification for 0.3.0
+
+The public installer was run in a fresh prefix for the published 0.2.0 baseline; all twelve baseline process tests passed against that installation.
+The updated 0.3.0 release was then built and installed in a separate prefix using the same installer with `--source` and `--skip-build` after a successful release build.
+All fifteen process tests passed again with `OLYMPUS_TEST_BIN` pointing to the installed executable and `OLYMPUS_PI_EXTENSION` pointing to its installed extension.
+The 98 unique tests comprise 60 Rust, 23 terminal/policy and 15 process cases; rerunning the same cases against an installation is not counted as extra unique coverage.
+A real 0.2.0 database was opened by the installed 0.3.0 coordinator: existing project/task requirements survived, schema 3 was installed and the old binary subsequently refused to open it.
+
+| Requested behavior | Evidence exercised | What this establishes |
+|---|---|---|
+| Independent and unique requests | Installed CLI creates observatory and orchard projects, with distinct task/project IDs | Real intake persistence; no model-generated implementation claim |
+| Similar and older requests | Identical request deduplicates; a named follow-up reopens the completed observatory project after a restart | Retained context and original accepted output survive |
+| Ambiguous requests | Atlas and Atlas Mobile refuse automatic selection; explicit project choice succeeds | Similarity does not silently overwrite either project |
+| Changed requirements and plans | Exact-task amendment increments the version, stale updates/results refuse, current owner gets a durable notice, dependency remains recorded | Versioned coordination and notification; unrelated human blockers remain blocked after an acknowledgement; not proof of arbitrary semantic replanning |
+| Communication across projects | Unlinked peer send refuses; a dependency enables two-way messages and recipient acknowledgements | Scoped cross-project transport with separate outcomes |
+| Model and effort choice | Role/complexity gates, minimum five matching outcomes, configuration-change invalidation and captured Firstmate `--model`/`--effort` arguments | Routing and argument plumbing; synthetic model profiles only |
+| Repeated mistakes and replacement | Two failed reviews exclude that configuration; automatic recovery uses the old profile to stop, waits for matching stop evidence, then prepares the alternative at higher configured effort | Deterministic recovery contracts with injected runtime observations |
+| Learning and context | Failed review followed by acceptance becomes one accepted-after-rework sample; exact evidence survives restart and scope checks; amended requirements retain old lessons without inheriting exclusion | Persistent harness learning and complete handover manifests, not model fine-tuning or demonstrated future quality improvement |
+| Installation and upgrade | Fresh public baseline, separate updated release installation, full installed process suite, schema upgrade and downgrade refusal | Linux installation and durable-state compatibility |
+
+The process tests use the actual coordinator, SQLite database, transport, CLI, terminal and installed Pi extension.
+Workers in the journey tests are scripted callers; the runtime-effect fixture is explicitly synthetic.
+`olympus doctor` found no installed Claude, Codex or Muse executable in this environment.
+Consequently no independent real-model project execution, vendor-native child communication, reasoning-quality comparison or long-run improvement benchmark is reported as passed.
+The prior 0.2.0 hosted Linux job passed; its macOS job was cancelled, not passed.
+Hosted results for a newer commit must be inspected separately.
+
+Reproduction after a release build and installation:
+
+```bash
+bash tests/olympus.test.sh
+OLYMPUS_TEST_BIN=/absolute/prefix/bin/olympus \
+OLYMPUS_PI_CLI=/absolute/prefix/lib/olympus/pi-runtime/node_modules/@earendil-works/pi-coding-agent/dist/cli.js \
+OLYMPUS_PI_EXTENSION=/absolute/prefix/lib/olympus/index.ts \
+python3 tests/olympus-e2e.py
+```
+
+The first command needs the pinned Pi executable in `OLYMPUS_PI_CLI` to include the token-free extension case; without it that case explicitly skips.
+The installed command above supplies the actual installed Pi paths and was run with no skips.

@@ -25,6 +25,11 @@ fn manifest(db: &Connection, actor: &Principal, tid: &str) -> Result<Value> {
         ("artifact","SELECT * FROM artifacts WHERE task=? ORDER BY id"),
         ("message","SELECT * FROM messages WHERE task=? AND state NOT IN ('acted','superseded') ORDER BY id"),
         ("incident","SELECT * FROM incidents WHERE task=? AND state='open' ORDER BY id"),
+        ("routing","SELECT * FROM task_routing WHERE task=?"),
+        ("lesson","SELECT * FROM lessons WHERE task=? ORDER BY id"),
+        ("notification","SELECT * FROM change_notices WHERE task=? ORDER BY id"),
+        ("profile","SELECT p.* FROM attempt_profiles p JOIN attempts a ON a.id=p.attempt WHERE a.task=? ORDER BY p.attempt"),
+        ("outcome","SELECT o.* FROM run_outcomes o JOIN attempts a ON a.id=o.attempt WHERE a.task=? ORDER BY o.attempt"),
         ("attempt","SELECT id,task,generation,version,agent,state,workspace,runtime_id,reserved_children FROM attempts WHERE task=? ORDER BY generation")
     ]{for (i,v) in rows(db,query,[tid])?.into_iter().enumerate(){records.push((format!("{kind}:{i}"),v));}}
     for (i,v) in rows(db,"SELECT * FROM knowledge WHERE (project=? OR project IS NULL) AND status='verified' ORDER BY id",[project])?.into_iter().enumerate(){records.push((format!("knowledge:{i}"),v));}

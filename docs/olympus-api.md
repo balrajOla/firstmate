@@ -25,12 +25,12 @@ No example enables or launches a model merely by being displayed.
 | `snapshot` | none | Scoped live projection, latest five responses and ten accepted tasks |
 | `projects.list` | none | Scoped project registry |
 | `project.get` | `project` | Full exact charter and repository binding |
-| `intake.preview` | `text` | Explainable, non-mutating candidates |
+| `intake.preview` | `text`; optional `project` | Explainable, non-mutating route: existing_project, new_project or needs_clarification |
 | `project.create` | `name`, `charter`; optional `aliases`, `repository` | Chief/operator; new project |
 | `project.state` | `project`, `state`: active/paused/completed | Manager; completion rejects unfinished tasks |
-| `task.create` | `project`, `title`, `requirements`; optional `role`, `priority` | Manager; immutable requirement version 1 |
+| `task.create` | `project`, `title`, `requirements`; optional `role`, `priority`, `complexity` | Manager; immutable requirement version 1 |
 | `task.get` | `task` | Current task, versions, attempts, dependencies, artifacts, incidents |
-| `task.amend` | `task`, `expected_version`, `requirements` | Manager; supersedes old requirements without erasing them |
+| `task.amend` | `task`, `expected_version`, `requirements`; optional `complexity` | Manager; supersedes requirements, retains history and queues owner/dependent notifications |
 | `task.ack_version` | `task`, `version`, `checkpoint` | Current owner/operator; confirms a safe current-version checkpoint |
 | `task.link` | `task`, `depends_on` | Manager; cycle checked dependency |
 | `task.next` | none | At most 20 eligible tasks, ordered by current project load, priority and age |
@@ -111,7 +111,12 @@ A minimal profile and evidence shape follows.
 Verification is an operator attestation, not a cryptographically verified test artifact.
 For `native_children: true`, evidence must also include true `child_launch`, `child_message`, `child_stop` and `child_budget` checks.
 The preview has no universal vendor-native spawn shim; the corresponding installed harness capability must be proven locally before using that route.
-Local performance ranking needs at least five outcomes; fewer samples are explicitly labelled insufficient evidence.
+Profile capabilities may declare `complexities: ["routine", "standard", "complex"]` and `effort_by_complexity: {"routine": "low", "standard": "medium", "complex": "high"}` only where those levels have been verified for that model.
+Any effort mapping additionally requires `evidence.checks.effort: true`; unsupported classes are excluded before launch.
+Profiles without declared complexity support cannot receive complex tasks.
+`operation.prepare` binds the exact configuration and mapped effort to its attempt; the bridge passes the effort to Firstmate and refuses configuration drift.
+Local performance ranking needs at least five automatically recorded, independently reviewed outcomes matching role, complexity and exact configuration; fewer samples are explicitly labelled insufficient evidence.
+A changed model, version or capability declaration cannot inherit the old configuration’s quality score.
 Equal scores use stable ordering rather than inventing model quality differences.
 
 ## Durable communication and chief obligations
@@ -144,7 +149,8 @@ Only operator credentials can call the transport-level `system.shutdown` control
 | `context.verify` | `capsule`, ordered `reconstructed` key/hash pairs, `next_action`; operator supplies `successor` | Different identity, matching project/role, unchanged manifest |
 | `context.transfer` | `capsule`, `confirmed_stopped: true` | Operator; successor free, old generation fenced, workspace retained |
 
-The manifest includes task requirements, charter, dependencies, artifacts, pending messages, open incidents, workspace/runtime identity and verified knowledge.
+The manifest includes task requirements, charter, dependencies, artifacts, pending messages, open incidents, workspace/runtime identity, routing, failure lessons, profile bindings, outcomes, notifications and verified knowledge.
+Acknowledging amended requirements never clears an unrelated unresolved blocker.
 New relevant evidence invalidates an old manifest.
 Fetching record references incrementally bounds prompt size while preserving access to the complete durable source.
 
@@ -152,8 +158,11 @@ Fetching record references incrementally bounds prompt size while preserving acc
 
 | Action | Fields | Contract |
 |---|---|---|
-| `intake.submit` | `text`; optional `project`, `title`, `role` | Manager; confident matches create a contextual follow-up, completed projects reopen, identical requests deduplicate; ambiguous routes refuse mutation |
-| `intake.submit` for a new project | `text`, `new_project: true`, `name`, `charter`; optional `repository` | Manager with project-creation authority; creates an explicitly named charter and task |
+| `intake.submit` | `text`; optional `project`, `title`, `role`, `complexity`, `auto_new` | Manager; confident matches create a contextual follow-up, completed projects reopen, identical requests deduplicate; unmatched requests create an unconnected project by default; ambiguous routes refuse mutation |
+| `intake.submit` for a new project | `text`, `new_project: true`; optional `name`, `charter`, `repository` | Chief/operator; explicit separation overrides similarity; absent name/charter derive from the request; no execution permission is inferred |
+| `intake.submit` amendment | `text`, `task`, `expected_version`; optional `complexity` | Manager; updates only that exact task through optimistic version checking and durable notifications |
+| `project.bind` | `project`, `repository` | Operator; existing local Git working copy, no active attempts; execution policy remains unchanged |
+| `learning.status` | `project`; optional `limit` in 1..50, default 20 | Scoped reviewed outcomes and bounded lesson evidence; complete evidence remains in task.get |
 | `project.context` | `project` | Bounded project evidence and full-record references, including completed work |
 | `project.outcomes` | `project`; optional `before`, `limit` | Separate project counts, blockers, responses and next actions; responses paginate by cursor |
 | `memory.get` | `knowledge` | Full exact source-backed record with scope enforcement |
@@ -168,7 +177,11 @@ Each automatic producer reserves an additional slot for its independent review.
 Review reservations are converted atomically; a parent’s admitted children need their own review headroom.
 The portable child route is `child.reserve` followed by coordinator dispatch through Firstmate.
 No vendor-native API is assumed merely because an agent has a parent.
-A second failed review or an exhausted recovery budget becomes a decision instead of another model loop.
+A second failed review requests bounded recovery to a different eligible profile when one exists and budget remains.
+Fresh matching stop evidence is mandatory before replacement; otherwise the old generation remains fenced from replacement.
+No eligible alternative or exhausted recovery budget creates a decision.
+Failure observations remain distinct from independently accepted fixes, and one attempt produces one quality sample.
+Repeated failures are keyed to the requirement version so a later amendment retains context without inheriting the old task-specific exclusion.
 Accepted results produce source-linked verified memory records; long outcome bodies are bounded previews whose artifact references retain the full evidence.
 The matcher uses explicit names, aliases and shared terms; it does not claim universal semantic understanding.
 

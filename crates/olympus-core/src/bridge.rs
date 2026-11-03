@@ -169,6 +169,12 @@ pub fn perform(store: &mut Store, root: &Path, fm_home: &Path, operation: &str) 
     )?;
     let harness = p["harness"].as_str().unwrap();
     let model = p["model"].as_str().unwrap();
+    if req["profile_signature"]
+        .as_str()
+        .is_some_and(|sig| sig != crate::learning::signature(&p))
+    {
+        bail!("profile configuration changed after preparation; reconcile before dispatch");
+    }
     if version(harness)? != p["version"].as_str().unwrap_or("") {
         bail!("installed harness version changed; rerun live verification before dispatch")
     }
@@ -270,25 +276,22 @@ pub fn perform(store: &mut Store, root: &Path, fm_home: &Path, operation: &str) 
                         .replace("{FIRSTMATE_SPEC}", &spec)
                         .as_bytes(),
                 )?;
-                command(
-                    root,
-                    fm_home,
-                    "fm-spawn.sh",
-                    &[
-                        runtime_id.clone(),
-                        repository.to_string_lossy().into(),
-                        "--mode".into(),
-                        "local-only".into(),
-                        "--yolo".into(),
-                        "off".into(),
-                        "--harness".into(),
-                        harness.into(),
-                        "--model".into(),
-                        model.into(),
-                    ],
-                    &logs,
-                    60,
-                )
+                let mut launch_args = vec![
+                    runtime_id.clone(),
+                    repository.to_string_lossy().into(),
+                    "--mode".into(),
+                    "local-only".into(),
+                    "--yolo".into(),
+                    "off".into(),
+                    "--harness".into(),
+                    harness.into(),
+                    "--model".into(),
+                    model.into(),
+                ];
+                if let Some(effort) = req["effort"].as_str().filter(|e| !e.is_empty()) {
+                    launch_args.extend(["--effort".into(), effort.into()]);
+                }
+                command(root, fm_home, "fm-spawn.sh", &launch_args, &logs, 60)
             }
             "message" => command(
                 root,

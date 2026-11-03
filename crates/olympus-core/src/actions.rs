@@ -14,6 +14,7 @@ pub fn is_read(action: &str) -> bool {
             | "memory.get"
             | "automation.status"
             | "backups.list"
+            | "learning.status"
     ) {
         return true;
     }
@@ -43,6 +44,7 @@ pub fn read(db: &Connection, actor: &Principal, req: &Value) -> Result<Value> {
     let action = required(req, "action")?;
     let scope = actor.project.as_deref().unwrap_or("");
     match action.as_str(){
+        "learning.status"=>crate::learning::read(db,actor,req),
         "agenda"|"schedules.list"=>crate::scheduling::read(db,actor,req),
         "project.outcomes"=>crate::portfolio::outcomes(db,actor,req),
         "project.context"=>crate::portfolio::context(db,actor,&required(req,"project")?),
@@ -66,7 +68,7 @@ pub fn read(db: &Connection, actor: &Principal, req: &Value) -> Result<Value> {
         },
         "task.get"=>{
             let id=required(req,"task")?;let t=task(db,actor,&id)?;
-            Ok(json!({"task":t,"versions":rows(db,"SELECT * FROM requirements WHERE task=? ORDER BY version",[&id])?,"attempts":rows(db,"SELECT * FROM attempts WHERE task=? ORDER BY generation",[&id])?,"dependencies":rows(db,"SELECT * FROM dependencies WHERE task=?",[&id])?,"artifacts":rows(db,"SELECT * FROM artifacts WHERE task=? ORDER BY created",[&id])?,"incidents":rows(db,"SELECT * FROM incidents WHERE task=? ORDER BY created",[&id])?}))
+            Ok(json!({"task":t,"notifications":rows(db,"SELECT * FROM change_notices WHERE task=? ORDER BY rowid",[&id])?,"routing":crate::learning::classification(db,&t)?,"learning":rows(db,"SELECT * FROM lessons WHERE task=? ORDER BY created,rowid",[&id])?,"versions":rows(db,"SELECT * FROM requirements WHERE task=? ORDER BY version",[&id])?,"attempts":rows(db,"SELECT * FROM attempts WHERE task=? ORDER BY generation",[&id])?,"dependencies":rows(db,"SELECT * FROM dependencies WHERE task=?",[&id])?,"artifacts":rows(db,"SELECT * FROM artifacts WHERE task=? ORDER BY created",[&id])?,"incidents":rows(db,"SELECT * FROM incidents WHERE task=? ORDER BY created",[&id])?}))
         },
         "task.next"=>Ok(json!(rows(db,"SELECT t.* FROM tasks t JOIN projects p ON p.id=t.project WHERE t.state='ready' AND p.state='active' AND (? OR t.project=?) AND NOT EXISTS(SELECT 1 FROM dependencies d JOIN tasks dep ON dep.id=d.depends_on WHERE d.task=t.id AND dep.state!='accepted') ORDER BY (SELECT COUNT(*) FROM attempts a JOIN tasks z ON z.id=a.task WHERE z.project=t.project AND a.state IN ('running','unknown','paused','review','recovering')), t.priority DESC,t.created,t.id LIMIT 20",params![actor.global(),scope])?)),
         "history"=>{
@@ -150,6 +152,25 @@ pub fn mutate(db: &Connection, actor: &Principal, req: &Value, home: &Path) -> R
         }
         "review.submit" => crate::automation::review(db, actor, req, home)?,
         "team.create" | "evaluation.record" => planning::mutate(db, actor, req, home)?,
+        "project.bind" => {
+            require_operator(actor)?;
+            let pid = required(req, "project")?;
+            row(db, "SELECT id FROM projects WHERE id=?", [&pid])?;
+            let active:bool=db.query_row("SELECT EXISTS(SELECT 1 FROM attempts a JOIN tasks t ON t.id=a.task WHERE t.project=? AND a.state IN ('running','unknown','paused','review','recovering'))",[&pid],|r|r.get(0))?;
+            if active {
+                bail!("reconcile active attempts before changing the project repository");
+            }
+            let path = fs::canonicalize(required(req, "repository")?)
+                .context("repository path must exist")?;
+            if !path.is_dir() || !path.join(".git").exists() {
+                bail!("repository must be an existing local Git working copy");
+            }
+            db.execute(
+                "UPDATE projects SET repository=? WHERE id=?",
+                params![path.to_string_lossy(), pid],
+            )?;
+            json!({"project":pid,"repository":path,"bound":true,"dispatch_policy_unchanged":true})
+        }
         "project.create" => {
             require_manager(actor)?;
             if !actor.global() {

@@ -44,10 +44,20 @@ enum Cmd {
     /// Route a request, recover related project context and queue a follow-up.
     Submit {
         text: String,
-        #[arg(long)]
+        #[arg(long, conflicts_with = "new_project")]
         project: Option<String>,
         #[arg(long, default_value = "engineer")]
         role: String,
+        #[arg(long, value_parser=["routine","standard","complex"])]
+        complexity: Option<String>,
+        /// Force a distinct project with this name; the request becomes its charter.
+        #[arg(long, conflicts_with = "task")]
+        new_project: Option<String>,
+        /// Amend this exact task instead of creating a follow-up.
+        #[arg(long, requires = "expected_version")]
+        task: Option<String>,
+        #[arg(long, requires = "task")]
+        expected_version: Option<i64>,
     },
     /// Today's or this week's work in the configured local timezone.
     Agenda {
@@ -62,6 +72,11 @@ enum Cmd {
     },
     /// Show one project's outcomes and retained responses.
     Outcomes { project: String },
+    /// Bind a project to an existing Git working copy before enabling execution.
+    Bind {
+        project: String,
+        repository: PathBuf,
+    },
     /// Open the interactive terminal interface.
     Ui {
         #[arg(long)]
@@ -161,10 +176,14 @@ fn run() -> Result<()> {
             text,
             project,
             role,
+            complexity,
+            new_project,
+            task,
+            expected_version,
         } => print(protocol::call(
             &home,
             &token()?,
-            &json!({"action":"intake.submit","text":text,"project":project,"role":role,"request_id":id("intake")}),
+            &json!({"action":"intake.submit","text":text,"project":project,"role":role,"complexity":complexity,"new_project":new_project.is_some(),"name":new_project,"task":task,"expected_version":expected_version,"request_id":id("intake")}),
         )?),
         Cmd::Agenda { view } => print(protocol::call(
             &home,
@@ -175,6 +194,14 @@ fn run() -> Result<()> {
             &home,
             &token()?,
             &json!({"action":"project.outcomes","project":project}),
+        )?),
+        Cmd::Bind {
+            project,
+            repository,
+        } => print(protocol::call(
+            &home,
+            &token()?,
+            &json!({"action":"project.bind","project":project,"repository":repository,"request_id":id("bind")}),
         )?),
         Cmd::Auto { project, off } => {
             start(&home)?;

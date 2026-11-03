@@ -23,8 +23,8 @@ To install a reviewed local checkout, run `bash bin/olympus-install.sh --source 
 For a reproducible revision, check out the desired commit before running the local installer.
 An upgrade replaces application binaries and assets; it does not erase or silently restart an existing coordinator.
 Take a verified backup, stop the coordinator, install, then start it.
-Opening a version 1 database applies the additive version 2 tables transactionally.
-A version 1 binary refuses a version 2 database; rollback uses the pre-upgrade backup in a new home.
+Opening schema 1 or 2 applies additive migrations through schema 3 transactionally.
+An older binary refuses schema 3; rollback uses the pre-upgrade backup in a new home.
 
 Use a separate home for the sample portfolio.
 
@@ -65,7 +65,7 @@ The optional interactive Pi conversation is not restarted automatically; reopeni
 
 | You do | System behavior | Where to inspect |
 |---|---|---|
-| Give a request | `intake.preview` identifies explicit IDs or project aliases and returns candidate matches with reasons | `:` opens a non-mutating routing preview |
+| Give a request | `intake.preview` identifies explicit IDs or project aliases and returns candidate matches with reasons | `:` previews and submits the route; ambiguity opens a project choice |
 | Add related work | Chief creates a task in the selected project or proposes a versioned amendment | Projects; task detail |
 | Change requirements | `task.amend` requires `expected_version`; old output becomes stale until the owner acknowledges the new version at a safe checkpoint | Task detail and requirement history |
 | Ask for a team | `team.create` registers a captain and up to eight role-specific identities without launching idle workers | Crew hierarchy |
@@ -81,7 +81,12 @@ The optional interactive Pi conversation is not restarted automatically; reopeni
 The routing preview never silently merges projects or overwrites requirements based on similarity.
 The intake matcher uses names, aliases and shared topic terms across active and completed projects.
 A confident `intake.submit` creates a follow-up with retained context, reopens a completed project, and deduplicates an identical existing request.
-Ambiguous matches require an explicit project; existing requirements change only through the versioned amendment action.
+An unmatched request creates a separate project and task, with the request as its initial charter.
+No repository, account or execution permission is inferred; bind the new project with `olympus bind P-ID /absolute/path/to/repository`, then enable its verified execution policy.
+Ambiguous matches require an explicit project; existing requirements change only through a versioned amendment with an exact task ID.
+Use `olympus submit "Full revised requirements" --task T-ID --expected-version 2` to amend a known task.
+Use `--new-project "Project name"` to force a separate project, or `--complexity routine|standard|complex` to override the disclosed text heuristic.
+Requirement changes create durable owner and dependent-owner notifications; a full mailbox delays delivery without losing the amendment.
 This is explainable lexical retrieval, not a validated semantic embedding model.
 It can form sub-captains with `agent.create`, subject to scope, a maximum depth of four and bounded management spans.
 Native children have a separate maximum depth of six and consume the same admission capacity as independent workers.
@@ -101,7 +106,10 @@ olympus outcomes P-YOUR-PROJECT
 
 The coordinator assigns an eligible specialist, reserves room for independent review, prepares a launch, and advances the dependency graph as accepted results arrive.
 Quality workers use `review.submit` to complete their review and accept or reject the exact producer revision together.
-One failed review returns evidence to the producer; a second failure requires a decision.
+One failed review returns evidence to the producer.
+After a second failure, a different verified profile may be selected; the coordinator requests a stop and requires matching fresh stop evidence before replacement.
+If no eligible alternative or recovery budget remains, the task waits for a decision.
+The total replacement budget remains two; each new attempt has one bounded rework opportunity.
 Accepted evidence is captured automatically in the local second brain, with full source references.
 `child.reserve` creates a scoped child identity, dependency and reservation; project automation launches that child as an independent Firstmate worker.
 This portable route works through the selected verified profile and does not require vendor-native subagent APIs.
@@ -115,6 +123,27 @@ Project automation does not authorize merging, publishing, changing provider acc
 
 Use `olympus auto P-YOUR-PROJECT --off` to stop new automatic assignments for that project.
 Already running work remains visible and must be paused or stopped explicitly.
+
+## Model choice and retained learning
+
+`dispatch.plan` exposes the task class, candidate profiles, chosen effort, recorded outcomes and exclusion reasons.
+Classification is an editable conservative text heuristic, not a calibrated prediction of task difficulty.
+A profile declares supported roles and complexity classes; reasoning effort comes from its verified `effort_by_complexity` mapping, not a guessed vendor flag.
+Profiles without complexity declarations remain eligible for routine and standard work only.
+The exact profile configuration is pinned to each launched attempt, including model, harness version and capabilities.
+Changing a profile invalidates its verification and prevents old evidence from scoring the new configuration.
+
+Independent reviews and repeated-progress failures record source-linked lessons automatically.
+One attempt contributes one outcome, with reworked acceptance distinguished from first-pass acceptance.
+Routing uses the last 100 matching outcomes only after five samples for the same role, complexity and exact profile configuration; the current score assigns 1 to clean acceptance, 0.5 to acceptance after rework and 0 to failure.
+That is an inspectable local policy, not a statistical guarantee that the chosen model is universally best.
+Two failures on the same requirement version exclude that profile configuration for the next attempt and require complex-capable alternatives.
+Amended requirements retain the old lessons but do not inherit their task-specific exclusion.
+Operator-recorded `evaluation.record` entries remain audit evidence; unbound historical entries do not silently count as automatic quality measurements.
+
+`learning.status` returns project-scoped lessons and outcomes; press `l` on a project or task to inspect them in the terminal.
+Project context includes a bounded recent learning summary, while `task.get` retains complete lesson evidence.
+This improves the harness's retained context and routing decisions; it does not fine-tune a model or prove that future quality has improved.
 
 ## Calendar and recurring work
 
@@ -165,7 +194,7 @@ They are exact text/layout examples with synthetic tasks, not evidence of live m
 
 ![Olympus live terminal](assets/olympus-live.png)
 
-[Animated activity](assets/olympus-live.gif) · [Today PNG](assets/olympus-today.png) · [Recurring PNG](assets/olympus-recurring.png) · [Project outcomes PNG](assets/olympus-outcomes.png)
+[Animated activity](assets/olympus-live.gif) · [Today PNG](assets/olympus-today.png) · [Recurring PNG](assets/olympus-recurring.png) · [Project outcomes PNG](assets/olympus-outcomes.png) · [Learning PNG](assets/olympus-learning.png)
 
 [Projects](assets/olympus-projects.svg) · [Crew](assets/olympus-crew.svg) · [Queue](assets/olympus-queue.svg) · [Memory](assets/olympus-memory.svg) · [Health](assets/olympus-health.svg) · [History](assets/olympus-history.svg) · [Today](assets/olympus-today.svg) · [This week](assets/olympus-week.svg) · [Recurring](assets/olympus-recurring.svg) · [Project outcomes](assets/olympus-outcomes.svg)
 
@@ -176,6 +205,7 @@ They are exact text/layout examples with synthetic tasks, not evidence of live m
 | `1` - `7` | Live, Projects, Crew, Queue, Memory, Health, History |
 | `8` / `9` / `0` | Today / This week / Recurring |
 | `f` / `o` | Filter by the selected project / open its separate outcome report |
+| `l` | Inspect the selected project’s retained learning and reviewed outcomes |
 | `i` in Crew | Inspect the selected agent’s pending mailbox |
 | `s` / `d` | Create a recurring job / set a task due date |
 | `A` in Projects | Toggle that project’s automation policy |
@@ -189,7 +219,7 @@ They are exact text/layout examples with synthetic tasks, not evidence of live m
 | `N` / `n` | New project / new task wizard |
 | `a` | Amend the selected task with optimistic version checking |
 | `p` / `r` | Pause / resume the selected task or recurring schedule |
-| `:` | Route a request; confident matches queue work, ambiguity opens a project choice |
+| `:` | Route a request; confident matches queue work, unmatched work creates a project, ambiguity opens a project choice |
 | `Esc` / `q` | Back / detach |
 
 Any fresh working task animates the fleet indicator even when the chief is idle.
@@ -265,7 +295,7 @@ Restore requires a new destination, disables dispatch, revokes agent credentials
 Inspect archived workspaces and reconcile old machines before reconstructing them in a new location and resuming.
 The preview does not automatically rewrite workspace paths, log into providers or resume restored external effects.
 For encrypted offsite retention, configure Restic and run `olympus backup offsite /absolute/path/to/new-snapshot`.
-Scheduled backups and automatic disaster-recovery failover remain release work.
+Local scheduled backups are implemented; automatic offsite transfer and disaster-recovery failover remain release work.
 
 To survive login or host restarts, print and inspect a service definition, then install it with your OS service manager.
 

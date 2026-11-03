@@ -16,6 +16,7 @@ pub mod automation;
 pub mod backup;
 pub mod bridge;
 pub mod demo;
+mod learning;
 mod portfolio;
 pub mod protocol;
 pub mod scheduling;
@@ -122,11 +123,17 @@ impl Store {
             })
             .optional()
             .unwrap_or(None);
-        if existing.as_deref().is_some_and(|v| v != "1" && v != "2") {
+        if existing
+            .as_deref()
+            .is_some_and(|v| !matches!(v, "1" | "2" | "3"))
+        {
             bail!("incompatible database schema; use the matching release or restore a backup")
         }
         db.execute_batch(include_str!("schema.sql"))?;
-        db.execute_batch(include_str!("schema-v2.sql"))?;
+        if existing.as_deref() != Some("3") {
+            db.execute_batch(include_str!("schema-v2.sql"))?;
+            db.execute_batch(include_str!("schema-v3.sql"))?;
+        }
         fs::set_permissions(home.join("olympus.db"), fs::Permissions::from_mode(0o600))?;
         if !home.join("operator.token").exists() {
             // create_new prevents two initialisers replacing one another's token.

@@ -70,7 +70,7 @@ export default function (pi: ExtensionAPI) {
   });
   pi.on("before_agent_start", async (event) => {
     if (!process.env.OLYMPUS_AGENT_TOKEN_FILE) return;
-    return { systemPrompt: event.systemPrompt + "\nYou are the Olympus chief of staff for this session. Keep portfolio state in the durable coordinator. Start with chief.briefing and read olympus_help before unfamiliar mutations. Route new requests using intake.preview then intake.submit for confident matches; ask a short project choice for ambiguity. Use project.context for older work, project.outcomes for separate deliverables, agenda for today/week and schedules.list for recurring work. Preserve versions, form scoped teams, respect capacity and live capability gates, and delegate independent work through Firstmate. Project automation dispatches and reviews ready tasks without keeping this conversation open. Never treat process exit as task acceptance. Finish a coordination turn with chief.finish. The daemon must remain independent of your conversation. Do not repeatedly retry an unchanged refusal." };
+    return { systemPrompt: event.systemPrompt + "\nYou are the Olympus chief of staff for this session. Keep portfolio state in the durable coordinator. Start with chief.briefing and read olympus_help before unfamiliar mutations. Route new requests using intake.preview then intake.submit for confident matches or unmatched new projects; ask a short project choice for ambiguity. Amend a specifically identified task with task and expected_version; never overwrite requirements based only on similarity. Use learning.status and dispatch.plan to inspect evidence, complexity and effort. Use project.context for older work, project.outcomes for separate deliverables, agenda for today/week and schedules.list for recurring work. Preserve versions, form scoped teams, respect capacity and live capability gates, and delegate independent work through Firstmate. Project automation dispatches and reviews ready tasks without keeping this conversation open. Never treat process exit as task acceptance. Finish a coordination turn with chief.finish. The daemon must remain independent of your conversation. Do not repeatedly retry an unchanged refusal." };
   });
   pi.registerTool({
     name: "olympus_help", label: "Olympus action reference",
@@ -91,7 +91,7 @@ export default function (pi: ExtensionAPI) {
     parameters: Type.Object({ request: Type.String({ description: "JSON object following the Olympus action contract" }) }),
     async execute(_id, params) {
       const request = JSON.parse(params.request);
-      const forbidden = new Set(["system.shutdown", "system.configure", "profile.register", "profile.verify", "runtime.observe", "operation.receipt", "context.transfer", "task.recover", "automation.configure", "maintenance.configure"]);
+      const forbidden = new Set(["system.shutdown", "system.configure", "profile.register", "profile.verify", "runtime.observe", "operation.receipt", "context.transfer", "task.recover", "automation.configure", "maintenance.configure", "project.bind"]);
       if (forbidden.has(request.action)) throw new Error("This operation requires the operator CLI.");
       const result = await agent(request);
       return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };

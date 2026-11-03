@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1648" height="1060" viewBox="0 0 1648 1060"><rect width="1648" height="1060" rx="16" fill="#101827"/><g font-family="DejaVu Sans Mono,monospace" font-size="16" xml:space="preserve"><text x="24" y="36" fill="#75c4ff">OLYMPUS / Full record  |  SIMULATOR - SAMPLE DATA                                                                                                               </text>
 <text x="24" y="59" fill="#d8e2f0">1 Live  2 [Projects]  3 Crew  4 Queue  5 Memory  6 Health  7 History                                                                                            </text>
 <text x="24" y="82" fill="#d8e2f0">8 Today  9 Week  0 Recurring | All projects                                                                                                                     </text>
-<text x="24" y="105" fill="#ffb66c">[.o.] 12 working  1 recovering  3 blocked  3 need you  Chief: idle</text>
+<text x="24" y="105" fill="#ffb66c">[..o] 12 working  1 recovering  3 blocked  3 need you  Chief: idle</text>
 <text x="24" y="128" fill="#d8e2f0">Verified 0s ago | History retained | Motion indicates activity; checkpoints establish progress</text>
 <text x="24" y="151" fill="#d8e2f0"></text>
 <text x="24" y="174" fill="#d8e2f0">Experiment Lab / PROJECT OUTCOMES</text>
@@ -16,7 +16,7 @@
 <text x="24" y="381" fill="#8ddbb3">Accepted: Experiment Lab accepted milestone 2</text>
 <text x="24" y="404" fill="#d8e2f0"></text>
 <text x="24" y="427" fill="#d8e2f0">Evidence: Simulator fixture acceptance; no real harness executed.</text>
-<text x="24" y="450" fill="#d8e2f0">Artifact: A-6a24e6cc846b420d</text>
+<text x="24" y="450" fill="#d8e2f0">Artifact: A-c7f679a98b944113</text>
 <text x="24" y="473" fill="#d8e2f0"></text>
 <text x="24" y="496" fill="#8ddbb3">[accepted] Experiment Lab accepted milestone 2</text>
 <text x="24" y="519" fill="#d8e2f0">Experiment Lab: sample milestone complete.</text>
@@ -28,7 +28,7 @@
 <text x="24" y="657" fill="#8ddbb3">Accepted: Experiment Lab accepted milestone 1</text>
 <text x="24" y="680" fill="#d8e2f0"></text>
 <text x="24" y="703" fill="#d8e2f0">Evidence: Simulator fixture acceptance; no real harness executed.</text>
-<text x="24" y="726" fill="#d8e2f0">Artifact: A-1e41c4e71cfc47cd</text>
+<text x="24" y="726" fill="#d8e2f0">Artifact: A-11d557f84c65419f</text>
 <text x="24" y="749" fill="#d8e2f0"></text>
 <text x="24" y="772" fill="#8ddbb3">[accepted] Experiment Lab accepted milestone 1</text>
 <text x="24" y="795" fill="#d8e2f0">Experiment Lab: sample milestone complete.</text>

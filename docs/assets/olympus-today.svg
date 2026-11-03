@@ -1,27 +1,27 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1648" height="1060" viewBox="0 0 1648 1060"><rect width="1648" height="1060" rx="16" fill="#101827"/><g font-family="DejaVu Sans Mono,monospace" font-size="16" xml:space="preserve"><text x="24" y="36" fill="#75c4ff">OLYMPUS / Today  |  SIMULATOR - SAMPLE DATA                                                                                                                     </text>
 <text x="24" y="59" fill="#d8e2f0">1 Live  2 Projects  3 Crew  4 Queue  5 Memory  6 Health  7 History                                                                                              </text>
 <text x="24" y="82" fill="#d8e2f0">8 [Today]  9 Week  0 Recurring | All projects                                                                                                                   </text>
-<text x="24" y="105" fill="#ffb66c">[o..] 12 working  1 recovering  3 blocked  3 need you  Chief: idle</text>
+<text x="24" y="105" fill="#ffb66c">[.o.] 12 working  1 recovering  3 blocked  3 need you  Chief: idle</text>
 <text x="24" y="128" fill="#d8e2f0">Verified 0s ago | History retained | Motion indicates activity; checkpoints establish progress</text>
 <text x="24" y="151" fill="#d8e2f0"></text>
 <text x="24" y="174" fill="#ffb66c">TODAY / Europe/London / due, overdue, active and completed</text>
 <text x="24" y="197" fill="#d8e2f0"></text>
-<text x="24" y="220" fill="#ffb66c">&gt; [o..] API Platform / API Platform current deliverable / overdue / 02/11/2026, 12:21:36</text>
-<text x="24" y="243" fill="#ffb66c">  [o..] Agent Skills / Agent Skills current deliverable / overdue / 02/11/2026, 13:21:36</text>
-<text x="24" y="266" fill="#ffb66c">  [o..] WebCraft / WebCraft current deliverable / overdue / 02/11/2026, 14:21:36</text>
-<text x="24" y="289" fill="#d8e2f0">  [o..] Research Notes / Research Notes current deliverable / due / 02/11/2026, 15:21:36</text>
-<text x="24" y="312" fill="#d8e2f0">  [o..] Travel Planner / Travel Planner current deliverable / due / 02/11/2026, 16:21:37</text>
-<text x="24" y="335" fill="#d8e2f0">  [o..] Portfolio Site / Portfolio Site current deliverable / due / 02/11/2026, 17:21:37</text>
-<text x="24" y="358" fill="#d8e2f0">  [o..] LinkedIn Workflow / LinkedIn Workflow current deliverable / due / 02/11/2026, 18:21:37</text>
-<text x="24" y="381" fill="#d8e2f0">  [o..] Learning Portal / Learning Portal current deliverable / due / 02/11/2026, 19:21:37</text>
+<text x="24" y="220" fill="#ffb66c">&gt; [.o.] Browser Workspaces / Browser Workspaces current deliverable / overdue / 03/11/2026, 09:39:12</text>
+<text x="24" y="243" fill="#ffb66c">  [.o.] Travel Planner / Travel Planner current deliverable / overdue / 03/11/2026, 10:39:12</text>
+<text x="24" y="266" fill="#ffb66c">  [.o.] Research Notes / Research Notes current deliverable / overdue / 03/11/2026, 11:39:12</text>
+<text x="24" y="289" fill="#d8e2f0">  [.o.] Portfolio Site / Portfolio Site current deliverable / due / 03/11/2026, 12:39:12</text>
+<text x="24" y="312" fill="#d8e2f0">  [.o.] Model Evaluation / Model Evaluation current deliverable / due / 03/11/2026, 13:39:12</text>
+<text x="24" y="335" fill="#d8e2f0">  [.o.] LinkedIn Workflow / LinkedIn Workflow current deliverable / due / 03/11/2026, 14:39:12</text>
+<text x="24" y="358" fill="#d8e2f0">  [.o.] Hosting Ops / Hosting Ops current deliverable / due / 03/11/2026, 15:39:12</text>
+<text x="24" y="381" fill="#d8e2f0">  [.o.] WebCraft / WebCraft current deliverable / due / 03/11/2026, 16:39:12</text>
 <text x="24" y="404" fill="#ffb66c">  BLOCK Evaluation Lab / Evaluation Lab current deliverable / in_progress / no due date</text>
 <text x="24" y="427" fill="#d8e2f0">  REPAIR Release Tools / Release Tools current deliverable / in_progress / no due date</text>
-<text x="24" y="450" fill="#ffb66c">  BLOCK Docs Studio / Docs Studio current deliverable / in_progress / no due date</text>
-<text x="24" y="473" fill="#d8e2f0">  [o..] Browser Workspaces / Browser Workspaces current deliverable / in_progress / no due date</text>
-<text x="24" y="496" fill="#d8e2f0">  [o..] Model Evaluation / Model Evaluation current deliverable / in_progress / no due date</text>
+<text x="24" y="450" fill="#d8e2f0">  [.o.] API Platform / API Platform current deliverable / in_progress / no due date</text>
+<text x="24" y="473" fill="#d8e2f0">  [.o.] Agent Skills / Agent Skills current deliverable / in_progress / no due date</text>
+<text x="24" y="496" fill="#ffb66c">  BLOCK Docs Studio / Docs Studio current deliverable / in_progress / no due date</text>
 <text x="24" y="519" fill="#ffb66c">  BLOCK Quality Platform / Quality Platform current deliverable / in_progress / no due date</text>
-<text x="24" y="542" fill="#d8e2f0">  [o..] Hosting Ops / Hosting Ops current deliverable / in_progress / no due date</text>
-<text x="24" y="565" fill="#d8e2f0">  [o..] Test Reliability / Test Reliability current deliverable / in_progress / no due date</text>
+<text x="24" y="542" fill="#d8e2f0">  [.o.] Learning Portal / Learning Portal current deliverable / in_progress / no due date</text>
+<text x="24" y="565" fill="#d8e2f0">  [.o.] Test Reliability / Test Reliability current deliverable / in_progress / no due date</text>
 <text x="24" y="588" fill="#8ddbb3">  DONE WebCraft / WebCraft accepted milestone 1 / completed / no due date</text>
 <text x="24" y="611" fill="#8ddbb3">  DONE WebCraft / WebCraft accepted milestone 2 / completed / no due date</text>
 <text x="24" y="634" fill="#8ddbb3">  DONE Evaluation Lab / Evaluation Lab accepted milestone 1 / completed / no due date</text>

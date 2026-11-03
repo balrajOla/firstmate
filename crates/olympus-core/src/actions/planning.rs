@@ -3,26 +3,31 @@ use crate::*;
 pub fn dispatch(db: &Connection, actor: &Principal, r: &Value) -> Result<Value> {
     let tid = required(r, "task")?;
     let t = task(db, actor, &tid)?;
+    let classification = crate::learning::classification(db, &t)?;
     let mut candidates = vec![];
     let mut excluded = vec![];
     for p in rows(db, "SELECT * FROM profiles ORDER BY id", [])? {
         let capabilities: Value = serde_json::from_str(p["capabilities"].as_str().unwrap())?;
-        let supported = capabilities["roles"]
-            .as_array()
-            .is_some_and(|roles| roles.iter().any(|role| *role == t["role"]));
-        if p["verified"] != 1 || p["harness"] == "simulator" || !supported {
-            excluded.push(json!({"profile":p["id"],"reason":if p["verified"]!=1{"not lifecycle verified"}else if !supported{"role capability absent"}else{"simulation only"}}));
+        if p["verified"] != 1 || p["harness"] == "simulator" {
+            excluded.push(json!({"profile":p["id"],"reason":if p["verified"]!=1{"not lifecycle verified"}else{"simulation only"}}));
             continue;
         }
-        let metrics=row(db,"SELECT COUNT(*) AS samples,SUM(outcome='accepted') AS accepted,AVG(elapsed_ms) AS mean_ms,AVG(cost) AS mean_cost FROM evaluations WHERE profile=?",[p["id"].as_str()])?;
+        let selection = match crate::learning::eligibility(db, &t, &p) {
+            Ok(v) => v,
+            Err(e) => {
+                excluded.push(json!({"profile":p["id"],"reason":e.to_string()}));
+                continue;
+            }
+        };
+        let metrics =
+            crate::learning::metrics(db, &t, &p, selection["complexity"].as_str().unwrap())?;
         let n = metrics["samples"].as_i64().unwrap_or(0);
-        let successes = metrics["accepted"].as_i64().unwrap_or(0);
         let score = if n >= 5 {
-            successes as f64 / n as f64
+            metrics["quality_score"].as_f64().unwrap_or(0.0)
         } else {
             0.5
         };
-        candidates.push(json!({"profile":p["id"],"harness":p["harness"],"model":p["model"],"score":score,"evidence":metrics,"confidence":if n<5{"insufficient local evidence"}else{"local operator-recorded outcomes"},"native_children":capabilities["native_children"]==true}));
+        candidates.push(json!({"profile":p["id"],"harness":p["harness"],"model":p["model"],"complexity":selection["complexity"],"effort":selection["effort"],"score":score,"evidence":metrics,"confidence":if n<5{"insufficient local evidence"}else{"local independently reviewed outcomes for this exact role, complexity and profile"},"native_children":capabilities["native_children"]==true}));
     }
     candidates.sort_by(|a, b| {
         b["score"]
@@ -42,7 +47,7 @@ pub fn dispatch(db: &Connection, actor: &Principal, r: &Value) -> Result<Value> 
         "independent_worker"
     };
     Ok(
-        json!({"task":tid,"shape":shape,"recommended":selected,"candidates":candidates,"excluded":excluded,"policy":"Rank only verified role-capable profiles. Fewer than five local outcomes is insufficient evidence; equal profiles use stable ordering. Native children still require explicit admission and live child-messaging conformance. No universal best-model claim.","mutated":false}),
+        json!({"task":tid,"classification":classification,"shape":shape,"recommended":selected,"candidates":candidates,"excluded":excluded,"policy":"Rank only verified role and complexity capable profiles. Effort uses the operator-verified per-model mapping. Five matching automatic outcomes are needed for quality ranking; equal or unevidenced profiles use stable ordering. Two failures on this task exclude the same profile configuration. Native children require admission and live conformance. No universal best-model claim.","mutated":false}),
     )
 }
 

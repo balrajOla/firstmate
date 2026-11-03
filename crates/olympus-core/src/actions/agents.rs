@@ -255,6 +255,37 @@ pub fn mutate(db: &Connection, actor: &Principal, r: &Value, home: &Path) -> Res
             ) {
                 bail!("unsupported harness")
             }
+            let caps = r.get("capabilities").cloned().unwrap_or(json!({}));
+            if !caps.is_object() {
+                bail!("capabilities must be an object");
+            }
+            if let Some(classes) = caps.get("complexities") {
+                let values = classes
+                    .as_array()
+                    .context("complexities must be an array")?;
+                if values.is_empty()
+                    || values
+                        .iter()
+                        .any(|v| !matches!(v.as_str(), Some("routine" | "standard" | "complex")))
+                {
+                    bail!("invalid complexity capability");
+                }
+            }
+            if let Some(efforts) = caps.get("effort_by_complexity") {
+                for (class, level) in efforts
+                    .as_object()
+                    .context("effort_by_complexity must be an object")?
+                {
+                    if !matches!(class.as_str(), "routine" | "standard" | "complex")
+                        || !matches!(
+                            level.as_str(),
+                            Some("low" | "medium" | "high" | "xhigh" | "max" | "ultra")
+                        )
+                    {
+                        bail!("invalid complexity effort mapping");
+                    }
+                }
+            }
             db.execute("INSERT INTO profiles VALUES(?,?,?,?,?,?,0) ON CONFLICT(id) DO UPDATE SET harness=excluded.harness,model=excluded.model,version=excluded.version,capabilities=excluded.capabilities,evidence=excluded.evidence,verified=0",params![pid,harness,required(r,"model")?,required(r,"version")?,r.get("capabilities").unwrap_or(&json!({})).to_string(),"{}"]) ?;
             Ok(json!({"profile":pid,"verified":false}))
         }
@@ -277,6 +308,9 @@ pub fn mutate(db: &Connection, actor: &Principal, r: &Value, home: &Path) -> Res
                 bail!("simulated evidence cannot enable a real harness")
             }
             let capabilities: Value = serde_json::from_str(p["capabilities"].as_str().unwrap())?;
+            if capabilities.get("effort_by_complexity").is_some() && e["checks"]["effort"] != true {
+                bail!("live effort mapping check missing or failed");
+            }
             if capabilities["native_children"] == true {
                 for check in [
                     "child_launch",
@@ -359,10 +393,30 @@ pub fn mutate(db: &Connection, actor: &Principal, r: &Value, home: &Path) -> Res
             if pending > 0 {
                 bail!("reconcile the pending operation before another runtime effect")
             }
+            let mut prepared = r.clone();
+            if verb == "launch" {
+                let binding = crate::learning::bind(db, &t, &attempt, &p)?;
+                prepared["effort"] = binding["effort"].clone();
+                prepared["profile_signature"] = binding["signature"].clone();
+            } else if let Some(binding) = crate::learning::current_profile(db, &tid)? {
+                if binding["profile"] != profile
+                    || binding["signature"] != crate::learning::signature(&p)
+                {
+                    bail!("lifecycle control must use the current attempt's exact profile");
+                }
+                prepared["profile_signature"] = binding["signature"].clone();
+            }
             let op = id("OP");
             db.execute(
                 "INSERT INTO operations(id,task,attempt,verb,body,created) VALUES(?,?,?,?,?,?)",
-                params![op, tid, attempt["id"].as_str(), verb, r.to_string(), now()],
+                params![
+                    op,
+                    tid,
+                    attempt["id"].as_str(),
+                    verb,
+                    prepared.to_string(),
+                    now()
+                ],
             )?;
             Ok(
                 json!({"operation":op,"state":"pending","attempt":attempt["id"],"harness":p["harness"],"model":p["model"]}),

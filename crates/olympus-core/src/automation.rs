@@ -28,6 +28,12 @@ fn mutate(db: &Connection, home: &Path, r: Value) -> Result<Value> {
 }
 
 fn profile(db: &Connection, tid: &str) -> Result<Value> {
+    if let Some(current) = crate::learning::current_profile(db, tid)? {
+        let state = row(db, "SELECT state FROM tasks WHERE id=?", [tid])?;
+        if state["state"] != "ready" {
+            return Ok(current);
+        }
+    }
     let plan = crate::actions::read(
         db,
         &Principal::operator(),
@@ -113,7 +119,8 @@ fn prepare(db: &Connection, home: &Path, t: &Value) -> Result<Value> {
 
 fn recover(db: &Connection, home: &Path, t: &Value, timeout: i64) -> Result<()> {
     let tid = t["id"].as_str().unwrap();
-    let human_block:bool=db.query_row("SELECT EXISTS(SELECT 1 FROM incidents WHERE task=? AND state='open' AND kind NOT IN ('no_progress','observation_stale','automatic_recovery'))",[tid],|r|r.get(0))?;
+    let human_block:bool=db.query_row("SELECT EXISTS(SELECT 1 FROM incidents WHERE task=? AND state='open' AND kind NOT IN ('no_progress','observation_stale','automatic_recovery','quality_recovery'))",[tid],|r|r.get(0))?;
+    let quality_retry:bool=db.query_row("SELECT EXISTS(SELECT 1 FROM incidents WHERE task=? AND kind='quality_recovery' AND state='open')",[tid],|r|r.get(0))?;
     if human_block && t["state"] == "blocked" {
         return Ok(());
     }
@@ -139,15 +146,16 @@ fn recover(db: &Connection, home: &Path, t: &Value, timeout: i64) -> Result<()> 
         )?;
     } else if !pending
         && matches!(t["state"].as_str(), Some("running" | "unknown" | "blocked"))
-        && now() - a["progress_at"].as_i64().unwrap() > timeout
+        && (quality_retry || now() - a["progress_at"].as_i64().unwrap() > timeout)
     {
         let waiting:bool=db.query_row("SELECT EXISTS(SELECT 1 FROM dependencies d JOIN tasks child ON child.id=d.depends_on WHERE d.task=? AND child.state!='accepted')",[tid],|r|r.get(0))?;
         if waiting {
             return Ok(());
         }
         let completed:Option<i64>=db.query_row("SELECT MAX(child.completed) FROM dependencies d JOIN tasks child ON child.id=d.depends_on WHERE d.task=?",[tid],|r|r.get(0))?;
-        if completed
-            .is_some_and(|at| at > a["progress_at"].as_i64().unwrap() && now() - at < timeout)
+        if !quality_retry
+            && completed
+                .is_some_and(|at| at > a["progress_at"].as_i64().unwrap() && now() - at < timeout)
         {
             db.execute(
                 "UPDATE attempts SET progress_at=? WHERE id=?",
@@ -179,6 +187,19 @@ fn recover(db: &Connection, home: &Path, t: &Value, timeout: i64) -> Result<()> 
 
 pub(crate) fn tick(db: &Connection, home: &Path) -> Result<Value> {
     let due = crate::scheduling::tick(db, now())?;
+    let notices=rows(db,"SELECT n.* FROM change_notices n JOIN tasks t ON t.id=n.about JOIN tasks recipient_task ON recipient_task.id=n.task WHERE n.message IS NULL AND n.version=t.version AND n.recipient=recipient_task.owner AND recipient_task.state NOT IN ('accepted','cancelled') ORDER BY n.rowid LIMIT 50",[])?;
+    for notice in notices {
+        if let Ok(sent) = mutate(
+            db,
+            home,
+            json!({"action":"message.send","recipient":notice["recipient"],"task":notice["task"],"thread":format!("requirements-{}-{}",notice["about"],notice["version"]),"priority":"critical","body":notice["body"]}),
+        ) {
+            db.execute(
+                "UPDATE change_notices SET message=? WHERE id=?",
+                params![sent["message"].as_str(), notice["id"].as_str()],
+            )?;
+        }
+    }
     let enabled: String = db.query_row(
         "SELECT value FROM settings WHERE key='dispatch_enabled'",
         [],
@@ -249,7 +270,7 @@ pub(crate) fn tick(db: &Connection, home: &Path) -> Result<Value> {
     }
     // Persisted messages wake only their current recipient. A transport receipt
     // does not advance delivered/read/acted; the recipient owns those receipts.
-    let messages=rows(db,"SELECT m.*,t.id AS target_task FROM messages m JOIN tasks t ON t.owner=m.recipient JOIN autonomy p ON p.project=t.project WHERE p.enabled=1 AND m.state='persisted' AND t.state='running' AND NOT EXISTS(SELECT 1 FROM message_dispatch d WHERE d.message=m.id) ORDER BY m.created LIMIT 20",[])?;
+    let messages=rows(db,"SELECT m.*,t.id AS target_task FROM messages m JOIN tasks t ON t.owner=m.recipient JOIN autonomy p ON p.project=t.project WHERE p.enabled=1 AND m.state='persisted' AND t.state IN ('running','blocked','review') AND NOT EXISTS(SELECT 1 FROM message_dispatch d WHERE d.message=m.id) ORDER BY m.created LIMIT 20",[])?;
     for m in messages {
         db.execute_batch("SAVEPOINT automatic_message")?;
         let out = (|| -> Result<()> {
@@ -322,13 +343,36 @@ pub(crate) fn review(db: &Connection, actor: &Principal, r: &Value, home: &Path)
     if r["passed"] == false {
         let original = task(db, &Principal::operator(), art["task"].as_str().unwrap())?;
         if original["replans"].as_i64().unwrap() >= 1 {
-            db.execute("UPDATE tasks SET state='blocked',reason='Independent review failed twice; decision required' WHERE id=?",[art["task"].as_str()])?;
+            let plan = crate::actions::read(
+                db,
+                &Principal::operator(),
+                &json!({"action":"dispatch.plan","task":original["id"]}),
+            )?;
+            let current = crate::learning::current_profile(db, original["id"].as_str().unwrap())?;
+            let alternative = !plan["recommended"].is_null()
+                && current
+                    .as_ref()
+                    .is_some_and(|p| p["profile"] != plan["recommended"]["profile"])
+                && original["recoveries"].as_i64().unwrap() < 2;
+            let reason = if alternative {
+                "Repeated review failure; stop current worker before trying the verified alternative"
+            } else {
+                "Independent review failed twice; no eligible alternative or recovery budget remains"
+            };
+            db.execute(
+                "UPDATE tasks SET state='blocked',reason=? WHERE id=?",
+                params![reason, art["task"].as_str()],
+            )?;
             incident(
                 db,
                 art["task"].as_str(),
-                "review_exhausted",
-                "Two failed independent reviews; change the requirements or approach",
-                "operator",
+                if alternative {
+                    "quality_recovery"
+                } else {
+                    "review_exhausted"
+                },
+                reason,
+                if alternative { "captain" } else { "operator" },
             )?;
         } else {
             // The completed reviewer releases one slot; hold it for the next

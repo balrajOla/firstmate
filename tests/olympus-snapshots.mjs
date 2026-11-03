@@ -12,7 +12,7 @@ const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
 const bin=process.env.OLYMPUS_TEST_BIN || resolve(root,"target/debug/olympus");
 const output=resolve(process.argv[2] || resolve(root,"docs/assets"));
 const home=mkdtempSync(resolve(tmpdir(),"olympus-snapshots-"));
-const invoke=(...args)=>JSON.parse(execFileSync(bin,["--home",home,...args],{encoding:"utf8"}));
+const invoke=(...args)=>JSON.parse(execFileSync(bin,["--home",home,...args],{encoding:"utf8",stdio:["ignore","pipe","pipe"]}));
 const action=r=>invoke("request",JSON.stringify(r));
 const escape=s=>s.replaceAll("&","&amp;").replaceAll("<","&lt;").replaceAll(">","&gt;").replaceAll('"',"&quot;");
 let daemon,view;
@@ -30,6 +30,7 @@ try{
     await view.setTab(tab);frames[name]=view.render(160,44);
   }
   await view.setTab(1);view.selected=Math.max(0,view.items().findIndex(p=>p.id===snapshot.responses[0]?.project));await view.key("o");frames.outcomes=view.render(160,44);
+  await view.key("\x1b");await view.key("l");frames.learning=view.render(160,44);
   await view.key("\x1b");await view.setTab(0);
   for(let i=0;i<3;i++) frames[`live-frame-${i}`]=view.render(160,44,Date.now()+i*250);
   for(const [name,lines] of Object.entries(frames)){

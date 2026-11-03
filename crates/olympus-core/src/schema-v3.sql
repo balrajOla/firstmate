@@ -1,0 +1,10 @@
+BEGIN IMMEDIATE;
+CREATE TABLE IF NOT EXISTS task_routing(task TEXT PRIMARY KEY REFERENCES tasks(id), complexity TEXT NOT NULL, source TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS attempt_profiles(attempt TEXT PRIMARY KEY REFERENCES attempts(id), profile TEXT NOT NULL, signature TEXT NOT NULL, complexity TEXT NOT NULL, effort TEXT NOT NULL, specification TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS lessons(id TEXT PRIMARY KEY, project TEXT NOT NULL REFERENCES projects(id), task TEXT NOT NULL REFERENCES tasks(id), attempt TEXT REFERENCES attempts(id), kind TEXT NOT NULL, source TEXT NOT NULL UNIQUE, body TEXT NOT NULL, created INTEGER NOT NULL, version INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS project_lessons ON lessons(project,created);
+CREATE TABLE IF NOT EXISTS run_outcomes(attempt TEXT PRIMARY KEY REFERENCES attempts(id), profile TEXT NOT NULL, signature TEXT NOT NULL, role TEXT NOT NULL, complexity TEXT NOT NULL, outcome TEXT NOT NULL, failures INTEGER NOT NULL, elapsed_ms INTEGER NOT NULL, updated INTEGER NOT NULL);
+CREATE INDEX IF NOT EXISTS outcome_routing ON run_outcomes(signature,role,complexity);
+CREATE TABLE IF NOT EXISTS change_notices(id TEXT PRIMARY KEY, task TEXT NOT NULL REFERENCES tasks(id), about TEXT NOT NULL REFERENCES tasks(id), version INTEGER NOT NULL, recipient TEXT NOT NULL REFERENCES agents(id), body TEXT NOT NULL, message TEXT REFERENCES messages(id), UNIQUE(about,version,recipient));
+UPDATE settings SET value='3' WHERE key='schema';
+COMMIT;

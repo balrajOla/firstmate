@@ -1,19 +1,19 @@
 {
-  "date": "2026-11-02",
+  "date": "2026-11-03",
   "environment": "ephemeral Linux x86_64 test container",
-  "domain_tests": 50,
-  "ui_tests": 21,
-  "process_tests": 12,
+  "domain_tests": 60,
+  "ui_tests": 23,
+  "process_tests": 15,
   "model_calls": 0,
   "pi": "1.4.0",
   "typescript": "5.9.3",
   "rust": "1.99.1",
   "node": "24.22.1",
-  "version": "0.2.0",
-  "database_schema": 2,
-  "total_unique_tests": 83,
-  "installed_cli_process_checks": 2,
-  "snapshot_views": 14,
+  "version": "0.3.0",
+  "database_schema": 3,
+  "total_unique_tests": 98,
+  "installed_cli_process_checks": 15,
+  "snapshot_views": 15,
   "authenticated_vendor_lifecycle_tested": false,
   "macos_service_activation_tested": false,
   "baseline_load_probe": {
@@ -25,6 +25,24 @@
     "p95_ms": 165.96,
     "total_seconds": 2.027,
     "claim": "Local snapshot read probe only; not a production SLO or model-worker benchmark",
-    "revision": "0.1.0 prior baseline; not rerun as a 0.2.0 performance benchmark"
+    "revision": "0.1.0 historical baseline"
+  },
+  "public_installer_baseline": "0.2.0 fresh public install; twelve baseline process tests passed",
+  "updated_installation": "0.3.0 release build, source installer, fifteen installed process tests passed without skips",
+  "upgrade_0_2_to_0_3": {
+    "passed": true,
+    "existing_project_and_requirements_preserved": true,
+    "schema": 3
+  },
+  "old_binary_refuses_new_schema": true,
+  "read_probe": {
+    "requests": 100,
+    "concurrent_clients": 8,
+    "simulated_projects": 20,
+    "failures": 0,
+    "p50_ms": 162.36,
+    "p95_ms": 192.05,
+    "total_seconds": 2.083,
+    "scope": "Installed CLI snapshot reads, no model workers"
   }
 }

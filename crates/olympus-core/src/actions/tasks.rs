@@ -21,6 +21,7 @@ pub fn mutate(db: &Connection, actor: &Principal, r: &Value, home: &Path) -> Res
                 "INSERT INTO requirements VALUES(?,1,?,?)",
                 params![tid, body, now()],
             )?;
+            crate::learning::classify(db, &tid, r, &format!("{title}\n{body}"))?;
             Ok(json!({"task":tid,"version":1,"state":"ready"}))
         }
         "task.amend" => {
@@ -45,6 +46,17 @@ pub fn mutate(db: &Connection, actor: &Principal, r: &Value, home: &Path) -> Res
                 "INSERT INTO requirements VALUES(?,?,?,?)",
                 params![tid, version, body, now()],
             )?;
+            crate::learning::classify(
+                db,
+                &tid,
+                r,
+                &format!("{}\n{body}", t["title"].as_str().unwrap()),
+            )?;
+            db.execute("UPDATE messages SET state='superseded' WHERE task=? AND version<? AND state IN ('persisted','delivered','read')",params![tid,version])?;
+            let affected=rows(db,"WITH RECURSIVE impacted(id) AS (SELECT ? UNION SELECT d.task FROM dependencies d JOIN impacted i ON d.depends_on=i.id) SELECT t.id,t.owner FROM impacted i JOIN tasks t ON t.id=i.id WHERE t.owner IS NOT NULL AND t.state NOT IN ('accepted','cancelled')",[&tid])?;
+            for recipient in affected {
+                db.execute("INSERT OR IGNORE INTO change_notices VALUES(?,?,?,?,?,?,NULL)",params![id("NOTICE"),recipient["id"].as_str(),tid,version,recipient["owner"].as_str(),format!("Requirements for {tid} changed to version {version}. Re-read task.get within your project scope, or request the published contract from the linked project. Replan affected work. The current task owner must acknowledge the exact version with task.ack_version at a safe checkpoint; old evidence cannot be accepted.")])?;
+            }
             if state == "blocked" {
                 incident(
                     db,
@@ -73,14 +85,40 @@ pub fn mutate(db: &Connection, actor: &Principal, r: &Value, home: &Path) -> Res
             if number(r, "version", -1) != t["version"].as_i64().unwrap() {
                 bail!("requirement version conflict")
             }
+            if a["version"] == t["version"] {
+                bail!("current requirements are already acknowledged");
+            }
             required(r, "checkpoint")?;
-            db.execute("UPDATE attempts SET version=?,state='running',heartbeat=?,progress_at=? WHERE id=?",params![t["version"].as_i64(),now(),now(),a["id"].as_str()])?;
+            let outstanding=rows(db,"SELECT reason FROM incidents WHERE task=? AND state='open' AND kind!='requirements_changed' ORDER BY created LIMIT 1",[&tid])?;
+            let state = if outstanding.is_empty() {
+                "running"
+            } else {
+                "blocked"
+            };
+            let reason = outstanding
+                .first()
+                .and_then(|i| i["reason"].as_str())
+                .unwrap_or("");
             db.execute(
-                "UPDATE tasks SET state='running',reason='',updated=? WHERE id=?",
-                params![now(), tid],
+                "UPDATE attempts SET version=?,state=?,heartbeat=?,progress_at=? WHERE id=?",
+                params![
+                    t["version"].as_i64(),
+                    if state == "running" {
+                        "running"
+                    } else {
+                        "paused"
+                    },
+                    now(),
+                    now(),
+                    a["id"].as_str()
+                ],
+            )?;
+            db.execute(
+                "UPDATE tasks SET state=?,reason=?,updated=? WHERE id=?",
+                params![state, reason, now(), tid],
             )?;
             db.execute("UPDATE incidents SET state='resolved',resolution='Current version acknowledged' WHERE task=? AND kind='requirements_changed' AND state='open'",[&tid])?;
-            Ok(json!({"task":tid,"version":t["version"],"acknowledged":true}))
+            Ok(json!({"task":tid,"version":t["version"],"acknowledged":true,"state":state}))
         }
         "task.link" => {
             require_manager(actor)?;
@@ -152,6 +190,7 @@ pub fn mutate(db: &Connection, actor: &Principal, r: &Value, home: &Path) -> Res
                 ],
             )?;
             if repeats >= 3 {
+                crate::learning::feedback(db,&t,a["id"].as_str().unwrap(),"repeated_failure",&format!("loop-{}-{}",a["id"].as_str().unwrap(),t["replans"]),&format!("Repeated checkpoint fingerprint: {fingerprint}. No changed evidence was recorded. Reproduce and change the hypothesis; this record does not establish a fix."))?;
                 db.execute("UPDATE tasks SET state='blocked',reason='Repeated attempt without changed evidence; one bounded replan required',updated=? WHERE id=?",params![now(),t["id"].as_str()])?;
                 db.execute(
                     "UPDATE attempts SET state='paused' WHERE id=?",
@@ -241,6 +280,21 @@ pub fn mutate(db: &Connection, actor: &Principal, r: &Value, home: &Path) -> Res
             db.execute(
                 "INSERT INTO reviews VALUES(?,?,?,?,?,?)",
                 params![id("V"), artifact, reviewer, passed, evidence, now()],
+            )?;
+            crate::learning::feedback(
+                db,
+                &t,
+                art["attempt"].as_str().unwrap(),
+                if passed {
+                    "accepted"
+                } else {
+                    "review_rejected"
+                },
+                &artifact,
+                &format!(
+                    "Revision: {}\nIndependent review evidence: {evidence}",
+                    art["code_revision"].as_str().unwrap()
+                ),
             )?;
             let state = if passed { "accepted" } else { "running" };
             db.execute(
@@ -398,7 +452,7 @@ pub fn mutate(db: &Connection, actor: &Principal, r: &Value, home: &Path) -> Res
                 return Ok(json!({"state":"blocked","reason":"recovery_budget_exhausted"}));
             }
             db.execute("UPDATE attempts SET state='fenced' WHERE task=? AND state IN ('running','unknown','paused','review','recovering')",[&tid])?;
-            db.execute("UPDATE tasks SET state='ready',owner=NULL,recoveries=recoveries+1,reason=?,updated=? WHERE id=?",params![evidence,now(),tid])?;
+            db.execute("UPDATE tasks SET state='ready',owner=NULL,recoveries=recoveries+1,replans=0,reason=?,updated=? WHERE id=?",params![evidence,now(),tid])?;
             db.execute(
                 "UPDATE incidents SET state='resolved',resolution=? WHERE task=? AND state='open'",
                 params![evidence, tid],

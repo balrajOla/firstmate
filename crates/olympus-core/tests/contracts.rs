@@ -451,7 +451,7 @@ fn legacy_schema_upgrade_preserves_tasks_and_rejects_unknown_future_schema() {
                 r.get::<_, String>(0)
             })
             .unwrap(),
-        "2"
+        "3"
     );
     l.store
         .db
@@ -508,6 +508,349 @@ struct Lab {
     project: String,
     worker: Value,
     reviewer: Value,
+}
+
+// These attestations exercise routing contracts only; no vendor model is run.
+fn adaptive_profile(l: &mut Lab, name: &str, model: &str) {
+    send(&mut l.store,json!({"action":"profile.register","profile":name,"harness":"codex","model":model,"version":"synthetic-v1","capabilities":{"roles":["rust"],"complexities":["routine","standard","complex"],"effort_by_complexity":{"routine":"low","standard":"medium","complex":"high"}}})).unwrap();
+    send(&mut l.store,json!({"action":"profile.verify","profile":name,"evidence":{"harness":"codex","version":"synthetic-v1","real_harness":true,"command":"Synthetic domain fixture; not live vendor proof","observed_result":"Synthetic contract only","checks":{"launch":true,"message":true,"interrupt":true,"resume":true,"stop":true,"effort":true}}})).unwrap();
+    send(
+        &mut l.store,
+        json!({"action":"system.configure","dispatch_enabled":true}),
+    )
+    .unwrap();
+}
+
+fn bind_contract_run(l: &mut Lab, tid: &str, profile: &str) {
+    let operation = send(
+        &mut l.store,
+        json!({"action":"operation.prepare","task":tid,"profile":profile,"verb":"launch"}),
+    )
+    .unwrap();
+    send(&mut l.store,json!({"action":"operation.receipt","operation":operation["operation"],"state":"confirmed","receipt":"Synthetic test launch, no external process"})).unwrap();
+}
+
+#[test]
+fn novel_intake_creates_separate_project_and_identical_retry_deduplicates() {
+    let mut l = Lab::new();
+    let input = json!({"action":"intake.submit","text":"Map Himalayan trekking routes","role":"researcher"});
+    let new = send(&mut l.store, input.clone()).unwrap();
+    assert_eq!(new["project_created"], true);
+    assert_ne!(new["project"], l.project);
+    assert_eq!(send(&mut l.store, input).unwrap()["task"], new["task"]);
+    assert_eq!(
+        send(&mut l.store, json!({"action":"automation.status"})).unwrap(),
+        json!([])
+    );
+    let forced=send(&mut l.store,json!({"action":"intake.submit","text":"WebCraft importer experimental variant","new_project":true,"name":"Importer experiment"})).unwrap();
+    assert_ne!(forced["project"], l.project);
+    assert_eq!(forced["project_created"], true);
+    let matching=send(&mut l.store,json!({"action":"intake.submit","project":l.project,"text":"WebCraft preserve the importer rows"})).unwrap();
+    assert_eq!(matching["project"], l.project);
+    assert_eq!(matching["project_created"], false);
+}
+
+#[test]
+fn intake_does_not_match_short_names_inside_unrelated_words() {
+    let mut l = Lab::new();
+    send(
+        &mut l.store,
+        json!({"action":"project.create","name":"Art","charter":"Gallery paintings"}),
+    )
+    .unwrap();
+    let result = send(
+        &mut l.store,
+        json!({"action":"intake.preview","text":"Repair shopping cart checkout"}),
+    )
+    .unwrap();
+    assert_eq!(result["route"], "new_project");
+}
+
+#[test]
+fn explicit_intake_amendment_preserves_history_and_notifies_current_owner_once() {
+    let mut l = Lab::new();
+    let tid = l.task("Importer");
+    l.claim(&tid);
+    let out=send(&mut l.store,json!({"action":"intake.submit","task":tid,"expected_version":1,"text":"Retain invalid CSV rows and emit diagnostics"})).unwrap();
+    assert_eq!(out["amended"], true);
+    assert_eq!(out["version"], 2);
+    l.store.tick().unwrap();
+    l.store.tick().unwrap();
+    let inbox = as_agent(&mut l.store, &l.worker, json!({"action":"message.inbox"})).unwrap();
+    assert_eq!(inbox.as_array().unwrap().len(), 1);
+    assert_eq!(inbox[0]["version"], 2);
+    assert!(send(&mut l.store,json!({"action":"task.result","task":tid,"generation":1,"body":"old result","code_revision":"old"})).is_err());
+    assert!(send(
+        &mut l.store,
+        json!({"action":"intake.submit","task":tid,"expected_version":1,"text":"stale overwrite"})
+    )
+    .is_err());
+    as_agent(&mut l.store,&l.worker,json!({"action":"task.ack_version","task":tid,"version":2,"checkpoint":"Reviewed changed requirements"})).unwrap();
+    let detail = send(&mut l.store, json!({"action":"task.get","task":tid})).unwrap();
+    assert_eq!(detail["versions"].as_array().unwrap().len(), 2);
+    assert_eq!(
+        detail["task"]["requirements"],
+        "Retain invalid CSV rows and emit diagnostics"
+    );
+}
+
+#[test]
+fn requirement_change_survives_a_full_mailbox_and_retries_after_backpressure() {
+    let mut l = Lab::new();
+    let tid = l.task("Importer");
+    l.claim(&tid);
+    let mut first = Value::Null;
+    for n in 0..160 {
+        let message=send(&mut l.store,json!({"action":"message.send","recipient":l.worker["agent"],"thread":format!("pressure-{n}"),"priority":"critical","body":"Outstanding evidence"})).unwrap();
+        if n == 0 {
+            first = message["message"].clone();
+        }
+    }
+    send(&mut l.store,json!({"action":"task.amend","task":tid,"expected_version":1,"requirements":"Updated contract despite full inbox"})).unwrap();
+    l.store.tick().unwrap();
+    assert_eq!(
+        send(&mut l.store, json!({"action":"task.get","task":tid})).unwrap()["task"]["version"],
+        2
+    );
+    for state in ["delivered", "read", "acted"] {
+        as_agent(
+            &mut l.store,
+            &l.worker,
+            json!({"action":"message.ack","message":first,"state":state}),
+        )
+        .unwrap();
+    }
+    l.store.tick().unwrap();
+    let notices = send(&mut l.store, json!({"action":"task.get","task":tid})).unwrap()
+        ["notifications"]
+        .clone();
+    let message = as_agent(
+        &mut l.store,
+        &l.worker,
+        json!({"action":"message.get","message":notices[0]["message"]}),
+    )
+    .unwrap();
+    assert_eq!(message["version"], 2);
+}
+
+#[test]
+fn complexity_uses_verified_effort_mapping_and_legacy_profiles_cannot_claim_complex_work() {
+    let mut l = Lab::new();
+    enable_contract_automation(&mut l);
+    let tid=send(&mut l.store,json!({"action":"task.create","project":l.project,"title":"Distributed architecture migration","requirements":"Preserve records","role":"rust"})).unwrap()["task"].clone();
+    assert!(
+        send(&mut l.store, json!({"action":"dispatch.plan","task":tid})).unwrap()["recommended"]
+            .is_null()
+    );
+    adaptive_profile(&mut l, "deep", "fixture-deep");
+    let plan = send(&mut l.store, json!({"action":"dispatch.plan","task":tid})).unwrap();
+    assert_eq!(plan["classification"]["complexity"], "complex");
+    assert_eq!(plan["recommended"]["effort"], "high");
+    assert_eq!(plan["recommended"]["profile"], "deep");
+    assert_eq!(
+        plan["recommended"]["confidence"],
+        "insufficient local evidence"
+    );
+}
+
+#[test]
+fn rejected_reviews_learn_once_and_change_recovery_profile_without_changing_live_control() {
+    let mut l = Lab::new();
+    adaptive_profile(&mut l, "a-fast", "fixture-fast");
+    adaptive_profile(&mut l, "b-deep", "fixture-deep");
+    let tid = l.task("Importer");
+    l.claim(&tid);
+    bind_contract_run(&mut l, &tid, "a-fast");
+    for _ in 0..2 {
+        let art = l.result(&tid, 1);
+        send(&mut l.store,json!({"action":"task.review","artifact":art["artifact"],"reviewer":l.reviewer["agent"],"passed":false,"code_revision":"abc123","evidence":"Invalid rows are still lost; reproduce with fixture rows 3 and 9"})).unwrap();
+    }
+    let plan = send(&mut l.store, json!({"action":"dispatch.plan","task":tid})).unwrap();
+    assert_eq!(plan["recommended"]["profile"], "b-deep");
+    assert_eq!(plan["recommended"]["effort"], "high");
+    assert!(send(
+        &mut l.store,
+        json!({"action":"operation.prepare","task":tid,"profile":"b-deep","verb":"exit"})
+    )
+    .is_err());
+    let exit = send(
+        &mut l.store,
+        json!({"action":"operation.prepare","task":tid,"profile":"a-fast","verb":"exit"}),
+    )
+    .unwrap();
+    send(&mut l.store,json!({"action":"operation.receipt","operation":exit["operation"],"state":"confirmed","receipt":"Synthetic stop evidence"})).unwrap();
+    send(&mut l.store,json!({"action":"task.recover","task":tid,"confirmed_stopped":true,"evidence":"Synthetic test stopped; no real vendor run"})).unwrap();
+    l.claim(&tid);
+    bind_contract_run(&mut l, &tid, "b-deep");
+    let art = l.result(&tid, 2);
+    l.accept(&art);
+    let learned = send(
+        &mut l.store,
+        json!({"action":"learning.status","project":l.project}),
+    )
+    .unwrap();
+    assert_eq!(learned["lessons"].as_array().unwrap().len(), 3);
+    assert_eq!(learned["outcomes"].as_array().unwrap().len(), 2);
+    assert!(learned["outcomes"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .any(|o| o["profile"] == "a-fast" && o["failures"] == 2));
+    drop(l.store);
+    l.store = Store::open(l.dir.path()).unwrap();
+    let ctx = send(
+        &mut l.store,
+        json!({"action":"project.context","project":l.project}),
+    )
+    .unwrap();
+    assert_eq!(ctx["learning"]["lessons"].as_array().unwrap().len(), 3);
+}
+
+#[test]
+fn automatic_quality_ranking_needs_five_matching_runs_and_resets_for_new_model() {
+    let mut l = Lab::new();
+    adaptive_profile(&mut l, "a-no-evidence", "fixture-a");
+    adaptive_profile(&mut l, "z-proven", "fixture-z");
+    for n in 0..5 {
+        let tid = l.task(&format!("Import batch {n}"));
+        l.claim(&tid);
+        bind_contract_run(&mut l, &tid, "z-proven");
+        let art = l.result(&tid, 1);
+        l.accept(&art);
+        let probe = l.task(&format!("Next batch {n}"));
+        let plan = send(&mut l.store, json!({"action":"dispatch.plan","task":probe})).unwrap();
+        assert_eq!(
+            plan["recommended"]["profile"],
+            if n < 4 { "a-no-evidence" } else { "z-proven" }
+        );
+    }
+    let tid = l.task("Final batch");
+    adaptive_profile(&mut l, "z-proven", "fixture-z-new-model");
+    let plan = send(&mut l.store, json!({"action":"dispatch.plan","task":tid})).unwrap();
+    assert_eq!(plan["recommended"]["profile"], "a-no-evidence");
+    assert_eq!(plan["candidates"][1]["evidence"]["samples"], 0);
+}
+
+#[test]
+fn automatic_failed_review_stops_old_profile_before_switching_to_verified_alternative() {
+    let mut l = Lab::new();
+    enable_contract_automation(&mut l);
+    adaptive_profile(&mut l, "a-fast", "fixture-fast");
+    adaptive_profile(&mut l, "b-deep", "fixture-deep");
+    let tid = l.task("Import evidence");
+    l.store.tick().unwrap();
+    // Synthetic runtime observations and receipts. No vendor model is launched.
+    let settle = |l: &mut Lab| {
+        let pending = send(&mut l.store, json!({"action":"operations.list"})).unwrap();
+        for op in pending
+            .as_array()
+            .unwrap()
+            .iter()
+            .filter(|o| o["state"] == "pending")
+        {
+            send(&mut l.store,json!({"action":"operation.receipt","operation":op["id"],"state":"confirmed","receipt":"Synthetic lifecycle contract"})).unwrap();
+        }
+    };
+    settle(&mut l);
+    l.store.db.execute("UPDATE attempts SET runtime_id='quality-runtime',runtime_generation='quality-g1' WHERE task=?",[&tid]).unwrap();
+    for _ in 0..2 {
+        l.result(&tid, 1);
+        l.store.tick().unwrap();
+        settle(&mut l);
+        let all = send(&mut l.store, json!({"action":"snapshot"})).unwrap();
+        let review = all["tasks"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .find(|t| t["role"] == "quality" && t["state"] == "running")
+            .unwrap();
+        let reviewer = json!({"agent":review["owner"],"credential_file":l.dir.path().join("credentials").join(format!("{}.token",review["owner"].as_str().unwrap()))});
+        as_agent(&mut l.store,&reviewer,json!({"action":"review.submit","task":review["id"],"generation":1,"passed":false,"code_revision":"abc123","evidence":"Fixture loses row 3; changed implementation needed"})).unwrap();
+        l.store.tick().unwrap();
+        settle(&mut l);
+    }
+    let state = send(&mut l.store, json!({"action":"task.get","task":tid})).unwrap();
+    assert_eq!(state["task"]["state"], "recovering");
+    assert_eq!(state["task"]["generation"], 1);
+    l.store.tick().unwrap();
+    assert_eq!(
+        send(&mut l.store, json!({"action":"task.get","task":tid})).unwrap()["task"]["generation"],
+        1
+    );
+    let ops = send(&mut l.store, json!({"action":"operations.list"})).unwrap();
+    let stop = ops
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|o| o["task"] == tid && o["verb"] == "exit")
+        .unwrap();
+    let body: Value = serde_json::from_str(stop["body"].as_str().unwrap()).unwrap();
+    assert_eq!(body["profile"], "a-fast");
+    let stamp = chrono::DateTime::from_timestamp(now(), 0)
+        .unwrap()
+        .to_rfc3339();
+    send(&mut l.store,json!({"action":"runtime.observe","snapshot":{"schema":"fm-fleet-snapshot.v1","tasks":[{"id":"quality-runtime","spawn_gen":"quality-g1","remote":null,"current_state":{"state":"unknown","freshness":"fresh","observed_at":stamp},"endpoint":{"exists":false,"agent_alive":"dead","freshness":"fresh","observed_at":stamp}}]}})).unwrap();
+    l.store.tick().unwrap();
+    let state = send(&mut l.store, json!({"action":"task.get","task":tid})).unwrap();
+    assert_eq!(state["task"]["generation"], 2);
+    assert_eq!(state["task"]["replans"], 0);
+    let ops = send(&mut l.store, json!({"action":"operations.list"})).unwrap();
+    let launch = ops
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|o| o["task"] == tid && o["state"] == "pending" && o["verb"] == "launch")
+        .unwrap();
+    let body: Value = serde_json::from_str(launch["body"].as_str().unwrap()).unwrap();
+    assert_eq!(body["profile"], "b-deep");
+    assert_eq!(body["effort"], "high");
+}
+
+#[test]
+fn changed_requirements_retain_old_lessons_without_penalizing_the_new_contract() {
+    let mut l = Lab::new();
+    adaptive_profile(&mut l, "only-profile", "fixture-model");
+    let tid = l.task("Importer");
+    l.claim(&tid);
+    bind_contract_run(&mut l, &tid, "only-profile");
+    for _ in 0..2 {
+        let art = l.result(&tid, 1);
+        send(&mut l.store,json!({"action":"task.review","artifact":art["artifact"],"reviewer":l.reviewer["agent"],"passed":false,"code_revision":"abc123","evidence":"Original acceptance condition is not satisfied"})).unwrap();
+    }
+    assert!(
+        send(&mut l.store, json!({"action":"dispatch.plan","task":tid})).unwrap()["recommended"]
+            .is_null()
+    );
+    send(&mut l.store,json!({"action":"task.amend","task":tid,"expected_version":1,"requirements":"A different explicitly agreed contract","complexity":"standard"})).unwrap();
+    let plan = send(&mut l.store, json!({"action":"dispatch.plan","task":tid})).unwrap();
+    assert_eq!(plan["recommended"]["profile"], "only-profile");
+    assert_eq!(plan["classification"]["failure_records"], 0);
+    let detail = send(&mut l.store, json!({"action":"task.get","task":tid})).unwrap();
+    assert_eq!(detail["learning"].as_array().unwrap().len(), 2);
+    assert_eq!(detail["learning"][0]["version"], 1);
+}
+
+#[test]
+fn acknowledging_requirements_cannot_clear_an_unrelated_human_blocker() {
+    let mut l = Lab::new();
+    let tid = l.task("Blocked importer");
+    l.claim(&tid);
+    assert!(as_agent(
+        &mut l.store,
+        &l.worker,
+        json!({"action":"task.ack_version","task":tid,"version":1,"checkpoint":"No amendment"})
+    )
+    .is_err());
+    as_agent(&mut l.store,&l.worker,json!({"action":"task.block","task":tid,"generation":1,"reason":"Operator must choose data retention policy","owner":"operator","next_check":now()+600})).unwrap();
+    send(&mut l.store,json!({"action":"task.amend","task":tid,"expected_version":1,"requirements":"Also emit a checksum"})).unwrap();
+    let ack=as_agent(&mut l.store,&l.worker,json!({"action":"task.ack_version","task":tid,"version":2,"checkpoint":"Checksum requirement understood"})).unwrap();
+    assert_eq!(ack["state"], "blocked");
+    let detail = send(&mut l.store, json!({"action":"task.get","task":tid})).unwrap();
+    assert_eq!(detail["task"]["state"], "blocked");
+    assert_eq!(
+        detail["task"]["reason"],
+        "Operator must choose data retention policy"
+    );
 }
 fn send(store: &mut Store, mut req: Value) -> anyhow::Result<Value> {
     if req.get("request_id").is_none() {
@@ -758,14 +1101,25 @@ fn mailboxes_apply_backpressure_and_reserve_critical_capacity() {
 #[test]
 fn context_transfer_requires_all_durable_records_and_revokes_old_generation() {
     let mut l = Lab::new();
+    adaptive_profile(&mut l, "context-profile", "fixture-model");
     let t = l.task("Context");
     l.claim(&t);
+    bind_contract_run(&mut l, &t, "context-profile");
+    let art = l.result(&t, 1);
+    send(&mut l.store,json!({"action":"task.review","artifact":art["artifact"],"reviewer":l.reviewer["agent"],"code_revision":"abc123","passed":false,"evidence":"Retain the discovered missing-row regression during handover"})).unwrap();
     send(
         &mut l.store,
         json!({"action":"task.pause","task":t,"reason":"Verified safe checkpoint"}),
     )
     .unwrap();
     let cap=send(&mut l.store,json!({"action":"context.create","task":t,"generation":1,"checkpoint":"code abc123, no open effects"})).unwrap();
+    for prefix in ["lesson:", "routing:", "profile:", "outcome:"] {
+        assert!(cap["required"]
+            .as_array()
+            .unwrap()
+            .iter()
+            .any(|r| r["key"].as_str().unwrap().starts_with(prefix)));
+    }
     let next = send(
         &mut l.store,
         json!({"action":"agent.create","project":l.project,"role":"rust","harness":"claude"}),

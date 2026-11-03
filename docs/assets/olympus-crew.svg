@@ -1,42 +1,42 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1648" height="1060" viewBox="0 0 1648 1060"><rect width="1648" height="1060" rx="16" fill="#101827"/><g font-family="DejaVu Sans Mono,monospace" font-size="16" xml:space="preserve"><text x="24" y="36" fill="#75c4ff">OLYMPUS / Crew  |  SIMULATOR - SAMPLE DATA                                                                                                                      </text>
 <text x="24" y="59" fill="#d8e2f0">1 Live  2 Projects  3 [Crew]  4 Queue  5 Memory  6 Health  7 History                                                                                            </text>
 <text x="24" y="82" fill="#d8e2f0">8 Today  9 Week  0 Recurring | All projects                                                                                                                     </text>
-<text x="24" y="105" fill="#ffb66c">[.o.] 12 working  1 recovering  3 blocked  3 need you  Chief: idle</text>
+<text x="24" y="105" fill="#ffb66c">[o..] 12 working  1 recovering  3 blocked  3 need you  Chief: idle</text>
 <text x="24" y="128" fill="#d8e2f0">Verified 0s ago | History retained | Motion indicates activity; checkpoints establish progress</text>
 <text x="24" y="151" fill="#d8e2f0"></text>
 <text x="24" y="174" fill="#d8e2f0">ROLE / HARNESS / PARENT / DEPTH</text>
 <text x="24" y="197" fill="#d8e2f0"></text>
-<text x="24" y="220" fill="#d8e2f0">&gt; chief  pi  parent=root  AG-482b391857254aeb</text>
-<text x="24" y="243" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-04c76a690c0c47a5</text>
-<text x="24" y="266" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-1ba8eef39d064ac5</text>
-<text x="24" y="289" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-2fcf1500cd4445ea</text>
-<text x="24" y="312" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-490f8a7756e94cdc</text>
-<text x="24" y="335" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-7b6928c6507d46f9</text>
-<text x="24" y="358" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-a7002c152e8a4b94</text>
-<text x="24" y="381" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-bd5107e12a0842e4</text>
-<text x="24" y="404" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-ed8f38212e2d4ae6</text>
-<text x="24" y="427" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-2b34394486854117</text>
-<text x="24" y="450" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-344b4d1470c34a83</text>
-<text x="24" y="473" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-36f67c62107c4eb1</text>
-<text x="24" y="496" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-3ebed7c016494733</text>
-<text x="24" y="519" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-7c053cebf20249b2</text>
-<text x="24" y="542" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-9110c391776e417c</text>
-<text x="24" y="565" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-9b023eae5d4e4d4a</text>
-<text x="24" y="588" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-9b29da9bbb8f4c30</text>
-<text x="24" y="611" fill="#d8e2f0">    captain  claude  parent=AG-482b391857254aeb  AG-ab0bd367bcc6436f</text>
-<text x="24" y="634" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-c02a794ac3da4acc</text>
-<text x="24" y="657" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-d1ebc04fb17b4424</text>
-<text x="24" y="680" fill="#d8e2f0">    captain  codex  parent=AG-482b391857254aeb  AG-f4b2ad873b34462a</text>
-<text x="24" y="703" fill="#d8e2f0">      quality  claude  parent=AG-bd5107e12a0842e4  AG-0ce8c98da2754391</text>
-<text x="24" y="726" fill="#d8e2f0">      quality  claude  parent=AG-2fcf1500cd4445ea  AG-34e2555fce1e4090</text>
-<text x="24" y="749" fill="#d8e2f0">      quality  claude  parent=AG-7b6928c6507d46f9  AG-389e5c0770d24306</text>
-<text x="24" y="772" fill="#d8e2f0">      rust  muse  parent=AG-04c76a690c0c47a5  AG-448abc2c98d04eb9</text>
-<text x="24" y="795" fill="#d8e2f0">      quality  claude  parent=AG-490f8a7756e94cdc  AG-475b0d8cfd5c407f</text>
-<text x="24" y="818" fill="#d8e2f0">      quality  claude  parent=AG-04c76a690c0c47a5  AG-5d4ef217ee074598</text>
-<text x="24" y="841" fill="#d8e2f0">      rust  muse  parent=AG-490f8a7756e94cdc  AG-61bb615183654b19</text>
-<text x="24" y="864" fill="#d8e2f0">      rust  codex  parent=AG-1ba8eef39d064ac5  AG-6561037a500149be</text>
-<text x="24" y="887" fill="#d8e2f0">      rust  codex  parent=AG-a7002c152e8a4b94  AG-6f326e3adce74702</text>
-<text x="24" y="910" fill="#d8e2f0">      rust  muse  parent=AG-bd5107e12a0842e4  AG-7a71098670c9444d</text>
+<text x="24" y="220" fill="#d8e2f0">&gt; chief  pi  parent=root  AG-b095b03900ce494a</text>
+<text x="24" y="243" fill="#d8e2f0">    captain  codex  parent=AG-b095b03900ce494a  AG-17124a61d2224f81</text>
+<text x="24" y="266" fill="#d8e2f0">    captain  codex  parent=AG-b095b03900ce494a  AG-35117ab7bb124d74</text>
+<text x="24" y="289" fill="#d8e2f0">    captain  codex  parent=AG-b095b03900ce494a  AG-37b6b24d1bdd49dc</text>
+<text x="24" y="312" fill="#d8e2f0">    captain  codex  parent=AG-b095b03900ce494a  AG-3e2f336c128a4b09</text>
+<text x="24" y="335" fill="#d8e2f0">    captain  codex  parent=AG-b095b03900ce494a  AG-44c7e3f137544f4c</text>
+<text x="24" y="358" fill="#d8e2f0">    captain  claude  parent=AG-b095b03900ce494a  AG-487dd8ff9d0840ba</text>
+<text x="24" y="381" fill="#d8e2f0">    captain  codex  parent=AG-b095b03900ce494a  AG-5570b9cbc2f546ec</text>
+<text x="24" y="404" fill="#d8e2f0">    captain  claude  parent=AG-b095b03900ce494a  AG-8247f18bc1ac49b8</text>
+<text x="24" y="427" fill="#d8e2f0">    captain  claude  parent=AG-b095b03900ce494a  AG-9be6f299806b470d</text>
+<text x="24" y="450" fill="#d8e2f0">    captain  claude  parent=AG-b095b03900ce494a  AG-ad9ab11757984f4e</text>
+<text x="24" y="473" fill="#d8e2f0">    captain  claude  parent=AG-b095b03900ce494a  AG-b8958bb69ad94d60</text>
+<text x="24" y="496" fill="#d8e2f0">    captain  claude  parent=AG-b095b03900ce494a  AG-be854fddb7e8472b</text>
+<text x="24" y="519" fill="#d8e2f0">    captain  codex  parent=AG-b095b03900ce494a  AG-bfeb90f732944d9c</text>
+<text x="24" y="542" fill="#d8e2f0">    captain  claude  parent=AG-b095b03900ce494a  AG-c26a0c510200412c</text>
+<text x="24" y="565" fill="#d8e2f0">    captain  claude  parent=AG-b095b03900ce494a  AG-c952c894fd3d4eab</text>
+<text x="24" y="588" fill="#d8e2f0">    captain  claude  parent=AG-b095b03900ce494a  AG-d23a498c4b444e77</text>
+<text x="24" y="611" fill="#d8e2f0">    captain  codex  parent=AG-b095b03900ce494a  AG-d3b870203af64db4</text>
+<text x="24" y="634" fill="#d8e2f0">    captain  claude  parent=AG-b095b03900ce494a  AG-d819773af3a14688</text>
+<text x="24" y="657" fill="#d8e2f0">    captain  codex  parent=AG-b095b03900ce494a  AG-e6bd07d5bcf043c8</text>
+<text x="24" y="680" fill="#d8e2f0">    captain  codex  parent=AG-b095b03900ce494a  AG-eb6273329963466c</text>
+<text x="24" y="703" fill="#d8e2f0">      rust  codex  parent=AG-9be6f299806b470d  AG-005b4c1f37b54612</text>
+<text x="24" y="726" fill="#d8e2f0">      rust  muse  parent=AG-bfeb90f732944d9c  AG-0977988a496b4b48</text>
+<text x="24" y="749" fill="#d8e2f0">      quality  claude  parent=AG-e6bd07d5bcf043c8  AG-0d413e855a0e4076</text>
+<text x="24" y="772" fill="#d8e2f0">      rust  codex  parent=AG-e6bd07d5bcf043c8  AG-1293686e485140ac</text>
+<text x="24" y="795" fill="#d8e2f0">      quality  claude  parent=AG-17124a61d2224f81  AG-13d4f5bbfed64dfd</text>
+<text x="24" y="818" fill="#d8e2f0">      quality  claude  parent=AG-eb6273329963466c  AG-1bb4a8a9098740b6</text>
+<text x="24" y="841" fill="#d8e2f0">      quality  claude  parent=AG-487dd8ff9d0840ba  AG-224ec135aa884ace</text>
+<text x="24" y="864" fill="#d8e2f0">      rust  codex  parent=AG-c26a0c510200412c  AG-262d24ef0f04480e</text>
+<text x="24" y="887" fill="#d8e2f0">      quality  claude  parent=AG-35117ab7bb124d74  AG-28ca12f1a07e417a</text>
+<text x="24" y="910" fill="#d8e2f0">      quality  claude  parent=AG-ad9ab11757984f4e  AG-3478875adfd74f05</text>
 <text x="24" y="933" fill="#d8e2f0"></text>
 <text x="24" y="956" fill="#d8e2f0"></text>
 <text x="24" y="979" fill="#d8e2f0"></text>

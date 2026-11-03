@@ -83,3 +83,16 @@ test("project outcome view keeps full responses and scrolls",async()=>{
 test("calendar forms preserve timezone and pause only the selected schedule",async()=>{
   const {d,calls}=view();d.tab=9;d.schedules=[{id:"S1",project:"P0",state:"active"}];await d.key("p");assert.ok(calls.some(c=>c.action==="schedule.state"&&c.schedule==="S1"&&c.state==="paused"));assert.ok(!calls.some(c=>c.action==="task.pause"));
 });
+
+test("unmatched request creates a project without forcing a project-choice form",async()=>{
+  const {d,calls}=view();const base=d.request;d.request=async r=>{calls.push(r);if(r.action==="intake.preview")return {route:"new_project",candidates:[]};if(r.action==="intake.submit")return {task:"new-task",project_created:true};return base(r);};
+  await d.key(":");await d.key("Map lunar observations");await d.key("\r");
+  assert.ok(calls.some(c=>c.action==="intake.submit"&&!c.project));assert.equal(d.form,null);
+  assert.ok(d.notice.includes("connect it to enable execution"));
+});
+
+test("project learning displays evidence and does not imply model training",async()=>{
+  const {d}=view();const base=d.request;d.request=async r=>r.action==="learning.status"?{policy:"Recorded evidence; not model fine-tuning",outcomes:[{profile:"reviewed-profile",role:"rust",complexity:"complex",outcome:"accepted_after_rework",failures:1}],lessons:[{kind:"review_rejected",task:"T1",evidence:"Fixture lost row 3",source:"artifact-1"}]}:base(r);
+  await d.key("2");await d.key("l");
+  assert.ok(d.detail.body.includes("not model fine-tuning"));assert.ok(d.detail.body.includes("accepted_after_rework"));assert.ok(d.detail.body.includes("artifact-1"));
+});
