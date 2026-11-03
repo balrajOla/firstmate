@@ -451,14 +451,21 @@ fn start(home: &Path) -> Result<()> {
     let mut child = command.spawn()?;
     let deadline = Instant::now() + Duration::from_secs(5);
     loop {
-        if protocol::call(home, &token, &json!({"action":"snapshot"})).is_ok() {
-            return Ok(());
+        let readiness_error = match protocol::call(home, &token, &json!({"action":"snapshot"})) {
+            Ok(_) => return Ok(()),
+            Err(e) => e,
         };
         if let Some(s) = child.try_wait()? {
-            bail!("coordinator exited {s}; inspect coordinator.log")
+            bail!(
+                "coordinator exited {s}: {readiness_error:#}; inspect {}",
+                home.join("coordinator.log").display()
+            )
         };
         if Instant::now() > deadline {
-            bail!("coordinator has not become ready; inspect coordinator.log before retrying")
+            bail!(
+                "coordinator has not become ready: {readiness_error:#}; inspect {} before retrying",
+                home.join("coordinator.log").display()
+            )
         };
         thread::sleep(Duration::from_millis(100));
     }

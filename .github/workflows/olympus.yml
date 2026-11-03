@@ -51,11 +51,16 @@ jobs:
       - name: Build release and test installation
         run: |
           cargo build --release --workspace --locked
-          bash bin/olympus-install.sh --source "$PWD" --prefix "$RUNNER_TEMP/olympus" --skip-build --skip-pi
+          bash bin/olympus-install.sh --source "$PWD" --prefix "$RUNNER_TEMP/olympus" --skip-build
+          trap 'test ! -f "$RUNNER_TEMP/olympus-home/coordinator.log" || cat "$RUNNER_TEMP/olympus-home/coordinator.log"' EXIT
           "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" demo
           "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" start
           "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" ui --reduced-motion
           "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" stop
+          OLYMPUS_TEST_BIN="$RUNNER_TEMP/olympus/bin/olympus" \
+            OLYMPUS_PI_CLI="$RUNNER_TEMP/olympus/lib/olympus/pi-runtime/node_modules/@earendil-works/pi-coding-agent/dist/cli.js" \
+            OLYMPUS_PI_EXTENSION="$RUNNER_TEMP/olympus/lib/olympus/index.ts" \
+            python3 tests/olympus-e2e.py
       - name: Package tested binaries and assets
         run: |
           mkdir -p dist/olympus/bin dist/olympus/lib/olympus

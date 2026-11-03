@@ -852,6 +852,44 @@ fn acknowledging_requirements_cannot_clear_an_unrelated_human_blocker() {
         "Operator must choose data retention policy"
     );
 }
+
+#[test]
+fn scheduled_and_child_tasks_use_the_same_complexity_policy() {
+    let mut l = Lab::new();
+    let parent = l.task("Parent");
+    l.claim(&parent);
+    let child=as_agent(&mut l.store,&l.worker,json!({"action":"child.reserve","task":parent,"generation":1,"title":"Concurrency audit","requirements":"Find distributed deadlock risks","role":"rust"})).unwrap();
+    let child_plan = send(
+        &mut l.store,
+        json!({"action":"dispatch.plan","task":child["task"]}),
+    )
+    .unwrap();
+    assert_eq!(child_plan["classification"]["complexity"], "complex");
+    let schedule=send(&mut l.store,json!({"action":"schedule.create","project":l.project,"title":"Weekly security review","requirements":"Review authentication changes","role":"rust","cadence":"weekly"})).unwrap();
+    l.store
+        .db
+        .execute(
+            "UPDATE schedules SET next_run=? WHERE id=?",
+            rusqlite::params![now() - 1, schedule["schedule"].as_str()],
+        )
+        .unwrap();
+    l.store.tick().unwrap();
+    let agenda = send(&mut l.store, json!({"action":"agenda","view":"today"})).unwrap();
+    let job = agenda["jobs"]
+        .as_array()
+        .unwrap()
+        .iter()
+        .find(|t| t["schedule"] == schedule["schedule"])
+        .unwrap();
+    assert_eq!(
+        send(
+            &mut l.store,
+            json!({"action":"dispatch.plan","task":job["id"]})
+        )
+        .unwrap()["classification"]["complexity"],
+        "complex"
+    );
+}
 fn send(store: &mut Store, mut req: Value) -> anyhow::Result<Value> {
     if req.get("request_id").is_none() {
         req["request_id"] = json!(id("test"));

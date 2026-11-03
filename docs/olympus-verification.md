@@ -34,7 +34,7 @@ The demonstration portfolio is labelled synthetic throughout.
 
 ## Local measured run
 
-The final local contract run contains 60 Rust tests, 23 terminal/policy tests and fifteen process acceptance tests, including real Pi extension registration.
+The final local contract run contains 61 Rust tests, 23 terminal/policy tests and fifteen process acceptance tests, including real Pi extension registration.
 The [machine-readable evidence](verification/olympus-local-evidence.json) records the toolchain and the separate read-load probe.
 The installed 0.3.0 read-path probe used a 20-project simulated portfolio; 100 snapshot requests from eight concurrent clients had zero failures, a median of 162.36 ms and a 95th percentile of 192.05 ms in this container.
 This is a small local read-path measurement, not a model-worker scaling result or production latency guarantee.
@@ -118,9 +118,11 @@ New service installation code emits and activates standard user services, but th
 ## Installed workflow verification for 0.3.0
 
 The public installer was run in a fresh prefix for the published 0.2.0 baseline; all twelve baseline process tests passed against that installation.
+The public installer was also downloaded and run in a fresh prefix for published 0.3.0 commit `8d6952c45b72aa1264f9c8f41e4cd5b12997ab7e`; all fifteen installed process tests passed with no skips.
 The updated 0.3.0 release was then built and installed in a separate prefix using the same installer with `--source` and `--skip-build` after a successful release build.
 All fifteen process tests passed again with `OLYMPUS_TEST_BIN` pointing to the installed executable and `OLYMPUS_PI_EXTENSION` pointing to its installed extension.
-The 98 unique tests comprise 60 Rust, 23 terminal/policy and 15 process cases; rerunning the same cases against an installation is not counted as extra unique coverage.
+The 99 unique tests comprise 61 Rust, 23 terminal/policy and 15 process cases; rerunning the same cases against an installation is not counted as extra unique coverage.
+Child tasks and recurring jobs exercise the same complexity rules, and the detached-start acceptance case starts a populated 20-project simulator.
 A real 0.2.0 database was opened by the installed 0.3.0 coordinator: existing project/task requirements survived, schema 3 was installed and the old binary subsequently refused to open it.
 
 | Requested behavior | Evidence exercised | What this establishes |
@@ -139,8 +141,9 @@ The process tests use the actual coordinator, SQLite database, transport, CLI, t
 Workers in the journey tests are scripted callers; the runtime-effect fixture is explicitly synthetic.
 `olympus doctor` found no installed Claude, Codex or Muse executable in this environment.
 Consequently no independent real-model project execution, vendor-native child communication, reasoning-quality comparison or long-run improvement benchmark is reported as passed.
-The prior 0.2.0 hosted Linux job passed; its macOS job was cancelled, not passed.
-Hosted results for a newer commit must be inspected separately.
+Hosted commit `8d6952c45b72aa1264f9c8f41e4cd5b12997ab7e` passed the Linux job, but its macOS installed-release readiness check failed after compilation, domain/process tests and real Pi loading passed.
+The workflow now retains startup diagnostics and runs the complete process suite against installed release binaries and Pi assets on both platforms.
+Hosted results for a newer commit must be inspected separately; the workflow definition alone does not establish a passing Mac installation.
 
 Reproduction after a release build and installation:
 

@@ -1,22 +1,9 @@
 //! Evidence-backed adaptation, never self-certification of model capability.
 use crate::*;
 
-pub(crate) fn classify(db: &Connection, tid: &str, r: &Value, text: &str) -> Result<()> {
-    let explicit = optional(r, "complexity");
-    if explicit.is_empty() {
-        let pinned: bool = db.query_row(
-            "SELECT EXISTS(SELECT 1 FROM task_routing WHERE task=? AND source='explicit')",
-            [tid],
-            |r| r.get(0),
-        )?;
-        if pinned {
-            return Ok(());
-        }
-    }
+fn infer_complexity(text: &str) -> &'static str {
     let lower = text.to_lowercase();
-    let complexity = if !explicit.is_empty() {
-        explicit.as_str()
-    } else if [
+    if [
         "security",
         "migration",
         "architecture",
@@ -37,6 +24,25 @@ pub(crate) fn classify(db: &Connection, tid: &str, r: &Value, text: &str) -> Res
         "routine"
     } else {
         "standard"
+    }
+}
+
+pub(crate) fn classify(db: &Connection, tid: &str, r: &Value, text: &str) -> Result<()> {
+    let explicit = optional(r, "complexity");
+    if explicit.is_empty() {
+        let pinned: bool = db.query_row(
+            "SELECT EXISTS(SELECT 1 FROM task_routing WHERE task=? AND source='explicit')",
+            [tid],
+            |r| r.get(0),
+        )?;
+        if pinned {
+            return Ok(());
+        }
+    }
+    let complexity = if explicit.is_empty() {
+        infer_complexity(text)
+    } else {
+        explicit.as_str()
     };
     if !matches!(complexity, "routine" | "standard" | "complex") {
         bail!("complexity must be routine, standard or complex");
@@ -54,7 +60,7 @@ pub(crate) fn classification(db: &Connection, t: &Value) -> Result<Value> {
     let mut result = stored
         .first()
         .cloned()
-        .unwrap_or(json!({"complexity":"standard","source":"legacy default"}));
+        .unwrap_or_else(||json!({"complexity":infer_complexity(&format!("{}\n{}",t["title"].as_str().unwrap_or(""),t["requirements"].as_str().unwrap_or(""))),"source":"conservative text heuristic; editable"}));
     let failures:i64=db.query_row("SELECT COUNT(*) FROM lessons WHERE task=? AND version=? AND kind IN ('review_rejected','repeated_failure')",params![t["id"].as_str(),t["version"].as_i64()],|r|r.get(0))?;
     // Failure does not prove a model is weak. A more capable configured class
     // is a bounded next option, and only future accepted evidence scores it.

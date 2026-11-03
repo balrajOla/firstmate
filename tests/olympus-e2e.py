@@ -78,11 +78,13 @@ class ProcessContract(unittest.TestCase):
 
     def test_cli_start_detaches_session_and_survives_terminal_hangup_boundary(self):
         detached=Path(self.area.name)/"detached"
+        self.assertEqual(self.cli("demo",home=detached)["projects"],20)
         self.cli("start",home=detached)
         pid=int((detached/"daemon.lock").read_text().strip())
         try:
             self.assertNotEqual(os.getsid(pid),os.getsid(0))
             self.assertEqual(self.cli("status",home=detached)["schema"],"olympus.v1")
+            self.assertEqual(len(self.cli("status",home=detached)["projects"]),20)
         finally:
             self.cli("stop",home=detached)
             for _ in range(100):
