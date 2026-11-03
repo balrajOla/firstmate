@@ -32,12 +32,17 @@ impl Write for Stream {
 }
 impl Stream {
     pub fn timeout(&self, read: Duration, write: Duration) -> Result<()> {
+        // Protocol frames use bounded blocking I/O. On BSD, an accepted socket
+        // inherits the nonblocking listener flag, which otherwise ignores these
+        // deadlines and can truncate a response when the send buffer fills.
         match self {
             Self::Unix(s) => {
+                s.set_nonblocking(false)?;
                 s.set_read_timeout(Some(read))?;
                 s.set_write_timeout(Some(write))?;
             }
             Self::Tcp(s) => {
+                s.set_nonblocking(false)?;
                 s.set_read_timeout(Some(read))?;
                 s.set_write_timeout(Some(write))?;
             }
@@ -82,9 +87,13 @@ pub fn call(home: &Path, token: &str, request: &Value) -> Result<Value> {
     socket.write_all(&bytes)?;
     socket.write_all(b"\n")?;
     let mut line = String::new();
+    let response_limit = MAX_REQUEST * 8;
     BufReader::new(socket)
-        .take((MAX_REQUEST * 8) as u64)
+        .take((response_limit + 1) as u64)
         .read_line(&mut line)?;
+    if line.len() > response_limit || !line.ends_with('\n') {
+        bail!("invalid or oversized coordinator response frame")
+    }
     let reply: Value = serde_json::from_str(&line).context("invalid coordinator response")?;
     if reply["ok"] != true {
         bail!(
