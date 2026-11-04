@@ -1,16 +1,19 @@
-// The embedded workstation uses the same Dashboard renderer as the standalone
-// terminal and the GitHub screenshots. Only its available height is different.
+// Full dashboard tabs share the standalone/GitHub renderer. The default tasks
+// view is a smaller prompt/output/status projection that leaves chat visible.
 import { Dashboard, clean } from "./view.mjs";
+import { taskLines } from "./task-view.mjs";
 
 export const oneLine = value => clean(value).replace(/\s+/g, " ").trim();
 export const taskLabel = task => `${task.id} [${task.state}] ${oneLine(task.title)}`;
 export const panelTabs = ["live", "projects", "crew", "queue", "memory", "health", "history", "today", "week", "recurring"];
-export const panelHelp = "Olympus UI is embedded above your typing area in this same Pi terminal. /olympus-panel on shows it; /olympus-panel live|projects|crew|queue|memory|health|history|today|week|recurring changes its view. Alt+1 through Alt+9 and Alt+0 switch dashboard tabs without replacing your typed text. /olympus-focus selects a task/project for the conversation; /olympus-focus clear resets it. Alt+o or /olympus opens full interactive details; Escape/q returns to chat. These are user UI commands, not olympus_control actions. Do not send the user to a separate window to find this dashboard. GitHub screenshots show synthetic sample data; this panel shows the user's real saved work.";
+export const panelHelp = "The default widget is a compact prompt/output/status view. /olympus-panel tasks restores it, and /olympus-panel live opens the larger original dashboard layout. A finished Pi reply does not mean its task was independently accepted. Olympus UI is embedded above your typing area in this same Pi terminal. /olympus-panel on shows it; /olympus-panel live|projects|crew|queue|memory|health|history|today|week|recurring changes its view. Alt+1 through Alt+9 and Alt+0 switch dashboard tabs without replacing your typed text. /olympus-focus selects a task/project for the conversation; /olympus-focus clear resets it. Alt+o or /olympus opens full interactive details; Escape/q returns to chat. These are user UI commands, not olympus_control actions. Do not send the user to a separate window to find this dashboard. GitHub screenshots show synthetic sample data; this panel shows the user's real saved work.";
 
 export function panelColor(line, index, length) {
   const text = line.trim();
   if (index === 0) return "accent";
-  if (text.startsWith("STALE")) return "error";
+  if (text.startsWith("STALE") || text.includes("[Reply failed]")) return "error";
+  if (/\[(Blocked|Awaiting feedback|Unknown - verify|Stopped)\]/.test(text)) return "warning";
+  if (/\[(Responding|Running command|In progress|Completed|Reply finished)\]/.test(text)) return "success";
   if (/RECOVERING|BLOCKED|NEXT ACTION|\bACTION\b|\[unknown\]/.test(text)) return "warning";
   if (/^(LAST |IN PROGRESS|PROJECT |ROLE |KNOWLEDGE |PROFILE |TODAY |THIS WEEK |RECURRING |RESPONSES |TASKS |PROJECTS )/.test(text)) return "accent";
   if (/^WORK|^RESULT|\[WORK\]|\[o\.\.|\.o\.|\.\.o\]|\baccepted\b/.test(text)) return "success";
@@ -18,7 +21,8 @@ export function panelColor(line, index, length) {
 }
 export const panelHeight = rows => Math.max(6, Math.min(32, Math.floor(rows * 0.65)));
 
-export function panelLines(snapshot, { tab = "live", focus, error = "", lastSuccess = 0, now = Date.now(), rows = 40, columns = 144, dashboard } = {}) {
+export function panelLines(snapshot, { tab = "live", focus, record, reply, error = "", lastSuccess = 0, now = Date.now(), rows = 40, columns = 144, dashboard } = {}) {
+  if (tab === "tasks") return taskLines(snapshot, { focus, record, reply, error, lastSuccess, now, rows, columns });
   const view = dashboard || new Dashboard(() => Promise.resolve(snapshot));
   view.snapshot = snapshot;
   view.lastSuccess = lastSuccess;
@@ -56,6 +60,12 @@ export class PanelState {
       try {
         const snapshot = await this.request({ action: "snapshot" });
         const extra = {};
+        let record;
+        if (this.tab === "tasks") {
+          const candidates = (snapshot.tasks || []).filter(t => this.focus?.kind !== "project" || t.project === this.focus.id);
+          const task = this.focus?.kind === "task" ? this.focus.id : !this.reply?.prompt ? candidates[0]?.id : undefined;
+          if (task) record = await this.request({ action: "task.get", task });
+        }
         if (this.tab === "memory") extra.knowledge = await this.request({ action: "memory.search", query: "" });
         if (this.tab === "health") {
           extra.profiles = await this.request({ action: "profiles.list" });
@@ -67,6 +77,7 @@ export class PanelState {
         if (this.tab === "recurring") extra.schedules = await this.request({ action: "schedules.list" });
         if (!this.disposed) {
           this.snapshot = snapshot;
+          this.record = record;
           Object.assign(this.dashboard, extra);
           this.lastSuccess = Date.now(); this.error = "";
         }

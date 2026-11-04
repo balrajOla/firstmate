@@ -61,12 +61,33 @@ test("panel commands preserve input and focus supplies fresh scoped context", as
     assert.equal(r.component, undefined);
     await r.commands.get("olympus-panel").handler("on", r.context);
     assert.ok(r.component);
-    assert.ok(r.reads.every(request => request.action === "snapshot"));
+    assert.ok(r.reads.every(request => ["snapshot", "task.get"].includes(request.action)));
   } finally {
     await r.hooks.get("session_shutdown")();
     if (previous === undefined) delete process.env.OLYMPUS_CHIEF_MODE;
     else process.env.OLYMPUS_CHIEF_MODE = previous;
   }
+});
+
+test("compact widget pairs prompts with streamed reply and command output without claiming task acceptance", async () => {
+  const r = runtime();
+  try {
+    await r.hooks.get("session_start")({}, r.context);
+    await r.hooks.get("message_start")({ message: { role: "user", content: [{ type: "text", text: "Count the accepted reports" }] } });
+    await r.hooks.get("message_update")({ message: { role: "assistant", content: [{ type: "text", text: "There are 42 accepted reports" }] } });
+    let out = r.component.render(144).join("\n");
+    assert.ok(out.includes("PROMPT Count the accepted reports"));
+    assert.ok(out.includes("OUTPUT There are 42 accepted reports"));
+    assert.ok(out.includes("[Responding]"));
+    await r.hooks.get("agent_settled")({ aborted: false });
+    assert.ok(r.component.render(144).join("\n").includes("[Reply finished]"));
+    await r.hooks.get("message_start")({ message: { role: "user", content: "Next command" } });
+    await r.hooks.get("tool_execution_start")({ toolName: "olympus_control" });
+    await r.hooks.get("message_end")({ message: { role: "toolResult", toolName: "olympus_control", content: [{ type: "text", text: "Command output received" }] } });
+    out = r.component.render(144).join("\n");
+    assert.ok(out.includes("Running command"));
+    assert.ok(out.includes("Command output received"));
+  } finally { await r.hooks.get("session_shutdown")(); }
 });
 
 test("RPC never starts terminal widgets or polling and shutdown is idempotent", async () => {

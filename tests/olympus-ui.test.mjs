@@ -147,3 +147,17 @@ test("panel refreshes are read-only, coalesced, retain cache and stop on disposa
   const pending = state.refresh(); state.dispose(); resolve({ counts: {} }); await pending;
   assert.equal(state.snapshot.tasks.length, 14); assert.equal(repaint, 2);
 });
+
+import { taskLines, taskStatus, compactHeight } from "../packages/olympus-pi/task-view.mjs";
+test("compact task cards show exact prompt, output and verified completion while preserving transcript space", () => {
+  const snapshot = fixture(), task = { ...snapshot.tasks[0], state: "accepted", requirements: "Preserve every imported row", version: 2 };
+  snapshot.tasks[0] = task;
+  const record = { task, artifacts: [{ version: 1, body: "Old output" }, { version: 2, body: "Imported 42 rows" }] };
+  const lines = taskLines(snapshot, { record, focus: { kind: "task", id: task.id }, rows: 46, columns: 176, lastSuccess: 100000, now: 100000 });
+  assert.ok(lines.length <= compactHeight(46));
+  const out = lines.join("\n");
+  assert.ok(out.includes("[Completed]")); assert.ok(out.includes("PROMPT Preserve every imported row"));
+  assert.ok(out.includes("OUTPUT Imported 42 rows")); assert.ok(!out.includes("Old output"));
+  assert.equal(taskStatus({ id: "T", state: "unknown" }, [{ task: "T", owner: "operator", reason: "Confirm status" }]), "Unknown - verify");
+  assert.equal(taskStatus({ id: "T", state: "blocked" }, [{ task: "T", owner: "operator", reason: "Choose acceptance threshold" }]), "Awaiting feedback");
+});

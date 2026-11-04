@@ -46,9 +46,14 @@ balraj-work
 # Optional: /olympus-auto on
 ```
 
-The daily entry point opens one Pi terminal with a live Olympus panel docked above the ordinary chat editor.
+The daily entry point opens one Pi terminal with a compact prompt/output/status panel docked above the ordinary chat editor.
+The default `tasks` view uses at most 35 percent of the terminal, capped at fourteen rows, so normal Pi command output and the conversation remain visible.
+It pairs the current user prompt with streamed Pi reply or command output and distinguishes a finished chat reply from independently accepted task work.
+A selected task shows its exact current requirements, latest candidate output and task status; accepted tasks are labeled completed, while unknown observations remain explicitly unverified.
+A blocked task with a human decision is labeled awaiting feedback, without treating every technical incident as a feedback request.
 Your conversation and input stay available while the panel refreshes, and existing projects, results and recovery obligations come from the same saved coordinator home.
-The panel uses the same dashboard renderer as the standalone terminal and the GitHub screenshots, rather than a separate compact summary.
+Use `/olympus-panel tasks` for this compact view.
+The optional `live` view uses the same dashboard renderer as the standalone terminal and the GitHub screenshots, rather than a separate compact summary.
 It includes the ten dashboard tabs, live/recovering/blocked work, recent responses and completions, and the next-action queue.
 It occupies approximately 65 percent of the terminal, capped at 32 rows, while keeping the Pi conversation and normal input available in the same terminal.
 Very short terminals show the dashboard header and controls; narrow terminals use the shared dashboard's single-column layout.
@@ -56,7 +61,8 @@ The screenshots are explicitly labeled synthetic sample data, whereas your works
 Cyan identifies the panel and explicit focus, green identifies work and results, amber identifies actions, and red identifies disconnected observations.
 Text labels carry the same meaning so color is never the only status cue.
 Use Alt+1 through Alt+9 and Alt+0 to change dashboard tabs without replacing your typed draft, or name a tab with `/olympus-panel`.
-The tabs are live, projects, crew, queue, memory, health, history, today, week and recurring.
+The larger dashboard tabs are live, projects, crew, queue, memory, health, history, today, week and recurring.
+The GitHub screenshots illustrate these optional full dashboard layouts, not the default compact task view.
 Use `/olympus-panel off` to reclaim space and `/olympus-panel on` to restore the dashboard.
 Use `/olympus-focus` to select a task or project with the arrow keys and Enter, or provide its exact ID; `/olympus-focus clear` clears the selection.
 The selected identity is shown in the panel and a fresh, scoped record is added to the next user turn so references to the selected work have explicit context.

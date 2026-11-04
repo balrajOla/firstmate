@@ -58,7 +58,7 @@ test_installed_workstation_is_portable() {
   : > "$source/crates/olympusd/Cargo.toml"
   cp "$area/tools/olympus" "$source/target/release/olympus"
   cp "$area/tools/olympus" "$source/target/release/olympusd"
-  cp "$ROOT/packages/olympus-pi/"{index.ts,panel.ts,panel-view.mjs,client.mjs,view.mjs,wake.mjs,policy.mjs,terminal.mjs,package.json} "$source/packages/olympus-pi/"
+  cp "$ROOT/packages/olympus-pi/"{index.ts,panel.ts,panel-view.mjs,task-view.mjs,client.mjs,view.mjs,wake.mjs,policy.mjs,terminal.mjs,package.json} "$source/packages/olympus-pi/"
   cp "$ROOT/bin/balraj-work.sh" "$source/bin/"
   cp "$ROOT/docs/olympus.md" "$source/docs/"
   bash "$ROOT/bin/olympus-install.sh" --source "$source" --prefix "$prefix" --skip-build --skip-pi > "$area/install.log"

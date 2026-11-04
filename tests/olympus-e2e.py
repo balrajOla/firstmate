@@ -394,15 +394,15 @@ class ProcessContract(unittest.TestCase):
                     if marker in output: return output
             self.fail(f"Pi did not show {marker!r}: {output[-2000:]!r}")
         try:
-            wait_for(b"OLYMPUS / Live")
+            wait_for(b"OLYMPUS / Prompt")
             os.write(master, b"/olympus-panel projects\r")
             wait_for(b"OLYMPUS / Projects")
             os.write(master, ("/olympus-focus " + task + "\r").encode())
-            wait_for(("Focus: " + task).encode())
+            wait_for(("TASK " + task).encode())
             os.write(master, b"/olympus\r")
             wait_for(b"OLYMPUS / Live")
             os.write(master, b"q")
-            wait_for(b"Type below to talk to the chief")
+            wait_for(b"/olympus-panel live: full layout")
             # Type but do not submit: this proves dashboard refreshes leave the
             # standard editor usable without spending model tokens.
             os.write(master, b"Discuss the selected importer task")

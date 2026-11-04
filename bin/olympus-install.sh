@@ -71,7 +71,7 @@ for binary in olympus olympusd; do
   chmod 755 "$prefix/bin/$binary.new"
   mv "$prefix/bin/$binary.new" "$prefix/bin/$binary"
 done
-for asset in index.ts panel.ts panel-view.mjs client.mjs view.mjs wake.mjs policy.mjs terminal.mjs package.json; do
+for asset in index.ts panel.ts panel-view.mjs task-view.mjs client.mjs view.mjs wake.mjs policy.mjs terminal.mjs package.json; do
   cp "$source_dir/packages/olympus-pi/$asset" "$prefix/lib/olympus/$asset"
 done
 mkdir -p "$prefix/lib/olympus/docs"

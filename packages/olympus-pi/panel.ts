@@ -4,12 +4,24 @@ import { truncateToWidth } from "@earendil-works/pi-tui";
 import { client } from "./client.mjs";
 // @ts-ignore UI projection is shared with dependency-free tests.
 import { PanelState, panelColor, panelTabs, panelHelp, taskLabel, oneLine } from "./panel-view.mjs";
+// @ts-ignore Pure prompt/output projection.
+import { textOf } from "./task-view.mjs";
 
 export default function (pi: ExtensionAPI, { read = client(), agent = client({ agent: true }) } = {}) {
   let panel: PanelState | undefined;
   let context: ExtensionContext | undefined;
   let visible = true;
   let generation = 0;
+  let reply: { prompt: string; output: string; state: string; command?: string } | undefined;
+  const updateMessage = (message: any) => {
+    if (message.role === "user") reply = { prompt: textOf(message.content), output: "", state: "Responding" };
+    else if (message.role === "assistant" && reply) {
+      reply.output = textOf(message.content);
+      if (message.stopReason === "error") reply.state = "Reply failed";
+    }
+    else if (message.role === "toolResult" && reply) reply.output = `Command result (${message.toolName}): ${textOf(message.content)}`;
+    if (panel) { panel.reply = reply; panel.repaint(); }
+  };
   const stop = () => {
     panel?.dispose();
     panel = undefined;
@@ -18,13 +30,14 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
   const attach = (ctx: ExtensionContext) => {
     context = ctx;
     if (ctx.mode !== "tui" || !visible) return;
-    const oldTab = panel?.tab || "live";
+    const oldTab = panel?.tab || "tasks";
     const oldFocus = panel?.focus;
     stop();
     ctx.ui.setWidget("olympus-panel", (tui, theme) => {
       const state = new PanelState(read, () => tui.requestRender());
       state.tab = oldTab;
       state.focus = oldFocus;
+      state.reply = reply;
       panel = state;
       state.start();
       return {
@@ -42,17 +55,33 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
     }, { placement: "aboveEditor" });
   };
 
-  pi.on("session_start", (_event, ctx) => { generation++; visible = true; attach(ctx); });
+  pi.on("session_start", (_event, ctx) => {
+    generation++; visible = true; reply = undefined;
+    for (const entry of ctx.sessionManager?.getBranch() || []) if (entry.type === "message") updateMessage(entry.message);
+    if (reply) reply.state = "Last saved reply";
+    attach(ctx);
+  });
+  pi.on("message_start", (event) => { if (event.message.role === "user") updateMessage(event.message); });
+  pi.on("message_update", (event) => updateMessage(event.message));
+  pi.on("message_end", (event) => { if (event.message.role !== "user") updateMessage(event.message); });
+  pi.on("tool_execution_start", (event) => {
+    if (reply) { reply.command = event.toolName; reply.state = "Running command"; }
+    panel?.repaint();
+  });
+  pi.on("agent_settled", (event) => {
+    if (reply) { reply.state = event.aborted ? "Stopped" : reply.state === "Reply failed" ? "Reply failed" : "Reply finished"; reply.command = undefined; }
+    panel?.repaint();
+  });
   pi.on("session_shutdown", () => { generation++; stop(); context = undefined; });
 
   pi.registerCommand("olympus-panel", {
-    description: "Olympus dashboard tabs: live, projects, crew, queue, memory, health, history, today, week, recurring, on/off",
+    description: "Olympus: tasks (compact prompt/output/status), live, projects, crew, queue, memory, health, history, today, week, recurring, on/off",
     handler: async (args, ctx) => {
       if (ctx.mode !== "tui") { ctx.ui.notify("The docked Olympus panel requires interactive Pi.", "info"); return; }
-      const value = args.trim() || "live";
+      const value = args.trim() || "tasks";
       if (value === "off") { visible = false; stop(); return; }
-      if (![...panelTabs, "on"].includes(value)) {
-        ctx.ui.notify(`Use /olympus-panel ${panelTabs.join("|")}|on|off`, "info"); return;
+      if (![...panelTabs, "tasks", "on"].includes(value)) {
+        ctx.ui.notify(`Use /olympus-panel tasks|${panelTabs.join("|")}|on|off`, "info"); return;
       }
       visible = true;
       if (!panel) attach(ctx);
@@ -82,7 +111,7 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
       if (!panel) return;
       if (args.trim() === "clear") { panel.focus = undefined; await panel.refresh(); return; }
       const choices = [
-        ...(panel.snapshot?.tasks || []).map((t: any) => ({ id: t.id, kind: "task", label: taskLabel(t) })),
+        ...[...(panel.snapshot?.tasks || []), ...(panel.snapshot?.completed || [])].map((t: any) => ({ id: t.id, kind: "task", label: taskLabel(t) })),
         ...(panel.snapshot?.projects || []).map((p: any) => ({ id: p.id, kind: "project", label: `${p.id} ${oneLine(p.name)}` })),
       ];
       if (!choices.length) { ctx.ui.notify("No task or project is available in the latest snapshot.", "info"); return; }
@@ -91,7 +120,7 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
       const choice = choices.find(c => c.id === selected || c.label === selected);
       if (!choice) { ctx.ui.notify("Choose an exact task/project ID from the current Olympus view.", "warning"); return; }
       panel.focus = { id: choice.id, kind: choice.kind };
-      panel.tab = "live";
+      panel.tab = "tasks";
       await panel.refresh();
       ctx.ui.notify(`Selected ${choice.kind} ${choice.id}. Your next message shares this context; /olympus-focus clear resets it.`, "info");
     },
@@ -117,7 +146,7 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
 
   return {
     suspend() {
-      const wasVisible = visible, tab = panel?.tab || "live", focus = panel?.focus, currentGeneration = generation;
+      const wasVisible = visible, tab = panel?.tab || "tasks", focus = panel?.focus, currentGeneration = generation;
       stop();
       return (ctx: ExtensionContext) => {
         if (!wasVisible || generation !== currentGeneration) return;
