@@ -97,13 +97,13 @@ test("project learning displays evidence and does not imply model training",asyn
   assert.ok(d.detail.body.includes("not model fine-tuning"));assert.ok(d.detail.body.includes("accepted_after_rework"));assert.ok(d.detail.body.includes("artifact-1"));
 });
 
-import { PanelState, panelLines, panelColor } from "../packages/olympus-pi/panel-view.mjs";
+import { PanelState, panelLines, panelColor, panelHeight } from "../packages/olympus-pi/panel-view.mjs";
 test("docked panel leaves room for typing and uses labeled semantic colors", () => {
   for (const rows of [12, 24, 40, 80]) {
     const lines = panelLines(fixture(), { rows, lastSuccess: 100000, now: 100000 });
-    assert.ok(lines.length <= Math.max(3, Math.min(12, Math.floor(rows * .4))));
+    assert.equal(lines.length, panelHeight(rows));
     assert.ok(lines[0].includes("SIMULATOR"));
-    assert.ok(lines[1].includes("3 blocked"));
+    assert.ok(lines[3].includes("3 blocked"));
     assert.equal(panelColor(lines[0], 0, lines.length), "accent");
   }
   assert.equal(panelColor("WORK T1", 2, 8), "success");
@@ -112,17 +112,26 @@ test("docked panel leaves room for typing and uses labeled semantic colors", () 
 });
 test("docked tabs and explicit focus display stable task/project identities", () => {
   const opts = { rows: 40, lastSuccess: 100000, now: 100000 };
-  assert.ok(panelLines(fixture(), { ...opts, tab: "projects" }).join("\n").includes("P0 [active] Project 0"));
-  assert.ok(panelLines(fixture(), { ...opts, tab: "queue" }).join("\n").includes("T1 / Project 1"));
-  assert.ok(panelLines(fixture(), { ...opts, tab: "crew" }).join("\n").includes("worker / rust"));
-  assert.ok(panelLines(fixture(), { ...opts, focus: { id: "T1" } }).join("\n").includes("FOCUS T1 [blocked]"));
+  assert.ok(panelLines(fixture(), { ...opts, tab: "projects" }).join("\n").includes("Project 0"));
+  assert.ok(panelLines(fixture(), { ...opts, tab: "queue" }).join("\n").includes("Project 1"));
+  assert.ok(panelLines(fixture(), { ...opts, tab: "crew" }).join("\n").includes("parent=captain"));
+  assert.ok(panelLines(fixture(), { ...opts, focus: { id: "T1" } })[0].includes("Focus: T1"));
 });
 test("docked panel sanitizes model output and clearly marks cached data stale", () => {
   const data = fixture(); data.tasks[2].title = "\x1b[2Jmalicious\nrow";
   const lines = panelLines(data, { rows: 40, lastSuccess: 100000, now: 110000 });
-  assert.ok(lines[1].includes("STALE"));
+  assert.ok(lines[4].includes("STALE"));
   assert.ok(!lines.join("").includes("\x1b"));
   assert.ok(!lines.some(line => line.includes("\n")));
+});
+test("widget reuses the GitHub dashboard layout, including tabs and result/completion columns", () => {
+  const s = fixture(), opts = { rows: 46, columns: 176, now: 100000, lastSuccess: 100000 };
+  const lines = panelLines(s, opts);
+  const original = new Dashboard(async () => s); original.snapshot = s; original.lastSuccess = opts.lastSuccess;
+  assert.deepEqual(lines.slice(0, -2), original.render(opts.columns, panelHeight(opts.rows), opts.now).slice(0, -2));
+  for (const heading of ["IN PROGRESS", "RECOVERING", "BLOCKED", "LAST 5 RESPONSES", "LAST 10 COMPLETED", "NEXT ACTION FOR YOU"]) {
+    assert.ok(lines.join("\n").includes(heading), heading);
+  }
 });
 test("panel refreshes are read-only, coalesced, retain cache and stop on disposal", async () => {
   let resolve; let calls = 0; let repaint = 0;

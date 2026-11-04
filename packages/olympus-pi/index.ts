@@ -2,6 +2,8 @@ import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-a
 import { Type } from "typebox";
 import { readFile } from "node:fs/promises";
 import installPanel from "./panel.js";
+// @ts-ignore Shared renderer color semantics.
+import { panelColor } from "./panel-view.mjs";
 // The JavaScript view is also used by the standalone terminal and semantic UI tests.
 // @ts-ignore JavaScript module has an intentionally runtime-only interface.
 import { Dashboard } from "./view.mjs";
@@ -15,7 +17,7 @@ import { WakeGate } from "./wake.mjs";
 import { chiefTools, chiefToolPolicy } from "./policy.mjs";
 
 export default function (pi: ExtensionAPI) {
-  installPanel(pi);
+  const panelUI = installPanel(pi);
   const read = client();
   const agent = client({ agent: true });
   const gate = new WakeGate();
@@ -59,16 +61,27 @@ export default function (pi: ExtensionAPI) {
       context.ui.notify(automatic ? "Chief wakes enabled: 10 turns maximum, 30 seconds apart, changed conditions only." : "Chief wakes paused. The coordinator continues supervising.", "info");
     },
   });
-  pi.registerCommand("olympus", {
-    description: "Open the live portfolio, crew, recovery queue and retained responses",
-    handler: async (_args, ctx) => {
-      if (ctx.mode !== "tui") { ctx.ui.notify("Use olympus status for a non-interactive view.", "info"); return; }
-      await ctx.ui.custom<void>((tui, _theme, _keys, done) => {
+  const openDashboard = async (ctx: ExtensionContext) => {
+    if (ctx.mode !== "tui") { ctx.ui.notify("Use olympus status for a non-interactive view.", "info"); return; }
+    const restorePanel = panelUI.suspend();
+    try {
+      await ctx.ui.custom<void>((tui, theme, _keys, done) => {
         const dashboard = new Dashboard(read, { reducedMotion: process.env.OLYMPUS_REDUCED_MOTION === "1", repaint: () => tui.requestRender(), close: () => done() });
         void dashboard.start();
-        return { render: (width: number) => dashboard.render(width, process.stdout.rows || 40), handleInput: (data: string) => { void dashboard.key(data); }, invalidate: () => {}, dispose: () => dashboard.dispose() };
-      });
-    },
+        return { render: (width: number) => {
+          const lines = dashboard.render(width, tui.terminal.rows || 40);
+          return lines.map((line: string, index: number) => theme.fg(panelColor(line, index, lines.length), line));
+        }, handleInput: (data: string) => { void dashboard.key(data); }, invalidate: () => {}, dispose: () => dashboard.dispose() };
+      }, { overlay: true, overlayOptions: { width: "100%", maxHeight: "100%", row: 0, col: 0, margin: 0 } });
+    } finally { restorePanel(ctx); }
+  };
+  pi.registerCommand("olympus", {
+    description: "Open the live portfolio, crew, recovery queue and retained responses",
+    handler: async (_args, ctx) => openDashboard(ctx),
+  });
+  pi.registerShortcut("alt+o", {
+    description: "Open full Olympus dashboard; Escape returns to your typed draft",
+    handler: openDashboard,
   });
   pi.on("before_agent_start", async (event) => {
     if (!process.env.OLYMPUS_AGENT_TOKEN_FILE) return;

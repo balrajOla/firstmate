@@ -13,7 +13,8 @@ case "${1:-}" in
   --help|-h)
     printf '%s\n' 'Usage: balraj-work [--check] | [chief options] [-- Pi options]' \
       'Open your saved Olympus workspace inside Pi; keep typing below the live panel.' \
-      'Views: /olympus-panel. Select task/project: /olympus-focus. Full detail: /olympus.' \
+      'Same dashboard as the repo screenshots: Alt+1..9/0 tabs; Alt+o or /olympus opens full details.' \
+      'Select task/project: /olympus-focus. /olympus-panel on|off controls visibility.' \
       'Colors and labels: cyan focus, green work/results, amber actions, red disconnected.' \
       '--check starts configured services and prints the dashboard without a model call.' \
       'OLYMPUS_HOME selects the workspace; OLYMPUS_PI_COMMAND selects the authenticated Pi launcher.' \

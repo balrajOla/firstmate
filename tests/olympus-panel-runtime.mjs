@@ -11,7 +11,7 @@ const { visibleWidth } = require("@earendil-works/pi-tui");
 const install = await createJiti(import.meta.url).import(modulePath, { default: true });
 
 function runtime(mode = "tui") {
-  const hooks = new Map(), commands = new Map(), reads = [], scoped = [], widgets = [];
+  const hooks = new Map(), commands = new Map(), shortcuts = new Map(), reads = [], scoped = [], widgets = [];
   let component;
   const context = { mode, ui: {
     setWidget(_key, factory) {
@@ -28,11 +28,11 @@ function runtime(mode = "tui") {
     notify() {}, select: async (_title, choices) => choices[0],
     setEditorText() { throw new Error("The panel must never replace the user's input"); },
   } };
-  install({ on(name, hook) { hooks.set(name, hook); }, registerCommand(name, command) { commands.set(name, command); } }, {
-    read: async request => { reads.push(request); return { counts: {}, chief: "idle", tasks: [{ id: "T1", title: "Importer", state: "ready" }], projects: [{ id: "P1", name: "Data", state: "active" }] }; },
+  install({ on(name, hook) { hooks.set(name, hook); }, registerCommand(name, command) { commands.set(name, command); }, registerShortcut(name, shortcut) { shortcuts.set(name, shortcut); } }, {
+    read: async request => { reads.push(request); return { counts: {}, chief: "idle", tasks: [{ id: "T1", title: "Importer", state: "ready" }], projects: [{ id: "P1", name: "Data", state: "active" }], incidents: [], responses: [], completed: [] }; },
     agent: async request => { scoped.push(request); return { task: { id: request.task, requirements: "Current acceptance" } }; },
   });
-  return { hooks, commands, reads, scoped, widgets, context, get component() { return component; } };
+  return { hooks, commands, shortcuts, reads, scoped, widgets, context, get component() { return component; } };
 }
 
 test("panel commands preserve input and focus supplies fresh scoped context", async () => {
@@ -50,6 +50,10 @@ test("panel commands preserve input and focus supplies fresh scoped context", as
     assert.deepEqual(r.scoped, [{ action: "task.get", task: "T1" }]);
     assert.equal(result.message.display, false);
     assert.ok(result.message.content.includes("Current acceptance"));
+    assert.ok(result.message.content.includes("Alt+o or /olympus"));
+    assert.ok(result.message.content.includes("not olympus_control actions"));
+    await r.shortcuts.get("alt+2").handler(r.context);
+    assert.ok(r.component.render(144).join("\n").includes("PROJECT / STATUS / CHARTER"));
     await r.commands.get("olympus-focus").handler("clear", r.context);
     await r.hooks.get("before_agent_start")({ messageType: "user" }, r.context);
     assert.equal(r.scoped.at(-1).action, "chief.briefing");

@@ -48,14 +48,21 @@ balraj-work
 
 The daily entry point opens one Pi terminal with a live Olympus panel docked above the ordinary chat editor.
 Your conversation and input stay available while the panel refreshes, and existing projects, results and recovery obligations come from the same saved coordinator home.
-The panel occupies at most 40 percent of the terminal, capped at twelve rows, and adapts when the terminal resizes.
+The panel uses the same dashboard renderer as the standalone terminal and the GitHub screenshots, rather than a separate compact summary.
+It includes the ten dashboard tabs, live/recovering/blocked work, recent responses and completions, and the next-action queue.
+It occupies approximately 65 percent of the terminal, capped at 32 rows, while keeping the Pi conversation and normal input available in the same terminal.
+Very short terminals show the dashboard header and controls; narrow terminals use the shared dashboard's single-column layout.
+The screenshots are explicitly labeled synthetic sample data, whereas your workstation displays your saved projects and actual results.
 Cyan identifies the panel and explicit focus, green identifies work and results, amber identifies actions, and red identifies disconnected observations.
 Text labels carry the same meaning so color is never the only status cue.
-Use `/olympus-panel projects`, `/olympus-panel queue` or `/olympus-panel crew` to change the compact view, and `/olympus-panel off` to reclaim space.
+Use Alt+1 through Alt+9 and Alt+0 to change dashboard tabs without replacing your typed draft, or name a tab with `/olympus-panel`.
+The tabs are live, projects, crew, queue, memory, health, history, today, week and recurring.
+Use `/olympus-panel off` to reclaim space and `/olympus-panel on` to restore the dashboard.
 Use `/olympus-focus` to select a task or project with the arrow keys and Enter, or provide its exact ID; `/olympus-focus clear` clears the selection.
 The selected identity is shown in the panel and a fresh, scoped record is added to the next user turn so references to the selected work have explicit context.
 Cached observations are labeled disconnected and never presented to the model as fresh evidence.
-Use `/olympus` for the complete interactive dashboard, then Escape or `q` to return to the conversation without opening a separate window.
+Use Alt+o or `/olympus` for full-screen interactive detail, then Escape or `q` to return to the conversation and preserve your typed draft without opening a separate window.
+Each user turn also includes the exact UI controls, so the chief can explain the installed dashboard instead of directing you to a separate terminal.
 `olympus chief` also loads the docked panel.
 The portable installer includes the command and panel assets; `balraj-work --help` owns launcher options and `--check` provides a model-free startup check.
 The launcher uses an existing account-aware Pi executable when one is available, otherwise the bundled Pi remains the fallback.

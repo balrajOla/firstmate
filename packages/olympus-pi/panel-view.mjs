@@ -1,52 +1,37 @@
-// UI projection only: never launches work, changes state, or calls a model.
-import { clean } from "./view.mjs";
+// The embedded workstation uses the same Dashboard renderer as the standalone
+// terminal and the GitHub screenshots. Only its available height is different.
+import { Dashboard, clean } from "./view.mjs";
 
 export const oneLine = value => clean(value).replace(/\s+/g, " ").trim();
-
-// Semantic colors reinforce textual labels; color alone never carries status.
-export function panelColor(line, index, length) {
-  if (index === 0) return "accent";
-  if (line.startsWith("STALE")) return "error";
-  if (line.startsWith("ACTION")) return "warning";
-  if (line.startsWith("WORK") || line.startsWith("RESULT")) return "success";
-  if (line.startsWith("FOCUS")) return "accent";
-  return index === length - 1 ? "dim" : "muted";
-}
 export const taskLabel = task => `${task.id} [${task.state}] ${oneLine(task.title)}`;
+export const panelTabs = ["live", "projects", "crew", "queue", "memory", "health", "history", "today", "week", "recurring"];
+export const panelHelp = "Olympus UI is embedded above your typing area in this same Pi terminal. /olympus-panel on shows it; /olympus-panel live|projects|crew|queue|memory|health|history|today|week|recurring changes its view. Alt+1 through Alt+9 and Alt+0 switch dashboard tabs without replacing your typed text. /olympus-focus selects a task/project for the conversation; /olympus-focus clear resets it. Alt+o or /olympus opens full interactive details; Escape/q returns to chat. These are user UI commands, not olympus_control actions. Do not send the user to a separate window to find this dashboard. GitHub screenshots show synthetic sample data; this panel shows the user's real saved work.";
 
-export function panelLines(snapshot, { tab = "live", focus, error = "", lastSuccess = 0, now = Date.now(), rows = 40 } = {}) {
-  // Leave most of the terminal for Pi's conversation, editor, and completions.
-  const height = Math.max(3, Math.min(12, Math.floor(rows * 0.4)));
-  const stale = Boolean(error) || !lastSuccess || now - lastSuccess > 5000;
-  const counts = snapshot?.counts || {};
-  const sample = snapshot?.settings?.some(row => row.key === "mode" && row.value === "simulator");
-  const lines = [
-    `OLYMPUS / ${tab.toUpperCase()}${sample ? " / SIMULATOR - SAMPLE DATA" : ""}${focus ? ` / Focus: ${focus.id}` : ""}`,
-    stale ? `STALE / DISCONNECTED: ${oneLine(error) || "loading coordinator"}; cached state only` :
-      `${counts.working || 0} working | ${counts.recovering || 0} recovering | ${counts.blocked || 0} blocked | ${counts.needs_you || 0} need you | Chief: ${oneLine(snapshot?.chief || "unknown")}`,
-  ];
-  const body = [];
-  if (!snapshot) body.push("Connecting to your saved Olympus workspace...");
-  else if (tab === "projects") {
-    body.push(...(snapshot.projects || []).map(p => `${p.id} [${p.state}] ${oneLine(p.name)} / ${oneLine(p.charter)}`));
-  } else if (tab === "queue") {
-    body.push(...(snapshot.incidents || []).map(i => `${i.task || i.id} / ${oneLine(i.project_name || "System")}: ${oneLine(i.reason)}`));
-  } else if (tab === "crew") {
-    body.push(...(snapshot.agents || []).map(a => `${a.id} / ${a.role} / ${a.harness} / ${a.state || "unknown"}`));
-  } else {
-    if (focus) {
-      const item = [...(snapshot.tasks || []), ...(snapshot.projects || [])].find(row => row.id === focus.id);
-      body.push(item ? `FOCUS ${item.title ? taskLabel(item) : `${item.id} ${oneLine(item.name)}`}` : `FOCUS ${focus.id} (not in latest bounded snapshot)`);
-    }
-    const active = (snapshot.tasks || []).filter(t => ["running", "recovering", "review", "ready"].includes(t.state));
-    body.push(...active.slice(0, 3).map(t => `WORK ${taskLabel(t)}`));
-    body.push(...(snapshot.incidents || []).slice(0, 2).map(i => `ACTION ${i.task || i.id}: ${oneLine(i.reason)}`));
-    body.push(...(snapshot.responses || []).slice(0, 2).map(r => `RESULT ${r.task || r.id} / ${oneLine(r.project_name || r.project)}: ${oneLine(r.body)}`));
-    if (!body.length) body.push("No active work or pending actions in the latest snapshot.");
-  }
-  if (!body.length) body.push(`No records in ${tab}.`);
-  lines.push(...body.slice(0, Math.max(0, height - 3)));
-  lines.push("Views: /olympus-panel | Select work: /olympus-focus | Details: /olympus");
+export function panelColor(line, index, length) {
+  const text = line.trim();
+  if (index === 0) return "accent";
+  if (text.startsWith("STALE")) return "error";
+  if (/RECOVERING|BLOCKED|NEXT ACTION|\bACTION\b|\[unknown\]/.test(text)) return "warning";
+  if (/^(LAST |IN PROGRESS|PROJECT |ROLE |KNOWLEDGE |PROFILE |TODAY |THIS WEEK |RECURRING |RESPONSES |TASKS |PROJECTS )/.test(text)) return "accent";
+  if (/^WORK|^RESULT|\[WORK\]|\[o\.\.|\.o\.|\.\.o\]|\baccepted\b/.test(text)) return "success";
+  return index >= length - 2 ? "dim" : "muted";
+}
+export const panelHeight = rows => Math.max(6, Math.min(32, Math.floor(rows * 0.65)));
+
+export function panelLines(snapshot, { tab = "live", focus, error = "", lastSuccess = 0, now = Date.now(), rows = 40, columns = 144, dashboard } = {}) {
+  const view = dashboard || new Dashboard(() => Promise.resolve(snapshot));
+  view.snapshot = snapshot;
+  view.lastSuccess = lastSuccess;
+  view.error = error;
+  view.tab = Math.max(0, panelTabs.indexOf(tab));
+  // Rendering is read-only. Interactive mutations remain in the full view,
+  // which explicitly takes keyboard focus; ordinary typing is never captured.
+  const height = panelHeight(rows);
+  const full = view.render(columns, Math.max(12, height), now);
+  const lines = full.slice(0, height - 2);
+  if (focus) lines[0] = lines[0].trimEnd() + ` | Focus: ${focus.id}`;
+  lines.push("Alt+1..9/0 tabs | Alt+o full details | /olympus-focus select work | Type below to talk to the chief");
+  lines.push(snapshot?.settings?.some(row => row.key === "mode" && row.value === "simulator") ? "Synthetic fixtures. No model calls. No live reliability claims." : "Live saved workspace | /olympus-panel off hides this dashboard | Cyan sections / Amber attention / Red disconnected");
   return lines;
 }
 
@@ -54,6 +39,7 @@ export class PanelState {
   constructor(request, repaint = () => {}) {
     this.request = request;
     this.repaint = repaint;
+    this.dashboard = new Dashboard(request);
     this.snapshot = null;
     this.lastSuccess = 0;
     this.error = "";
@@ -64,14 +50,26 @@ export class PanelState {
   }
   refresh() {
     if (this.disposed) return Promise.resolve();
-    // Commands must await an already-running refresh rather than examining an
-    // empty startup snapshot. Polling and user actions share one request.
     if (this.pending) return this.pending;
     this.fetching = true;
     this.pending = (async () => {
       try {
         const snapshot = await this.request({ action: "snapshot" });
-        if (!this.disposed) { this.snapshot = snapshot; this.lastSuccess = Date.now(); this.error = ""; }
+        const extra = {};
+        if (this.tab === "memory") extra.knowledge = await this.request({ action: "memory.search", query: "" });
+        if (this.tab === "health") {
+          extra.profiles = await this.request({ action: "profiles.list" });
+          extra.automation = await this.request({ action: "automation.status" });
+          extra.backups = await this.request({ action: "backups.list" }).catch(() => []);
+        }
+        if (this.tab === "history") extra.history = await this.request({ action: "history", kind: "responses", limit: 20 });
+        if (this.tab === "today" || this.tab === "week") extra.agenda = await this.request({ action: "agenda", view: this.tab === "today" ? "today" : "week" });
+        if (this.tab === "recurring") extra.schedules = await this.request({ action: "schedules.list" });
+        if (!this.disposed) {
+          this.snapshot = snapshot;
+          Object.assign(this.dashboard, extra);
+          this.lastSuccess = Date.now(); this.error = "";
+        }
       } catch (error) {
         if (!this.disposed) this.error = oneLine(error.message);
       } finally {
@@ -85,8 +83,9 @@ export class PanelState {
     if (this.disposed || this.timer) return;
     void this.refresh();
     this.timer = setInterval(() => void this.refresh(), 1000);
-    this.timer.unref?.();
+    this.motion = setInterval(() => { if (!this.disposed) this.repaint(); }, 250);
+    this.timer.unref?.(); this.motion.unref?.();
   }
-  lines(rows) { return panelLines(this.snapshot, { ...this, rows }); }
-  dispose() { this.disposed = true; clearInterval(this.timer); }
+  lines(rows, columns) { return panelLines(this.snapshot, { ...this, rows, columns }); }
+  dispose() { this.disposed = true; clearInterval(this.timer); clearInterval(this.motion); }
 }
