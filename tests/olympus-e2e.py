@@ -399,11 +399,11 @@ class ProcessContract(unittest.TestCase):
             os.write(master, b"/olympus-panel projects\r")
             wait_for(b"OLYMPUS / Projects")
             os.write(master, ("/olympus-focus " + task + "\r").encode())
-            wait_for(("Selected task " + task).encode())
+            wait_for(b"Selected task #")
             os.write(master, b"/olympus\r")
             wait_for(b"OLYMPUS / Live")
             os.write(master, b"q")
-            wait_for(b"/olympus-focus select")
+            wait_for(b"/olympus-focus #N")
             # Type but do not submit: this proves dashboard refreshes leave the
             # standard editor usable without spending model tokens.
             os.write(master, b"Discuss the selected importer task")

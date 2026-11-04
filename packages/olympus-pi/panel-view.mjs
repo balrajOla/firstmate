@@ -4,7 +4,7 @@ import { Dashboard, clean } from "./view.mjs";
 import { taskLines, workbookTasks } from "./task-view.mjs";
 
 export const oneLine = value => clean(value).replace(/\s+/g, " ").trim();
-export const taskLabel = task => `${task.id} [${task.state}] ${oneLine(task.title)}`;
+export const taskLabel = (task, numbers) => `${numbers?.label(task.id) || task.id} [${task.state}] ${oneLine(task.title)}`;
 export const panelTabs = ["live", "projects", "crew", "queue", "memory", "health", "history", "today", "week", "recurring"];
 export const panelHelp = "The default widget is a compact prompt/output/status view. /olympus-panel tasks restores it, and /olympus-panel live opens the larger original dashboard layout. A finished Pi reply does not mean its task was independently accepted. Olympus UI is embedded above your typing area in this same Pi terminal. /olympus-panel on shows it; /olympus-panel live|projects|crew|queue|memory|health|history|today|week|recurring changes its view. Alt+1 through Alt+9 and Alt+0 switch dashboard tabs without replacing your typed text. /olympus-focus selects a task/project for the conversation; /olympus-focus clear resets it. Alt+o or /olympus opens full interactive details; Escape/q returns to chat. These are user UI commands, not olympus_control actions. Do not send the user to a separate window to find this dashboard. GitHub screenshots show synthetic sample data; this panel shows the user's real saved work.";
 
@@ -78,6 +78,7 @@ export class PanelState {
         if (!this.disposed) {
           this.snapshot = snapshot;
           this.record = record;
+          this.onSnapshot?.(snapshot);
           Object.assign(this.dashboard, extra);
           this.lastSuccess = Date.now(); this.error = "";
         }

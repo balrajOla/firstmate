@@ -75,7 +75,11 @@ The workbook preview below comes from the production segment renderer and an exp
 ![Decision-first workbook sample](assets/olympus-workbook.svg)
 Use `/olympus-panel off` to reclaim space and `/olympus-panel on` to restore the dashboard.
 Use `/olympus-focus` to select a task or project with the arrow keys and Enter, or provide its exact ID; `/olympus-focus clear` clears the selection.
-The selected task row is highlighted, exact identities remain in the selection menu, and a fresh scoped record is added to the next user turn so references to that work have explicit context.
+Task rows have stable conversation-local references such as #1 and #2; reordering never changes an assigned number.
+Use `/olympus-focus #2`, or write `inspect #2` or `compare #1 and #2` in a prompt; the chief receives the corresponding exact task records and uses full IDs with the broker.
+References survive reload and resuming that Pi conversation, are never reused within it, and do not grant task cancellation or acceptance authority.
+Starting a separate conversation may assign a fresh reference set, so use the numbers displayed in that conversation.
+An unbound old attempt is labeled RECONCILE / TRACKING rather than implying a current application authentication error.
 Cached observations are labeled disconnected and never presented to the model as fresh evidence.
 Use Alt+o or `/olympus` for full-screen interactive detail, then Escape or `q` to return to the conversation and preserve your typed draft without opening a separate window.
 Each user turn also includes the exact UI controls, so the chief can explain the installed dashboard instead of directing you to a separate terminal.
@@ -89,17 +93,36 @@ Pi uses your existing provider configuration or its own login flow.
 `OLYMPUS_PI_COMMAND` can name an exact account-aware Pi executable for chief startup; it is never evaluated as shell text.
 Extra Pi arguments follow `--`, for example `olympus chief -- --help`.
 The extension never falls back to the operator credential for model tool requests.
-`olympus chief` exposes the broker, action-reference and presentation-only summary tools, and blocks other tool calls, so routine coordination cannot issue a direct shell command to shut down its own service.
+The workstation chief has normal Pi shell, file, search and configured MCP tool access as well as Olympus tools.
+It is not a broker-only conversation: simple desktop requests run directly with the available tools and are verified before being reported as done.
+Simple desktop actions, such as opening a browser URL, are performed directly and verified through the tool rather than becoming repository-backed worker projects.
+Substantive independent project work still uses Firstmate workers.
+Operator-only changes through `olympus_control` ask for an explicit confirmation; shell tools run with the user's account permissions and are not an OS security boundary.
+`olympus_task_control` can inspect, stop, cancel or recover an exact task, including a displayed #N reference, within the connected Olympus home.
+It uses Firstmate's supported generation-bound stop and a fresh dead observation before cancelling a bound worker, preserves work, and refuses ambiguous or uncertain identities instead of raw-killing processes.
+Routine task lifecycle commands use operator-backed authority without requiring the user to run the evidence chain manually.
+Unknown risks can be investigated and mitigated with the normal toolset, but permissions never turn an uncertain effect into fabricated stop evidence.
+Queued work requires no fabricated stop proof; an unbound attempt must have every launch proved refused before execution before it can be cancelled or recovered.
 The summary tool changes session presentation only; it cannot accept work, alter task status, or control a runtime.
 Workers still require separate OS isolation for a strict system-wide security boundary.
 The interactive dashboard uses the operator connection for your own manual actions.
-The chief can submit work and define recurring tasks within its scope, but cannot enable execution policies, change backup settings, forge runtime evidence or shut down the coordinator.
+The chief can perform ordinary workstation actions directly and submit project work or recurring tasks.
+High-impact operator configuration and service controls are confirmed interactively, and runtime evidence must come from actual observations rather than a model-generated claim.
 
 Automatic chief wakes are explicit: `/olympus-auto on`, or `olympus chief --auto`.
 They coalesce unchanged conditions, wait at least 30 seconds between turns, never interrupt a busy turn, and stop after ten automatic turns until you renew the budget.
 The daemon continues when the chief pauses, hits a budget, exits or loses context.
 Project automation runs in the coordinator and continues after the chief session ends or reaches its wake budget.
 The optional interactive Pi conversation is not restarted automatically; reopening `olympus chief` reuses its durable identity and retrieves current project context.
+
+## Worker execution checks
+
+The coordinator's version probe has a bounded ten-second budget rather than refusing an otherwise valid launcher after three seconds.
+An optional configured account bridge can use the installed `gateway-launch.py` helper; its version-only path reads the same pinned package metadata that Pi uses for VERSION, without loading the full SDK.
+The helper preserves isolated worker discovery while restoring normal context, skills and configured MCP support for the interactive chief.
+The helper's header owns bridge, prefix and Node overrides; no provider code or credentials are copied into the repository.
+A prepared launch or allocated attempt is not a running worker; the chief must check the launch receipt and native runtime observation.
+Do not retry a refused operation unchanged or fabricate a native-generation receipt to free capacity.
 
 ## Workstation authentication checks
 

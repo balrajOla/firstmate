@@ -4,6 +4,8 @@ import { readFile } from "node:fs/promises";
 import { Text } from "@earendil-works/pi-tui";
 // @ts-ignore Presentation-only workbook helpers.
 import { textOf, coordinatorResultSummary, workbookGuidelines } from "./task-view.mjs";
+// @ts-ignore Operator-backed, task-scoped lifecycle implementation.
+import { controlTask } from "./task-control.mjs";
 import installPanel from "./panel.js";
 // @ts-ignore Shared renderer color semantics.
 import { panelColor } from "./panel-view.mjs";
@@ -17,7 +19,7 @@ import { client } from "./client.mjs";
 import { WakeGate } from "./wake.mjs";
 
 // @ts-ignore Shared runtime policy.
-import { chiefTools, chiefToolPolicy } from "./policy.mjs";
+import { chiefTools, workstationTools } from "./policy.mjs";
 
 export default function (pi: ExtensionAPI) {
   const panelUI = installPanel(pi);
@@ -25,14 +27,18 @@ export default function (pi: ExtensionAPI) {
   const agent = client({ agent: true });
   const gate = new WakeGate();
   const chiefMode = process.env.OLYMPUS_CHIEF_MODE === "1";
-  pi.on("tool_call", async (event) => chiefToolPolicy(event.toolName, chiefMode));
+  // Normal Pi and configured MCP tools remain available to the workstation.
+  // Do not turn a simple desktop request into a mandatory worker project.
   let ctx: ExtensionContext | undefined;
   let automatic = process.env.OLYMPUS_AUTO === "1";
   let polling = false;
   let working = false;
   let elapsed = 0;
   const activity = async (state: string) => { if (process.env.OLYMPUS_AGENT_TOKEN_FILE) await agent({ action: "agent.activity", state }).catch(() => {}); };
-  pi.on("session_start", async (_event, context) => { ctx = context; if (chiefMode) pi.setActiveTools(chiefTools); });
+  pi.on("session_start", async (_event, context) => {
+    ctx = context;
+    if (chiefMode) pi.setActiveTools([...new Set([...pi.getActiveTools(), ...chiefTools, ...workstationTools])]);
+  });
   pi.on("agent_start", async (_event, context) => { ctx = context; working = true; await activity("working"); });
   pi.on("agent_end", async () => { working = false; await activity("idle"); });
   const timer = setInterval(async () => {
@@ -88,7 +94,18 @@ export default function (pi: ExtensionAPI) {
   });
   pi.on("before_agent_start", async (event, ctx) => {
     if (!process.env.OLYMPUS_AGENT_TOKEN_FILE) return;
-    return { systemPrompt: event.systemPrompt + "\nYou are the Olympus chief of staff for this session. Keep portfolio state in the durable coordinator. Start with chief.briefing and read olympus_help before unfamiliar mutations. Route new requests using intake.preview then intake.submit for confident matches or unmatched new projects; ask a short project choice for ambiguity. Amend a specifically identified task with task and expected_version; never overwrite requirements based only on similarity. Use learning.status and dispatch.plan to inspect evidence, complexity and effort. Use project.context for older work, project.outcomes for separate deliverables, agenda for today/week and schedules.list for recurring work. Preserve versions, form scoped teams, respect capacity and live capability gates, and delegate independent work through Firstmate. Project automation dispatches and reviews ready tasks without keeping this conversation open. Never treat process exit as task acceptance. Finish a coordination turn with chief.finish. The daemon must remain independent of your conversation. Do not repeatedly retry an unchanged refusal." + (ctx.mode === "tui" && chiefMode ? "\n\n" + workbookGuidelines : "") };
+    return { systemPrompt: event.systemPrompt + "\nYou are the Olympus chief of staff for this session. Keep portfolio state in the durable coordinator. Use your normal shell, file, browser and configured MCP tools for direct user requests such as opening a URL, inspecting files or reporting a result. Do not create a repository-backed worker task merely to open a browser or perform a small desktop action. Use chrome-devtools-axi for browser work; for a visible browser use CHROME_DEVTOOLS_AXI_HEADED=1 and CHROME_DEVTOOLS_AXI_SESSION=balraj-workstation, then verify the returned page URL/snapshot before claiming success. Leave consent, authentication and destructive choices to the user unless explicitly authorized. Preserve work and require confirmation for destructive operations outside the task's approved scope. Use olympus_task_control to autonomously inspect, stop, cancel or recover named task workers: it performs supported Firstmate control and records actual evidence. Never bypass an identity fence, invent a stop receipt, or treat an allocated attempt as an actual running worker. Start with chief.briefing for portfolio coordination and read olympus_help before unfamiliar mutations. Route substantive project work using intake.preview then intake.submit for confident matches or unmatched new projects; ask a short project choice for ambiguity. Amend a specifically identified task with task and expected_version; never overwrite requirements based only on similarity. Use learning.status and dispatch.plan to inspect evidence, complexity and effort. Use project.context for older work, project.outcomes for separate deliverables, agenda for today/week and schedules.list for recurring work. Preserve versions, form scoped teams, respect capacity and live capability gates, and delegate substantive independent project work through Firstmate, while retaining direct tool access for ordinary workstation actions. Project automation dispatches and reviews ready tasks without keeping this conversation open. Never treat process exit as task acceptance. Finish a coordination turn with chief.finish. The daemon must remain independent of your conversation. Do not repeatedly retry an unchanged refusal." + (ctx.mode === "tui" && chiefMode ? "\n\n" + workbookGuidelines : "") };
+  });
+  pi.registerTool({
+    name: "olympus_task_control", label: "Task lifecycle",
+    description: "Inspect, stop, cancel or recover an exact task using operator-backed authority. Stop uses Firstmate's supported generation-bound exit, preserves work, and records real canonical observations. Refused or uncertain controls never become fabricated stop evidence. Queued tasks can be cancelled; unbound launches must be proved refused before execution. Accepts a task number such as #1 or the exact task ID.",
+    parameters: Type.Object({ task: Type.String(), command: Type.Union([Type.Literal("inspect"), Type.Literal("stop"), Type.Literal("cancel"), Type.Literal("recover")]), reason: Type.Optional(Type.String()) }),
+    async execute(_id, params) {
+      const result = await controlTask({ ...params, task: panelUI.resolveTask(params.task) }, { read });
+      return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
+    },
+    renderCall: (args, theme) => new Text(theme.fg("dim", `Task · ${args.command} ${args.task}`), 0, 0),
+    renderResult: (result, options, theme, context) => new Text(theme.fg(context.isError ? "error" : "muted", options.expanded ? clean(textOf(result.content)) : context.isError ? "Task control refused; evidence and workspace preserved." : result.details?.stopped ? "Exact worker stop observed; work preserved." : coordinatorResultSummary(result.details)), 0, 0),
   });
   pi.registerTool({
     name: "olympus_help", label: "Olympus action reference",
@@ -113,13 +130,18 @@ export default function (pi: ExtensionAPI) {
       return new Text(theme.fg("dim", "Olympus · " + clean(action).slice(0, 100).replace(/[._]/g, " ")), 0, 0);
     },
     renderResult: (result, options, theme, context) => new Text(theme.fg(context.isError ? "error" : "muted", options.expanded ? clean(textOf(result.content)) : context.isError ? "Coordinator request failed; expand for details." : coordinatorResultSummary(result.details)), 0, 0),
-    description: "Manage durable project work with the assigned scoped agent credential. Preview correlation before creating or amending tasks. Use chief.briefing for bounded context. Never infer acceptance from process exit. No operator service controls are available. Read docs/olympus-api.md in the installed source for complete contracts. A usual sequence is project.create; agent.create with project, role and parent; task.create with project, title, requirements and role; task.claim with task, agent and reserve_children for planned fan-out; dispatch.plan then operation.prepare with task, profile and verb=launch. A native child requires child.reserve before launch and verified native-child support; otherwise use an independent worker. messages use message.send with recipient, thread, body, optional task, followed by message.ack delivered/read/acted by the recipient. Fetch task.get before amendments and use expected_version. Never use an unverified profile.",
+    description: "Manage durable project work with the assigned scoped agent credential. Preview correlation before creating or amending tasks. Use chief.briefing for bounded context. Never infer acceptance from process exit. Operator-only mutations are available after an explicit confirmation through this tool. Read docs/olympus-api.md in the installed source for complete contracts. A usual sequence is project.create; agent.create with project, role and parent; task.create with project, title, requirements and role; task.claim with task, agent and reserve_children for planned fan-out; dispatch.plan then operation.prepare with task, profile and verb=launch. A native child requires child.reserve before launch and verified native-child support; otherwise use an independent worker. messages use message.send with recipient, thread, body, optional task, followed by message.ack delivered/read/acted by the recipient. Fetch task.get before amendments and use expected_version. Never use an unverified profile.",
     parameters: Type.Object({ request: Type.String({ description: "JSON object following the Olympus action contract" }) }),
-    async execute(_id, params) {
+    async execute(_id, params, _signal, _onUpdate, context) {
       const request = JSON.parse(params.request);
-      const forbidden = new Set(["system.shutdown", "system.configure", "profile.register", "profile.verify", "runtime.observe", "operation.receipt", "context.transfer", "task.recover", "automation.configure", "maintenance.configure", "project.bind"]);
-      if (forbidden.has(request.action)) throw new Error("This operation requires the operator CLI.");
-      const result = await agent(request);
+      const operatorActions = new Set(["system.shutdown", "system.configure", "profile.register", "profile.verify", "runtime.observe", "operation.receipt", "context.transfer", "task.recover", "task.cancel", "incident.resolve", "automation.configure", "maintenance.configure", "project.bind"]);
+      let result;
+      if (operatorActions.has(request.action)) {
+        if (!context.hasUI) throw new Error("Operator changes require an interactive confirmation; use the operator CLI otherwise.");
+        const approved = await context.ui.confirm(`Operator action: ${request.action}`, "Review the exact request. Cancellation does not itself stop a worker. Stop observations and receipts must be real, fresh and generation-bound.\n" + JSON.stringify(request, null, 2));
+        if (!approved) throw new Error("Operator action not approved; no change made.");
+        result = await read(request);
+      } else result = await agent(request);
       return { content: [{ type: "text", text: JSON.stringify(result) }], details: result };
     },
   });

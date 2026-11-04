@@ -7,12 +7,15 @@ import { client } from "./client.mjs";
 import { PanelState, panelColor, panelTabs, panelHelp, taskLabel, oneLine } from "./panel-view.mjs";
 // @ts-ignore Pure prompt/output projection.
 import { textOf, workbookRows } from "./task-view.mjs";
+// @ts-ignore Stable conversation-local task references.
+import { TaskNumbers } from "./task-numbers.mjs";
 
 export default function (pi: ExtensionAPI, { read = client(), agent = client({ agent: true }) } = {}) {
   let panel: PanelState | undefined;
   let context: ExtensionContext | undefined;
   let visible = true;
   let generation = 0;
+  let numbers = new TaskNumbers();
   let reply: { prompt: string; output: string; state: string; active: boolean; command?: string } | undefined;
   let brief: { headline: string; decision: string; nextAction: string; risk: string; riskBasis: string; task?: string } | undefined;
   const updateMessage = (message: any, redraw = true) => {
@@ -41,6 +44,11 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
       state.focus = oldFocus;
       state.reply = reply;
       state.brief = brief;
+      state.numbers = numbers;
+      state.onSnapshot = (snapshot: any) => {
+        const added = numbers.assign([...(snapshot.tasks || []), ...(snapshot.completed || [])]);
+        if (added.length) pi.appendEntry("olympus-task-numbers", added);
+      };
       state.reducedMotion = process.env.OLYMPUS_REDUCED_MOTION === "1";
       panel = state;
       state.start();
@@ -71,10 +79,11 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
   };
 
   pi.on("session_start", (_event, ctx) => {
-    generation++; visible = true; reply = undefined; brief = undefined;
+    generation++; visible = true; reply = undefined; brief = undefined; numbers = new TaskNumbers();
     for (const entry of ctx.sessionManager?.getBranch() || []) {
       if (entry.type === "message") updateMessage(entry.message);
       else if (entry.type === "custom" && entry.customType === "olympus-workbook-brief") brief = entry.data as typeof brief;
+      else if (entry.type === "custom" && entry.customType === "olympus-task-numbers") numbers.restore(entry.data);
     }
     if (reply) { reply.state = "Last saved reply"; reply.active = false; }
     attach(ctx);
@@ -153,18 +162,18 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
       if (!panel) return;
       if (args.trim() === "clear") { panel.focus = undefined; await panel.refresh(); return; }
       const choices = [
-        ...[...(panel.snapshot?.tasks || []), ...(panel.snapshot?.completed || [])].map((t: any) => ({ id: t.id, kind: "task", label: taskLabel(t) })),
+        ...[...(panel.snapshot?.tasks || []), ...(panel.snapshot?.completed || [])].map((t: any) => ({ id: t.id, kind: "task", label: taskLabel(t, numbers) })),
         ...(panel.snapshot?.projects || []).map((p: any) => ({ id: p.id, kind: "project", label: `${p.id} ${oneLine(p.name)}` })),
       ];
       if (!choices.length) { ctx.ui.notify("No task or project is available in the latest snapshot.", "info"); return; }
-      const selected = args.trim() || await ctx.ui.select("Olympus: focus for this conversation", choices.map(c => c.label));
+      const selected = (numbers.resolve(args.trim()) || args.trim()) || await ctx.ui.select("Olympus: focus for this conversation", choices.map(c => c.label));
       if (!selected) return;
       const choice = choices.find(c => c.id === selected || c.label === selected);
-      if (!choice) { ctx.ui.notify("Choose an exact task/project ID from the current Olympus view.", "warning"); return; }
+      if (!choice) { ctx.ui.notify("Choose a task number such as #1, an exact ID, or an item in /olympus-focus.", "warning"); return; }
       panel.focus = { id: choice.id, kind: choice.kind };
       panel.tab = "tasks";
       await panel.refresh();
-      ctx.ui.notify(`Selected ${choice.kind} ${choice.id}. Your next message shares this context; /olympus-focus clear resets it.`, "info");
+      ctx.ui.notify(`Selected ${choice.kind} ${numbers.label(choice.id) || choice.id}. Your next message shares this context; /olympus-focus clear resets it.`, "info");
     },
   });
 
@@ -173,6 +182,20 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
   // Read failures are disclosed; cached display data is never asserted fresh.
   pi.on("before_agent_start", async (event, ctx) => {
     if (ctx.mode !== "tui" || process.env.OLYMPUS_CHIEF_MODE !== "1" || event.messageType !== "user") return;
+    const references = numbers.references(event.prompt);
+    if (references.length) {
+      const loaded = await Promise.all(references.slice(0, 8).map(async (reference: any) => {
+        if (!reference.task) return { ...reference, unavailable: true };
+        try { return { ...reference, record: await agent({ action: "task.get", task: reference.task }) }; }
+        catch { return { ...reference, unavailable: true }; }
+      }));
+      if (loaded.length === 1 && loaded[0].task && !loaded[0].unavailable && panel) {
+        panel.focus = { id: loaded[0].task, kind: "task" }; panel.tab = "tasks"; panel.repaint();
+      }
+      return { message: { customType: "olympus-panel-context", display: false,
+        content: `${panelHelp}\nTask numbers are local to this Pi conversation and resolve to the exact task IDs below. They are references, not permission to cancel or accept work. Use full IDs with olympus_control. Unknown or unauthorized references must not be guessed or replaced by an earlier selection.\n${JSON.stringify(loaded).slice(0, 24000)}${references.length > 8 ? "\nOnly eight references were loaded; retrieve additional records explicitly." : ""}`,
+        details: { references: loaded.map((item: any) => ({ label: item.label, task: item.task || null, unavailable: item.unavailable || false })) } } };
+    }
     const focus = panel?.focus;
     const request = focus ? { action: focus.kind === "task" ? "task.get" : "project.context", [focus.kind]: focus.id } : { action: "chief.briefing" };
     let content: string;
@@ -187,6 +210,7 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
   });
 
   return {
+    resolveTask(value: string) { return numbers.resolve(value) || value; },
     suspend() {
       const wasVisible = visible, tab = panel?.tab || "tasks", focus = panel?.focus, currentGeneration = generation;
       stop();

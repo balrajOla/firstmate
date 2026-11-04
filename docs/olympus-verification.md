@@ -83,6 +83,17 @@ The default tool renderers collapse coordinator JSON and reference text without 
 `node tests/olympus-snapshots.mjs` also produces `assets/olympus-workbook.svg` and its segment record from the production workbook renderer and a running, explicitly synthetic demo.
 The preview is not concept art or evidence of real worker throughput.
 
+## Chief execution and task-control verification (2026-11-04)
+
+The workstation chief now retains normal Pi shell/file/search and configured MCP access rather than forcing every action through a worker.
+A real authenticated chief smoke test used its direct bash tool to invoke the visible `balraj-workstation` Chrome session through chrome-devtools-axi and verified the Google page title, URL and snapshot.
+The Google consent dialog was not clicked, and that smoke test created, modified, cancelled and delegated no tasks.
+The configured Pi version-only query was measured at about 0.06 seconds after switching the account adapter to the same package metadata that Pi uses for VERSION.
+The coordinator version-query budget is bounded at ten seconds, with a regression exercising a valid four-second launcher.
+Task-control tests cover queued cancellation without invented worker evidence, refusal of uncertain unbound launches, and supported generation-bound exit followed by a fresh dead observation before cancellation.
+These tests do not establish a universal vendor lifecycle guarantee or permission to bypass ambiguous runtime identities.
+Task numbers are conversation-local, stable across reordering and restored from branch metadata; exact task IDs remain the broker identities.
+
 ## Blueprint coverage
 
 These IDs map to the previously delivered 29-feature, 41-screen blueprint.

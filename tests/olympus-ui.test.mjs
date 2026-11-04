@@ -47,8 +47,8 @@ test("an empty portfolio does not wake an idle model", () => {
 });
 
 import { chiefToolPolicy } from "../packages/olympus-pi/policy.mjs";
-test("chief blocks direct shell and file tools but permits broker coordination", () => {
-  for (const tool of ["bash", "write", "exec", "nested-shell", "read"]) assert.equal(chiefToolPolicy(tool, true).block, true);
+test("chief retains normal shell/file and configured tool access", () => {
+  for (const tool of ["bash", "write", "exec", "nested-shell", "read"]) assert.equal(chiefToolPolicy(tool, true), undefined);
   assert.equal(chiefToolPolicy("olympus_control", true), undefined);
   assert.equal(chiefToolPolicy("olympus_help", true), undefined);
   assert.equal(chiefToolPolicy("bash", false), undefined);

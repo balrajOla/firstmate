@@ -102,10 +102,26 @@ test("structured chief brief updates presentation only, with explicit risk basis
     assert.ok(out.includes("Check the 42-row evidence"));
     assert.ok(out.includes("MEDIUM*"));
     assert.ok(out.includes("QUEUED"));
-    assert.equal(r.entries.at(-1).type, "olympus-workbook-brief");
+    assert.ok(r.entries.some(entry => entry.type === "olympus-workbook-brief"));
     assert.ok(r.reads.every(request => ["snapshot", "task.get"].includes(request.action)));
     await assert.rejects(tool.execute("bad", { headline: "Invalid", decision: "None", nextAction: "None", risk: "high", riskBasis: " " }));
   } finally { await r.hooks.get("session_shutdown")(); }
+});
+
+test("numbered request references load exact task records, not the current table order", async () => {
+  const previous = process.env.OLYMPUS_CHIEF_MODE; process.env.OLYMPUS_CHIEF_MODE = "1";
+  const r = runtime();
+  try {
+    await r.hooks.get("session_start")({}, r.context);
+    await r.commands.get("olympus-focus").handler("#1", r.context);
+    assert.ok(r.component.render(144).join("\n").includes("#1"));
+    const result = await r.hooks.get("before_agent_start")({ messageType: "user", prompt: "Inspect #1" }, r.context);
+    assert.equal(result.message.details.references[0].task, "T1");
+    assert.equal(r.scoped.at(-1).task, "T1");
+  } finally {
+    await r.hooks.get("session_shutdown")();
+    if (previous === undefined) delete process.env.OLYMPUS_CHIEF_MODE; else process.env.OLYMPUS_CHIEF_MODE = previous;
+  }
 });
 
 test("RPC never starts terminal widgets or polling and shutdown is idempotent", async () => {

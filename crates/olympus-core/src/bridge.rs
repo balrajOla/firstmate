@@ -28,7 +28,7 @@ pub fn version(name: &str) -> Result<String> {
                 };
                 break;
             }
-            if start.elapsed() > Duration::from_secs(3) || path.metadata()?.len() > 65536 {
+            if start.elapsed() > Duration::from_secs(10) || path.metadata()?.len() > 65536 {
                 let _ = child.kill();
                 let _ = child.wait();
                 bail!("version command exceeded its bound")

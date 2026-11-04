@@ -4,12 +4,25 @@ use std::{
     fs,
     io::{BufRead, BufReader, Write},
     net::{TcpListener, TcpStream},
+    os::unix::fs::PermissionsExt,
     os::unix::net::{UnixListener, UnixStream},
     sync::mpsc,
     thread,
     time::Duration,
 };
 use tempfile::TempDir;
+
+#[test]
+fn version_probe_accepts_a_valid_launcher_slower_than_three_seconds() {
+    let home = TempDir::new().unwrap();
+    let script = home.path().join("slow-version");
+    fs::write(&script, "#!/bin/sh\nsleep 4\nprintf 'fixture-version\\n'\n").unwrap();
+    fs::set_permissions(&script, fs::Permissions::from_mode(0o755)).unwrap();
+    assert_eq!(
+        olympus_core::bridge::version(script.to_str().unwrap()).unwrap(),
+        "fixture-version"
+    );
+}
 
 fn check_nonblocking_server(mut client: protocol::Stream, server: protocol::Stream) {
     client

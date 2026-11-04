@@ -43,6 +43,7 @@ export function riskSignal(task, incidents = [], stale = false) {
   const open = incidents.filter(i => i.task === task.id && i.state !== "resolved");
   const conflict = open.find(i => ["runtime_generation", "runtime_stop_conflict", "uncertain_effect"].includes(i.kind));
   if (conflict) return { label: "HIGH", color: "error", basis: "Runtime identity/effect needs reconciliation", weight: 3 };
+  if (!stale && task.state === "unknown" && task.runtime_id === "") return { label: "TRACKING", color: "warning", basis: "Saved attempt has no bound runtime; not a current application error", weight: 2 };
   if (stale || task.state === "unknown") return { label: "UNVERIFIED", color: "warning", basis: "Runtime observations are not verified", weight: 2 };
   if (open.length || ["blocked", "recovering"].includes(task.state)) return { label: "ATTENTION", color: "warning", basis: task.state === "recovering" ? "Recovery needs verification" : "Unresolved blocker or user action", weight: 2 };
   return { label: "UNRATED", color: "dim", basis: "No risk assessment provided", weight: 0 };
@@ -57,6 +58,7 @@ function assessedRisk(native, brief) {
 function nextAction(task, incidents) {
   const open = incidents.filter(i => i.task === task.id && i.state !== "resolved");
   if (open.some(i => ["runtime_generation", "runtime_stop_conflict", "uncertain_effect"].includes(i.kind))) return "Verify ownership and reconcile runtime effects";
+  if (task.state === "unknown" && task.runtime_id === "") return "Reconcile the earlier launch record; startup health is separate";
   if (task.state === "unknown") return "Verify the recorded session before stopping or replacing it";
   const human = open.find(i => i.owner === "operator");
   if (human) return decisionDigest(human.reason) || "Review the requested operator decision";
@@ -69,7 +71,7 @@ const padded = (text, columns) => {
   return value + " ".repeat(Math.max(0, columns - width(value)));
 };
 const spin = now => ["◐", "◓", "◑", "◒"][Math.floor(now / 250) % 4];
-export function workbookRows(snapshot, { record, focus, reply, brief, error = "", lastSuccess = 0, now = Date.now(), rows = 40, columns = 144, reducedMotion = false } = {}) {
+export function workbookRows(snapshot, { record, focus, reply, brief, error = "", lastSuccess = 0, now = Date.now(), rows = 40, columns = 144, reducedMotion = false, numbers } = {}) {
   const height = compactHeight(rows), stale = Boolean(error) || !lastSuccess || now - lastSuccess > 5000;
   const tasks = workbookTasks(snapshot, focus), ids = new Set(tasks.map(t => t.id));
   if (focus?.kind === "task" && brief?.task !== focus.id) brief = undefined;
@@ -97,7 +99,7 @@ export function workbookRows(snapshot, { record, focus, reply, brief, error = ""
     const result = decisionDigest(artifact?.body || response?.body);
     const state = taskStatus(task, incidents);
     const live = !stale && task.state === "running" && typeof task.heartbeat === "number" && task.heartbeat >= now / 1000 - 30;
-    const label = { Completed: "DONE", "In progress": "RUNNING", "Awaiting feedback": "NEEDS YOU", "Unknown - verify": "VERIFY", "In review": "REVIEW", Queued: "QUEUED", Blocked: "BLOCKED", Recovering: "RECOVER", Paused: "WAITING" }[state] || state;
+    const label = task.state === "unknown" && task.runtime_id === "" ? "RECONCILE" : { Completed: "DONE", "In progress": "RUNNING", "Awaiting feedback": "NEEDS YOU", "Unknown - verify": "VERIFY", "In review": "REVIEW", Queued: "QUEUED", Blocked: "BLOCKED", Recovering: "RECOVER", Paused: "WAITING" }[state] || state;
     return { id: task.id, title: plain(task.title), status: label, statusColor: state === "Completed" ? "success" : state === "In progress" ? "accent" : ["Awaiting feedback", "Blocked", "Unknown - verify"].includes(state) ? "warning" : "muted", risk: assessedRisk(riskSignal(task, incidents, stale), assessment), outcome: (assessment?.nextAction ? "Chief: " + assessment.nextAction : "") || (result ? (task.state === "accepted" ? "Result: " : "Candidate: ") + result : nextAction(task, incidents)), icon: task.id === focus?.id ? ">" : live && !reducedMotion ? spin(now) : task.state === "accepted" ? "✓" : task.state === "blocked" ? "!" : task.state === "unknown" ? "?" : "·" };
   });
   if (reply?.prompt && focus?.kind !== "task") display.unshift({ id: "reply", title: decisionDigest(reply.prompt), status: localActive ? "Reply running" : reply.state === "Reply failed" ? "Reply failed" : reply.state === "Stopped" ? "Stopped" : "Reply ready", statusColor: reply.state === "Reply failed" ? "error" : localActive ? "accent" : "muted", risk: assessedRisk({ label: "UNRATED", color: "dim", basis: "Chief risk not assessed", weight: 0 }, brief?.task ? undefined : brief), outcome: localActive ? "Working; routine logs hidden" : brief?.nextAction && !/^none\b|^no action\b/i.test(brief.nextAction) ? plain(brief.nextAction) : brief?.headline || decisionDigest(reply.output) || "No substantive reply yet", icon: localActive && !reducedMotion ? spin(now) : "·" });
@@ -111,14 +113,14 @@ export function workbookRows(snapshot, { record, focus, reply, brief, error = ""
     cells.push(part(" │ ", "dim"), part(padded(outcome, outcomeWidth), colors.outcome || "muted"));
     return cells.map(cell => selected ? { ...cell, bg: "selectedBg" } : cell);
   };
-  output.push(cellRow("TASK / REQUEST", "STATUS", "RISK SIGNAL", "DECISION / RESULT / NEXT ACTION", { title: "accent", status: "accent", risk: "accent", outcome: "accent" }));
+  output.push(cellRow("# TASK / REQUEST", "STATUS", "RISK SIGNAL", "DECISION / RESULT / NEXT ACTION", { title: "accent", status: "accent", risk: "accent", outcome: "accent" }));
   if (height >= 9) output.push([part("─".repeat(Math.max(0, columns)), "dim")]);
   const room = Math.max(1, height - (height < 9 ? 5 : 7));
-  for (const row of display.slice(0, room)) output.push(cellRow(row.icon + " " + row.title, row.status, row.risk.label, row.outcome, { title: "text", status: row.statusColor, risk: row.risk.color }, row.id === focus?.id));
+  for (const row of display.slice(0, room)) output.push(cellRow((row.id === "reply" ? "NOW" : numbers?.label(row.id) || "") + " " + row.icon + " " + row.title, row.status, row.risk.label, row.outcome, { title: "text", status: row.statusColor, risk: row.risk.color }, row.id === focus?.id));
   if (!display.length) output.push([part("No tasks or decisions yet. Type a request below.", "muted")]);
   if (output.length < height - 2 && display[0]) output.push([part("RISK BASIS  ", "dim"), part(clip(display[0].risk.basis, Math.max(0, columns - 12)), display[0].risk.color)]);
   const unlisted = (snapshot?.incidents || []).filter(i => !ids.has(i.task) && i.state !== "resolved").length;
-  const footer = `${Math.min(display.length, room)}/${display.length} shown${unlisted ? `  +${unlisted} other alerts in queue` : ""}  /olympus-focus select  Alt+o details`;
+  const footer = `${Math.min(display.length, room)}/${display.length} shown${unlisted ? `  +${unlisted} other alerts in queue` : ""}  Say task #N  /olympus-focus #N  Alt+o details`;
   output.push([part(clip(footer, columns), "dim")]);
   if (output.length < height) output.push([part("Risk* = chief assessment, not verified acceptance. Full logs remain in the transcript/details.", "dim")]);
   return output.slice(0, height);
