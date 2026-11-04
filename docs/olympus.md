@@ -124,6 +124,27 @@ The helper's header owns bridge, prefix and Node overrides; no provider code or 
 A prepared launch or allocated attempt is not a running worker; the chief must check the launch receipt and native runtime observation.
 Do not retry a refused operation unchanged or fabricate a native-generation receipt to free capacity.
 
+## Parallel intake and context continuity
+
+The chief has one coherent Pi conversation, but request intake is independent of that conversation's current model turn.
+`/request <text>` journals and submits new work immediately, including while the chief is streaming or compacting.
+Ordinary text submitted while the chief is busy is captured as an independent durable request when `OLYMPUS_PARALLEL_INTAKE=1`, the workstation default; attachments retain Pi's normal queue behavior.
+Use `/steer <text>` when you mean to change the current chief turn rather than create another request.
+A confident match groups follow-up work under an existing project with retained context; an ambiguous match is preserved for `/requests` to choose a project rather than silently merging work.
+A task number in the new request supplies project context, not permission to overwrite that task.
+`/amend #N <full revised requirements>` explicitly updates the exact task through optimistic version checking and retains earlier versions and results.
+An accepted receipt means durable intake, not a started worker or a completed result.
+Accepted work enables a bounded coordination wake when the chief becomes idle; existing project automation can continue workers independently of the chief conversation.
+Worker concurrency still obeys configured admission, provider limits and machine resources; this is not simultaneous mutation of a single model transcript or an unlimited-resource claim.
+
+Pi's automatic compaction should remain enabled, with reserve tokens chosen for the selected model's actual context window.
+The optional `chief-quality.example.json` profile demonstrates the installed large-context GPT chief at max effort, an early model-specific compaction threshold and delivery of all native steering/follow-up messages.
+It is a quality-oriented configuration, not proof of an objectively best model, and requires that model and effort to be supported by the authenticated provider.
+`/context-refresh` requests a real Pi compaction at a safe idle boundary; it does not restart workers or erase tasks.
+Before compaction, a bounded coordinator checkpoint is appended as session metadata; intake receipts, task numbers and authoritative work remain in the durable coordinator/branch records.
+A failed refresh is reported without discarding queued work, and uncertain operations are never replayed as a context-reset shortcut.
+No implementation promises that a provider will never report overflow; Pi's bounded overflow recovery and durable record retrieval are the fallback.
+
 ## Workstation authentication checks
 
 The authenticated Pi launcher setting is implemented in the Olympus CLI, not in the widget.

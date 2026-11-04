@@ -8,7 +8,7 @@ fm_live_gate default-on OLYMPUS_PI_LIVE node npm cargo python3
 sdk="$(mktemp -d "${TMPDIR:-/tmp}/olympus-pi-sdk.XXXXXX")"
 sdk="$(cd "$sdk" && pwd -P)"
 trap 'rm -rf -- "$sdk"' EXIT
-cp "$ROOT/packages/olympus-pi/"{package.json,package-lock.json,index.ts,panel.ts,panel-view.mjs,task-view.mjs,task-numbers.mjs,task-control.mjs,gateway-launch.py,client.mjs,view.mjs,wake.mjs,policy.mjs} "$sdk/"
+cp "$ROOT/packages/olympus-pi/"{package.json,package-lock.json,index.ts,panel.ts,parallel.ts,intake.mjs,context-safety.ts,panel-view.mjs,task-view.mjs,task-numbers.mjs,task-control.mjs,gateway-launch.py,client.mjs,view.mjs,wake.mjs,policy.mjs} "$sdk/"
 (cd "$sdk" && npm ci --ignore-scripts --no-audit --no-fund)
 (cd "$sdk" && npm run typecheck)
 OLYMPUS_PANEL_MODULE="$sdk/panel.ts" node --test "$ROOT/tests/olympus-panel-runtime.mjs"

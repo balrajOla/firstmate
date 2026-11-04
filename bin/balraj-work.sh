@@ -24,6 +24,7 @@ esac
 # This workstation's runtime is installer-managed; a Pi self-update notice is
 # not its upgrade path. Users can explicitly set this variable to 0 if desired.
 export PI_SKIP_VERSION_CHECK="${PI_SKIP_VERSION_CHECK:-1}"
+export OLYMPUS_PARALLEL_INTAKE="${OLYMPUS_PARALLEL_INTAKE:-1}"
 # Existing workstation services are optional. Never stop or forcibly restart them.
 if command -v balraj-stack-start >/dev/null 2>&1; then
   balraj-stack-start

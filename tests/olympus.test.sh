@@ -8,6 +8,6 @@ for tool in cargo node python3; do
 done
 cargo test --workspace --locked
 cargo build --workspace --locked
-node --test tests/olympus-ui.test.mjs tests/olympus-task-control.test.mjs
+node --test tests/olympus-ui.test.mjs tests/olympus-task-control.test.mjs tests/olympus-parallel.test.mjs
 bash tests/olympus-work.test.sh
 python3 tests/olympus-e2e.py

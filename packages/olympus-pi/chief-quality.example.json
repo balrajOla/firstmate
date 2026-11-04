@@ -1,0 +1,18 @@
+{
+  "defaultProvider": "openai",
+  "defaultModel": "gpt-6.1-sol[1m]",
+  "defaultThinkingLevel": "max",
+  "steeringMode": "all",
+  "followUpMode": "all",
+  "compaction": {
+    "enabled": true,
+    "reserveTokens": 32768,
+    "keepRecentTokens": 30000,
+    "modelOverrides": {
+      "openai/gpt-6.1-sol[1m]": {
+        "reserveTokens": 300000,
+        "keepRecentTokens": 30000
+      }
+    }
+  }
+}
