@@ -7,6 +7,7 @@ from pathlib import Path
 import pty
 import select
 import signal
+import shutil
 import sqlite3
 import struct
 import subprocess
@@ -427,5 +428,75 @@ class ProcessContract(unittest.TestCase):
                     except OSError: break
             if proc.poll() is None: proc.kill()
             proc.wait(timeout=3); os.close(master)
+
+    @unittest.skipUnless(os.environ.get("OLYMPUS_WEZTERM_LIVE") == "1", "Opt in with OLYMPUS_WEZTERM_LIVE=1 for an isolated real WezTerm GUI test")
+    def test_real_wezterm_colors_unicode_resize_and_draft(self):
+        wezterm = os.environ.get("WEZTERM_BIN") or shutil.which("wezterm")
+        self.assertTrue(wezterm, "Set WEZTERM_BIN to the installed WezTerm CLI")
+        cli = os.environ.get("OLYMPUS_PI_CLI")
+        self.assertTrue(cli, "Set OLYMPUS_PI_CLI to the pinned Pi CLI")
+        def wz(*args):
+            return subprocess.run([wezterm, "cli", *map(str, args)], check=True,
+                                  capture_output=True, text=True, timeout=10).stdout
+        before = {p["pane_id"] for p in json.loads(wz("list", "--format", "json"))}
+        panes = []; owned_window = None
+        self.cli("demo")
+        try:
+            args = ["spawn", "--new-window", "--workspace", "olympus-ui-test-" + self.home.parent.name,
+                    "--cwd", str(self.home), "--", "/usr/bin/env",
+                    "PI_CODING_AGENT_DIR=" + str(self.home.parent / "pi"),
+                    "PI_OFFLINE=1", "PI_SKIP_VERSION_CHECK=1", "OLYMPUS_HOME=" + str(self.home),
+                    "OLYMPUS_BIN=" + str(BIN), shutil.which("node"), cli,
+                    "--no-session", "--no-extensions", "--no-skills", "--no-mcp",
+                    "--no-context-files", "--no-approve", "--no-tools", "-e",
+                    os.environ.get("OLYMPUS_PI_EXTENSION", str(ROOT / "packages/olympus-pi/index.ts"))]
+            pane = int(wz(*args).strip()); self.assertNotIn(pane, before); panes.append(pane)
+            def metadata():
+                return next(p for p in json.loads(wz("list", "--format", "json")) if p["pane_id"] == pane)
+            owned_window = metadata()["window_id"]
+            def screen(marker):
+                output = ""; deadline = time.monotonic() + 25
+                while time.monotonic() < deadline:
+                    output = wz("get-text", "--pane-id", pane)
+                    if marker in output: return output
+                    time.sleep(.15)
+                self.fail(f"WezTerm pane {pane} did not render {marker!r}: {output[-1200:]}")
+            screen("OLYMPUS / Prompt")
+            screen("SIMULATOR")
+            colored = wz("get-text", "--pane-id", pane, "--escapes")
+            self.assertRegex(colored, r"\x1b\[[^\x1b]*?(?:38|48)[;:]")
+            for tab in ["live", "projects", "crew", "queue", "memory", "health", "history", "today", "week", "recurring"]:
+                wz("send-text", "--pane-id", pane, "--no-paste", "/olympus-panel " + tab + "\r")
+                screen("OLYMPUS / " + tab.capitalize())
+            wz("send-text", "--pane-id", pane, "--no-paste", "/olympus-panel tasks\r")
+            screen("OLYMPUS / Prompt")
+            # Paste exercises WezTerm's bracketed-paste path, not just a PTY.
+            wz("send-text", "--pane-id", pane, "Draft 界 Ω")
+            screen("Draft 界 Ω")
+            # Meta's terminal byte sequence is checked here. Physical macOS
+            # Option composition is user-configured; slash commands always work.
+            wz("send-text", "--pane-id", pane, "--no-paste", "\x1bo")
+            screen("Tab pane")
+            screen("Synthetic fixtures. No model calls.")
+            wz("send-text", "--pane-id", pane, "--no-paste", "q")
+            screen("Draft 界 Ω")
+            old_width = metadata()["size"]["cols"]
+            split = int(wz("split-pane", "--pane-id", pane, "--right", "--percent", "50", "--", "/bin/sh", "-c", "exec sleep 60").strip())
+            self.assertNotIn(split, before); panes.append(split)
+            deadline = time.monotonic() + 10
+            while metadata()["size"]["cols"] >= old_width and time.monotonic() < deadline:
+                time.sleep(.1)
+            self.assertLess(metadata()["size"]["cols"], old_width)
+            screen("OLYMPUS")
+            screen("Draft 界 Ω")
+            self.assertTrue(before.issubset({p["pane_id"] for p in json.loads(wz("list", "--format", "json"))}))
+        finally:
+            for owned in reversed(panes):
+                try:
+                    current = next((p for p in json.loads(wz("list", "--format", "json")) if p["pane_id"] == owned), None)
+                    if current and current["window_id"] == owned_window:
+                        wz("kill-pane", "--pane-id", owned)
+                except subprocess.SubprocessError:
+                    pass
 
 if __name__=="__main__":unittest.main(verbosity=2)

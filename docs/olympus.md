@@ -90,6 +90,15 @@ The daemon continues when the chief pauses, hits a budget, exits or loses contex
 Project automation runs in the coordinator and continues after the chief session ends or reaches its wake budget.
 The optional interactive Pi conversation is not restarted automatically; reopening `olympus chief` reuses its durable identity and retrieves current project context.
 
+## WezTerm compatibility
+
+The Pi widgets use Pi's terminal renderer, not a separate terminal process or browser window.
+The real WezTerm GUI check covers the compact task view, all ten dashboard tabs, ANSI colors, Unicode paste, pane-split resizing and returning from full detail with an unchanged draft.
+Use the opt-in guard documented in [verification](olympus-verification.md#wezterm-widget-verification-2026-11-04) to check an installed WezTerm build.
+On macOS, physical Option/Alt composition depends on your WezTerm configuration; `/olympus` and `/olympus-panel` provide the same functions without changing global keybindings.
+The automated guard verifies Meta's terminal byte sequence, not physical keyboard composition.
+Your existing fonts, colors, leader shortcuts and terminal configuration are left unchanged.
+
 ## Your daily workflow
 
 | You do | System behavior | Where to inspect |

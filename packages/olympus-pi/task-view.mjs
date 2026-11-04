@@ -14,7 +14,8 @@ export function taskLines(snapshot, { record, focus, reply, error = "", lastSucc
   const chosen = tasks.find(t => t.id === focus?.id) || allowedRecord?.task || tasks[0];
   const exact = record?.task?.id === chosen?.id ? record : undefined;
   const stale = error || !lastSuccess || now - lastSuccess > 5000;
-  const lines = ["OLYMPUS / Prompt · Output · Status"];
+  const simulator = snapshot?.settings?.some(row => row.key === "mode" && row.value === "simulator");
+  const lines = ["OLYMPUS / Prompt · Output · Status" + (simulator ? " / SIMULATOR - SAMPLE DATA" : "")];
   const counts = snapshot?.counts || {};
   lines.push(stale ? "STALE / DISCONNECTED - saved observations only" : `${counts.working || 0} running · ${counts.blocked || 0} blocked · ${counts.needs_you || 0} need feedback`);
   const showReply = reply?.prompt && focus?.kind !== "task";

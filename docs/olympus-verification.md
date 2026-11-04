@@ -39,6 +39,25 @@ The [machine-readable evidence](verification/olympus-local-evidence.json) record
 The installed 0.3.0 read-path probe used a 20-project simulated portfolio; 100 snapshot requests from eight concurrent clients had zero failures, a median of 162.36 ms and a 95th percentile of 192.05 ms in this container.
 This is a small local read-path measurement, not a model-worker scaling result or production latency guarantee.
 
+## WezTerm widget verification (2026-11-04)
+
+The real macOS WezTerm GUI guard passed with `wezterm 05343b387085842b434d267f91b6b0ec157e4331` and the pinned Pi 1.4.0 runtime.
+It created an isolated Olympus simulator and a new owned WezTerm window, checked the compact task widget and all ten full dashboard tabs, inspected colored terminal cells, pasted `Draft 界 Ω`, opened and closed full detail, and verified that a real pane split narrowed the widget without losing that draft.
+It closed only its newly created test panes and left pre-existing panes intact.
+The GUI test copied no provider credentials and submitted no model prompts or model requests.
+Physical macOS Option/Alt composition remains user-configured; the guard sends Meta's terminal byte sequence and also exercises slash-command navigation.
+This establishes GUI behavior for the named installed build, not future WezTerm releases or authenticated model-worker lifecycle compatibility.
+
+After building Olympus and installing the pinned Pi dependencies, run with an active WezTerm GUI:
+
+```bash
+OLYMPUS_WEZTERM_LIVE=1 bash tests/olympus-wezterm-live.test.sh
+```
+
+The guard's header owns optional installed-binary overrides.
+The measured result was `test_real_wezterm_colors_unicode_resize_and_draft ... ok`, `Ran 1 test`, `OK`.
+Without explicit opt-in the GUI test skips, so ordinary headless tests never open a terminal window.
+
 ## Blueprint coverage
 
 These IDs map to the previously delivered 29-feature, 41-screen blueprint.
