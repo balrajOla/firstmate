@@ -5,7 +5,8 @@ import { mkdtempSync, mkdirSync, writeFileSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { resolve, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
-import { Dashboard } from "../packages/olympus-pi/view.mjs";
+import { Dashboard, width } from "../packages/olympus-pi/view.mjs";
+import { workbookRows } from "../packages/olympus-pi/task-view.mjs";
 import { client } from "../packages/olympus-pi/client.mjs";
 
 const root=resolve(dirname(fileURLToPath(import.meta.url)),"..");
@@ -33,6 +34,17 @@ try{
   await view.key("\x1b");await view.key("l");frames.learning=view.render(160,44);
   await view.key("\x1b");await view.setTab(0);
   for(let i=0;i<3;i++) frames[`live-frame-${i}`]=view.render(160,44,Date.now()+i*250);
+  const workbook=workbookRows(view.snapshot,{lastSuccess:view.lastSuccess,now:Date.now(),rows:46,columns:176});
+  const palette={accent:"#75c4ff",success:"#8ddbb3",warning:"#ffb66c",error:"#ff7d8b",dim:"#7f94ad",muted:"#d8e2f0",text:"#eef4ff"};
+  const styled=workbook.map((segments,row)=>{
+    let column=0;
+    return segments.map(segment=>{
+      const x=24+column*10;const size=width(segment.text);column+=size;
+      return (segment.bg?`<rect x="${x}" y="${18+row*23}" width="${size*10}" height="23" fill="#24466f"/>`:"")+`<text x="${x}" y="${36+row*23}" fill="${palette[segment.color]||palette.muted}"${segment.bold?' font-weight="bold"':""} textLength="${size*10}" lengthAdjust="spacingAndGlyphs">${escape(segment.text)}</text>`;
+    }).join("");
+  }).join("\n");
+  writeFileSync(resolve(output,"olympus-workbook.svg"),`<svg xmlns="http://www.w3.org/2000/svg" width="1808" height="${workbook.length*23+48}" viewBox="0 0 1808 ${workbook.length*23+48}"><rect width="1808" height="${workbook.length*23+48}" rx="16" fill="#101827"/><g font-family="DejaVu Sans Mono,monospace" font-size="16" xml:space="preserve">${styled}</g></svg>\n`);
+  writeFileSync(resolve(output,"olympus-workbook.json"),JSON.stringify({source:"Running synthetic demo and production workbookRows renderer; no model calls",columns:176,rows:46,segments:workbook},null,2)+"\n");
   for(const [name,lines] of Object.entries(frames)){
     const text=lines.map((line,i)=>`<text x="24" y="${36+i*23}" fill="${i===0?"#75c4ff":/blocked|BLOCK|UNKNOWN|overdue|failed/.test(line)?"#ffb66c":/accepted|DONE|verified|WORK/.test(line)?"#8ddbb3":"#d8e2f0"}">${escape(line)}</text>`).join("\n");
     writeFileSync(resolve(output,`olympus-${name}.svg`),`<svg xmlns="http://www.w3.org/2000/svg" width="1648" height="1060" viewBox="0 0 1648 1060"><rect width="1648" height="1060" rx="16" fill="#101827"/><g font-family="DejaVu Sans Mono,monospace" font-size="16" xml:space="preserve">${text}</g></svg>\n`);

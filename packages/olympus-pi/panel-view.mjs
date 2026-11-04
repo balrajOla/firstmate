@@ -1,7 +1,7 @@
 // Full dashboard tabs share the standalone/GitHub renderer. The default tasks
 // view is a smaller prompt/output/status projection that leaves chat visible.
 import { Dashboard, clean } from "./view.mjs";
-import { taskLines } from "./task-view.mjs";
+import { taskLines, workbookTasks } from "./task-view.mjs";
 
 export const oneLine = value => clean(value).replace(/\s+/g, " ").trim();
 export const taskLabel = task => `${task.id} [${task.state}] ${oneLine(task.title)}`;
@@ -62,7 +62,7 @@ export class PanelState {
         const extra = {};
         let record;
         if (this.tab === "tasks") {
-          const candidates = (snapshot.tasks || []).filter(t => this.focus?.kind !== "project" || t.project === this.focus.id);
+          const candidates = workbookTasks(snapshot, this.focus).filter(t => t.state !== "accepted");
           const task = this.focus?.kind === "task" ? this.focus.id : !this.reply?.prompt ? candidates[0]?.id : undefined;
           if (task) record = await this.request({ action: "task.get", task });
         }
@@ -94,7 +94,13 @@ export class PanelState {
     if (this.disposed || this.timer) return;
     void this.refresh();
     this.timer = setInterval(() => void this.refresh(), 1000);
-    this.motion = setInterval(() => { if (!this.disposed) this.repaint(); }, 250);
+    this.motion = setInterval(() => {
+      if (this.disposed) return;
+      const fresh = !this.error && this.lastSuccess && Date.now() - this.lastSuccess <= 5000;
+      const ids = new Set(workbookTasks(this.snapshot, this.focus).map(t => t.id));
+      const attention = (this.snapshot?.incidents || []).some(i => ids.has(i.task) && i.owner === "operator" && i.state !== "resolved");
+      if (!this.reducedMotion && (this.reply?.active || fresh && (this.snapshot?.counts?.fresh_active > 0 || attention))) this.repaint();
+    }, 250);
     this.timer.unref?.(); this.motion.unref?.();
   }
   lines(rows, columns) { return panelLines(this.snapshot, { ...this, rows, columns }); }

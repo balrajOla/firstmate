@@ -395,15 +395,15 @@ class ProcessContract(unittest.TestCase):
                     if marker in output: return output
             self.fail(f"Pi did not show {marker!r}: {output[-2000:]!r}")
         try:
-            wait_for(b"OLYMPUS / Prompt")
+            wait_for(b"OLYMPUS / Workbook")
             os.write(master, b"/olympus-panel projects\r")
             wait_for(b"OLYMPUS / Projects")
             os.write(master, ("/olympus-focus " + task + "\r").encode())
-            wait_for(("TASK " + task).encode())
+            wait_for(("Selected task " + task).encode())
             os.write(master, b"/olympus\r")
             wait_for(b"OLYMPUS / Live")
             os.write(master, b"q")
-            wait_for(b"/olympus-panel live: full layout")
+            wait_for(b"/olympus-focus select")
             # Type but do not submit: this proves dashboard refreshes leave the
             # standard editor usable without spending model tokens.
             os.write(master, b"Discuss the selected importer task")
@@ -461,15 +461,19 @@ class ProcessContract(unittest.TestCase):
                     if marker in output: return output
                     time.sleep(.15)
                 self.fail(f"WezTerm pane {pane} did not render {marker!r}: {output[-1200:]}")
-            screen("OLYMPUS / Prompt")
+            screen("OLYMPUS / Workbook")
             screen("SIMULATOR")
+            if os.environ.get("OLYMPUS_WEZTERM_TEXT_EVIDENCE"):
+                evidence = Path(os.environ["OLYMPUS_WEZTERM_TEXT_EVIDENCE"])
+                evidence.write_text(screen("TASK / REQUEST"))
+                evidence.chmod(0o600)
             colored = wz("get-text", "--pane-id", pane, "--escapes")
             self.assertRegex(colored, r"\x1b\[[^\x1b]*?(?:38|48)[;:]")
             for tab in ["live", "projects", "crew", "queue", "memory", "health", "history", "today", "week", "recurring"]:
                 wz("send-text", "--pane-id", pane, "--no-paste", "/olympus-panel " + tab + "\r")
                 screen("OLYMPUS / " + tab.capitalize())
             wz("send-text", "--pane-id", pane, "--no-paste", "/olympus-panel tasks\r")
-            screen("OLYMPUS / Prompt")
+            screen("OLYMPUS / Workbook")
             # Paste exercises WezTerm's bracketed-paste path, not just a PTY.
             wz("send-text", "--pane-id", pane, "Draft 界 Ω")
             screen("Draft 界 Ω")

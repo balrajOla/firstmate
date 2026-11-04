@@ -1,0 +1,376 @@
+{
+  "source": "Running synthetic demo and production workbookRows renderer; no model calls",
+  "columns": 176,
+  "rows": 46,
+  "segments": [
+    [
+      {
+        "text": "OLYMPUS / Workbook",
+        "color": "accent",
+        "bold": true,
+        "bg": "selectedBg"
+      },
+      {
+        "text": "  SIMULATOR - SAMPLE DATA",
+        "color": "warning",
+        "bold": true
+      }
+    ],
+    [
+      {
+        "text": "◐ FLEET ACTIVE",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "  RUN 12",
+        "color": "accent",
+        "bold": false
+      },
+      {
+        "text": "  YOUR ACTION 3",
+        "color": "warning",
+        "bold": true
+      },
+      {
+        "text": "  BLOCKED 3",
+        "color": "warning",
+        "bold": false
+      },
+      {
+        "text": "  RECENT DONE 10",
+        "color": "success",
+        "bold": false
+      }
+    ],
+    [
+      {
+        "text": "YOUR MOVE! ",
+        "color": "warning",
+        "bold": true
+      },
+      {
+        "text": "Choose the acceptance threshold for the evaluation rubric",
+        "color": "warning",
+        "bold": true
+      }
+    ],
+    [
+      {
+        "text": "TASK / REQUEST                                   ",
+        "color": "accent",
+        "bold": false
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "STATUS            ",
+        "color": "accent",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "RISK SIGNAL ",
+        "color": "accent",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "DECISION / RESULT / NEXT ACTION                                                         ",
+        "color": "accent",
+        "bold": false
+      }
+    ],
+    [
+      {
+        "text": "────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────",
+        "color": "dim",
+        "bold": false
+      }
+    ],
+    [
+      {
+        "text": "! Evaluation Lab current deliverable             ",
+        "color": "text",
+        "bold": false
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "NEEDS YOU         ",
+        "color": "warning",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "ATTENTION   ",
+        "color": "warning",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "Choose the acceptance threshold for the evaluation rubric                               ",
+        "color": "muted",
+        "bold": false
+      }
+    ],
+    [
+      {
+        "text": "! Docs Studio current deliverable                ",
+        "color": "text",
+        "bold": false
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "NEEDS YOU         ",
+        "color": "warning",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "ATTENTION   ",
+        "color": "warning",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "Choose the acceptance threshold for the evaluation rubric                               ",
+        "color": "muted",
+        "bold": false
+      }
+    ],
+    [
+      {
+        "text": "! Quality Platform current deliverable           ",
+        "color": "text",
+        "bold": false
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "NEEDS YOU         ",
+        "color": "warning",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "ATTENTION   ",
+        "color": "warning",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "Choose the acceptance threshold for the evaluation rubric                               ",
+        "color": "muted",
+        "bold": false
+      }
+    ],
+    [
+      {
+        "text": "· Release Tools current deliverable              ",
+        "color": "text",
+        "bold": false
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "RECOVER           ",
+        "color": "muted",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "ATTENTION   ",
+        "color": "warning",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "Verify recovery and preserved work                                                      ",
+        "color": "muted",
+        "bold": false
+      }
+    ],
+    [
+      {
+        "text": "◐ Agent Skills current deliverable               ",
+        "color": "text",
+        "bold": false
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "RUNNING           ",
+        "color": "accent",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "UNRATED     ",
+        "color": "dim",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "No action required; follow progress                                                     ",
+        "color": "muted",
+        "bold": false
+      }
+    ],
+    [
+      {
+        "text": "◐ Model Evaluation current deliverable           ",
+        "color": "text",
+        "bold": false
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "RUNNING           ",
+        "color": "accent",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "UNRATED     ",
+        "color": "dim",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "No action required; follow progress                                                     ",
+        "color": "muted",
+        "bold": false
+      }
+    ],
+    [
+      {
+        "text": "◐ Research Notes current deliverable             ",
+        "color": "text",
+        "bold": false
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "RUNNING           ",
+        "color": "accent",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "UNRATED     ",
+        "color": "dim",
+        "bold": true
+      },
+      {
+        "text": " │ ",
+        "color": "dim",
+        "bold": false
+      },
+      {
+        "text": "No action required; follow progress                                                     ",
+        "color": "muted",
+        "bold": false
+      }
+    ],
+    [
+      {
+        "text": "7/26 shown  /olympus-focus select  Alt+o details",
+        "color": "dim",
+        "bold": false
+      }
+    ],
+    [
+      {
+        "text": "Risk* = chief assessment, not verified acceptance. Full logs remain in the transcript/details.",
+        "color": "dim",
+        "bold": false
+      }
+    ]
+  ]
+}

@@ -1,12 +1,15 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { readFile } from "node:fs/promises";
+import { Text } from "@earendil-works/pi-tui";
+// @ts-ignore Presentation-only workbook helpers.
+import { textOf, coordinatorResultSummary, workbookGuidelines } from "./task-view.mjs";
 import installPanel from "./panel.js";
 // @ts-ignore Shared renderer color semantics.
 import { panelColor } from "./panel-view.mjs";
 // The JavaScript view is also used by the standalone terminal and semantic UI tests.
 // @ts-ignore JavaScript module has an intentionally runtime-only interface.
-import { Dashboard } from "./view.mjs";
+import { Dashboard, clean } from "./view.mjs";
 // @ts-ignore Runtime-only client shares the same JSON protocol with the CLI.
 import { client } from "./client.mjs";
 
@@ -83,12 +86,14 @@ export default function (pi: ExtensionAPI) {
     description: "Open full Olympus dashboard; Escape returns to your typed draft",
     handler: openDashboard,
   });
-  pi.on("before_agent_start", async (event) => {
+  pi.on("before_agent_start", async (event, ctx) => {
     if (!process.env.OLYMPUS_AGENT_TOKEN_FILE) return;
-    return { systemPrompt: event.systemPrompt + "\nYou are the Olympus chief of staff for this session. Keep portfolio state in the durable coordinator. Start with chief.briefing and read olympus_help before unfamiliar mutations. Route new requests using intake.preview then intake.submit for confident matches or unmatched new projects; ask a short project choice for ambiguity. Amend a specifically identified task with task and expected_version; never overwrite requirements based only on similarity. Use learning.status and dispatch.plan to inspect evidence, complexity and effort. Use project.context for older work, project.outcomes for separate deliverables, agenda for today/week and schedules.list for recurring work. Preserve versions, form scoped teams, respect capacity and live capability gates, and delegate independent work through Firstmate. Project automation dispatches and reviews ready tasks without keeping this conversation open. Never treat process exit as task acceptance. Finish a coordination turn with chief.finish. The daemon must remain independent of your conversation. Do not repeatedly retry an unchanged refusal." };
+    return { systemPrompt: event.systemPrompt + "\nYou are the Olympus chief of staff for this session. Keep portfolio state in the durable coordinator. Start with chief.briefing and read olympus_help before unfamiliar mutations. Route new requests using intake.preview then intake.submit for confident matches or unmatched new projects; ask a short project choice for ambiguity. Amend a specifically identified task with task and expected_version; never overwrite requirements based only on similarity. Use learning.status and dispatch.plan to inspect evidence, complexity and effort. Use project.context for older work, project.outcomes for separate deliverables, agenda for today/week and schedules.list for recurring work. Preserve versions, form scoped teams, respect capacity and live capability gates, and delegate independent work through Firstmate. Project automation dispatches and reviews ready tasks without keeping this conversation open. Never treat process exit as task acceptance. Finish a coordination turn with chief.finish. The daemon must remain independent of your conversation. Do not repeatedly retry an unchanged refusal." + (ctx.mode === "tui" && chiefMode ? "\n\n" + workbookGuidelines : "") };
   });
   pi.registerTool({
     name: "olympus_help", label: "Olympus action reference",
+    renderCall: (_args, theme) => new Text(theme.fg("dim", "Olympus · action reference"), 0, 0),
+    renderResult: (result, options, theme) => new Text(theme.fg("muted", options.expanded ? clean(textOf(result.content)) : "Action reference loaded. Ctrl+O expands details."), 0, 0),
     description: "Read the installed exact Olympus JSON action contracts before changing work.",
     parameters: Type.Object({ section: Type.Optional(Type.String({ description: "portfolio, agents, messages, memory, automation or calendar; omit for introduction" })) }),
     async execute(_id, params) {
@@ -102,6 +107,12 @@ export default function (pi: ExtensionAPI) {
   pi.registerTool({
     name: "olympus_control",
     label: "Olympus",
+    renderCall: (args, theme) => {
+      let action = "coordinator request";
+      try { action = JSON.parse(args.request).action || action; } catch { /* partial arguments */ }
+      return new Text(theme.fg("dim", "Olympus · " + clean(action).slice(0, 100).replace(/[._]/g, " ")), 0, 0);
+    },
+    renderResult: (result, options, theme, context) => new Text(theme.fg(context.isError ? "error" : "muted", options.expanded ? clean(textOf(result.content)) : context.isError ? "Coordinator request failed; expand for details." : coordinatorResultSummary(result.details)), 0, 0),
     description: "Manage durable project work with the assigned scoped agent credential. Preview correlation before creating or amending tasks. Use chief.briefing for bounded context. Never infer acceptance from process exit. No operator service controls are available. Read docs/olympus-api.md in the installed source for complete contracts. A usual sequence is project.create; agent.create with project, role and parent; task.create with project, title, requirements and role; task.claim with task, agent and reserve_children for planned fan-out; dispatch.plan then operation.prepare with task, profile and verb=launch. A native child requires child.reserve before launch and verified native-child support; otherwise use an independent worker. messages use message.send with recipient, thread, body, optional task, followed by message.ack delivered/read/acted by the recipient. Fetch task.get before amendments and use expected_version. Never use an unverified profile.",
     parameters: Type.Object({ request: Type.String({ description: "JSON object following the Olympus action contract" }) }),
     async execute(_id, params) {

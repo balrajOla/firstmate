@@ -148,16 +148,43 @@ test("panel refreshes are read-only, coalesced, retain cache and stop on disposa
   assert.equal(state.snapshot.tasks.length, 14); assert.equal(repaint, 2);
 });
 
-import { taskLines, taskStatus, compactHeight } from "../packages/olympus-pi/task-view.mjs";
-test("compact task cards show exact prompt, output and verified completion while preserving transcript space", () => {
+import { taskLines, taskStatus, compactHeight, workbookRows, riskSignal, decisionDigest, coordinatorResultSummary } from "../packages/olympus-pi/task-view.mjs";
+test("workbook table shows a concise verified result, never full requirements or obsolete output",  () => {
   const snapshot = fixture(), task = { ...snapshot.tasks[0], state: "accepted", requirements: "Preserve every imported row", version: 2 };
   snapshot.tasks[0] = task;
   const record = { task, artifacts: [{ version: 1, body: "Old output" }, { version: 2, body: "Imported 42 rows" }] };
   const lines = taskLines(snapshot, { record, focus: { kind: "task", id: task.id }, rows: 46, columns: 176, lastSuccess: 100000, now: 100000 });
   assert.ok(lines.length <= compactHeight(46));
   const out = lines.join("\n");
-  assert.ok(out.includes("[Completed]")); assert.ok(out.includes("PROMPT Preserve every imported row"));
-  assert.ok(out.includes("OUTPUT Imported 42 rows")); assert.ok(!out.includes("Old output"));
+  assert.ok(out.includes("DONE")); assert.ok(out.includes("TASK / REQUEST"));
+  assert.ok(out.includes("Result: Imported 42 rows")); assert.ok(!out.includes("Old output"));
+  assert.ok(!out.includes("Preserve every imported row"));
   assert.equal(taskStatus({ id: "T", state: "unknown" }, [{ task: "T", owner: "operator", reason: "Confirm status" }]), "Unknown - verify");
   assert.equal(taskStatus({ id: "T", state: "blocked" }, [{ task: "T", owner: "operator", reason: "Choose acceptance threshold" }]), "Awaiting feedback");
+});
+test("workbook colors and activity animate only current observations and honor reduced motion", () => {
+  const s = fixture(); s.tasks[2].heartbeat = 100;
+  const opts = { rows: 46, columns: 176, lastSuccess: 100000, now: 100000 };
+  const a = taskLines(s, opts), b = taskLines(s, { ...opts, now: 100250 });
+  assert.notDeepEqual(a, b);
+  assert.deepEqual(taskLines(s, { ...opts, reducedMotion: true }), taskLines(s, { ...opts, now: 100250, reducedMotion: true }));
+  assert.deepEqual(taskLines(s, { ...opts, now: 110000 }), taskLines(s, { ...opts, now: 110250 }));
+  const segments = workbookRows(s, opts).flat();
+  assert.ok(segments.some(part => part.color === "warning" && part.bold));
+  assert.ok(segments.some(part => part.bg === "selectedBg"));
+  assert.ok(!a.join("\n").includes("%"));
+});
+test("risk signals preserve uncertainty and model assessment cannot accept work or hide native conflicts", () => {
+  const s = fixture(); s.tasks[1].state = "blocked";
+  s.incidents = [{ task: "T1", kind: "runtime_generation", owner: "operator", state: "open", reason: "Generation conflict" }];
+  const opts = { focus: { kind: "task", id: "T1" }, rows: 46, columns: 176, lastSuccess: 100000, now: 100000,
+    brief: { task: "T1", risk: "low", riskBasis: "Chief thinks low", nextAction: "Inspect generation" } };
+  const out = taskLines(s, opts).join("\n");
+  assert.ok(out.includes("HIGH")); assert.ok(!out.includes("LOW*")); assert.ok(out.includes("NEEDS YOU"));
+  assert.equal(riskSignal({ id: "U", state: "unknown" }).label, "UNVERIFIED");
+});
+test("routine payloads and code blocks are excluded from decision digests and broker rendering", () => {
+  assert.equal(decisionDigest('{"request_id":"secret-ish","records":[1,2]}'), "Result available in details");
+  assert.equal(decisionDigest('```sh\nrm -rf example\n```\nDecision: review the importer'), "Decision: review the importer");
+  assert.equal(coordinatorResultSummary({ state: "pending" }), "Runtime action pending - not confirmed");
 });

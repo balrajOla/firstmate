@@ -1,26 +1,28 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { truncateToWidth } from "@earendil-works/pi-tui";
+import { Text, truncateToWidth } from "@earendil-works/pi-tui";
+import { Type } from "typebox";
 // @ts-ignore Installation-local JavaScript modules.
 import { client } from "./client.mjs";
 // @ts-ignore UI projection is shared with dependency-free tests.
 import { PanelState, panelColor, panelTabs, panelHelp, taskLabel, oneLine } from "./panel-view.mjs";
 // @ts-ignore Pure prompt/output projection.
-import { textOf } from "./task-view.mjs";
+import { textOf, workbookRows } from "./task-view.mjs";
 
 export default function (pi: ExtensionAPI, { read = client(), agent = client({ agent: true }) } = {}) {
   let panel: PanelState | undefined;
   let context: ExtensionContext | undefined;
   let visible = true;
   let generation = 0;
-  let reply: { prompt: string; output: string; state: string; command?: string } | undefined;
-  const updateMessage = (message: any) => {
-    if (message.role === "user") reply = { prompt: textOf(message.content), output: "", state: "Responding" };
+  let reply: { prompt: string; output: string; state: string; active: boolean; command?: string } | undefined;
+  let brief: { headline: string; decision: string; nextAction: string; risk: string; riskBasis: string; task?: string } | undefined;
+  const updateMessage = (message: any, redraw = true) => {
+    if (message.role === "user") { reply = { prompt: textOf(message.content), output: "", state: "Responding", active: true }; brief = undefined; }
     else if (message.role === "assistant" && reply) {
       reply.output = textOf(message.content);
       if (message.stopReason === "error") reply.state = "Reply failed";
     }
-    else if (message.role === "toolResult" && reply) reply.output = `Command result (${message.toolName}): ${textOf(message.content)}`;
-    if (panel) { panel.reply = reply; panel.repaint(); }
+    // Raw API/tool payloads stay in the transcript, never in the workbook.
+    if (panel) { panel.reply = reply; panel.brief = brief; if (redraw) panel.repaint(); }
   };
   const stop = () => {
     panel?.dispose();
@@ -38,10 +40,23 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
       state.tab = oldTab;
       state.focus = oldFocus;
       state.reply = reply;
+      state.brief = brief;
+      state.reducedMotion = process.env.OLYMPUS_REDUCED_MOTION === "1";
       panel = state;
       state.start();
       return {
         render(width: number) {
+          if (state.tab === "tasks") {
+            return workbookRows(state.snapshot, { ...state, rows: tui.terminal.rows || 40, columns: width }).map((row: any[]) => {
+              const line = row.map(segment => {
+                let text = theme.fg(segment.color, segment.text);
+                if (segment.bold) text = theme.bold(text);
+                if (segment.bg) text = theme.bg(segment.bg, text);
+                return text;
+              }).join("");
+              return truncateToWidth(line, Math.max(0, width), "…");
+            });
+          }
           const lines = state.lines(tui.terminal.rows || 40, width);
           return lines.map((line: string, index: number) => {
             const clipped = truncateToWidth(line, Math.max(0, width), "…");
@@ -56,23 +71,50 @@ export default function (pi: ExtensionAPI, { read = client(), agent = client({ a
   };
 
   pi.on("session_start", (_event, ctx) => {
-    generation++; visible = true; reply = undefined;
-    for (const entry of ctx.sessionManager?.getBranch() || []) if (entry.type === "message") updateMessage(entry.message);
-    if (reply) reply.state = "Last saved reply";
+    generation++; visible = true; reply = undefined; brief = undefined;
+    for (const entry of ctx.sessionManager?.getBranch() || []) {
+      if (entry.type === "message") updateMessage(entry.message);
+      else if (entry.type === "custom" && entry.customType === "olympus-workbook-brief") brief = entry.data as typeof brief;
+    }
+    if (reply) { reply.state = "Last saved reply"; reply.active = false; }
     attach(ctx);
   });
-  pi.on("message_start", (event) => { if (event.message.role === "user") updateMessage(event.message); });
-  pi.on("message_update", (event) => updateMessage(event.message));
+  pi.on("message_start", (event) => {
+    if (event.message.role === "user") updateMessage(event.message);
+    else if (event.message.role === "assistant" && reply?.state === "Reply failed") { reply.state = "Responding"; reply.active = true; panel?.repaint(); }
+  });
+  pi.on("message_update", (event) => updateMessage(event.message, false));
   pi.on("message_end", (event) => { if (event.message.role !== "user") updateMessage(event.message); });
   pi.on("tool_execution_start", (event) => {
     if (reply) { reply.command = event.toolName; reply.state = "Running command"; }
     panel?.repaint();
   });
   pi.on("agent_settled", (event) => {
-    if (reply) { reply.state = event.aborted ? "Stopped" : reply.state === "Reply failed" ? "Reply failed" : "Reply finished"; reply.command = undefined; }
+    if (reply) { reply.active = false; reply.state = event.aborted ? "Stopped" : reply.state === "Reply failed" ? "Reply failed" : "Reply finished"; reply.command = undefined; }
     panel?.repaint();
   });
   pi.on("session_shutdown", () => { generation++; stop(); context = undefined; });
+
+  pi.registerTool({
+    name: "olympus_summary", label: "Workbook decision brief",
+    description: "Publish a concise chief assessment for the workbook: outcome, actual user decision or None, next action, and risk with its basis. Presentation only; never accepts work or controls a process. Omit raw logs and routine progress notes.",
+    parameters: Type.Object({
+      headline: Type.String({ maxLength: 110 }), decision: Type.String({ maxLength: 180 }),
+      nextAction: Type.String({ maxLength: 160 }),
+      risk: Type.Union([Type.Literal("unknown"), Type.Literal("low"), Type.Literal("medium"), Type.Literal("high")]),
+      riskBasis: Type.String({ minLength: 1, maxLength: 180 }), task: Type.Optional(Type.String({ maxLength: 80 })),
+    }),
+    async execute(_id, params) {
+      if (params.task && panel?.snapshot && ![...(panel.snapshot.tasks || []), ...(panel.snapshot.completed || [])].some((task: any) => task.id === params.task)) throw new Error("The assessment task is not in the current workbook; refresh or omit the task reference.");
+      if (!oneLine(params.riskBasis)) throw new Error("A concrete risk basis or 'Not assessed' is required.");
+      brief = { headline: oneLine(params.headline), decision: oneLine(params.decision), nextAction: oneLine(params.nextAction), risk: params.risk, riskBasis: oneLine(params.riskBasis), ...(params.task ? { task: params.task } : {}) };
+      pi.appendEntry("olympus-workbook-brief", brief);
+      if (panel) { panel.brief = brief; panel.repaint(); }
+      return { content: [{ type: "text", text: "Workbook assessment updated. Native task status and runtime authority are unchanged." }], details: brief };
+    },
+    renderCall: (_args, theme) => new Text(theme.fg("dim", "Workbook · decision brief"), 0, 0),
+    renderResult: (result, options, theme) => new Text(theme.fg("muted", options.expanded ? JSON.stringify(result.details, null, 2) : "Chief assessment recorded; task acceptance unchanged."), 0, 0),
+  });
 
   pi.registerCommand("olympus-panel", {
     description: "Olympus: tasks (compact prompt/output/status), live, projects, crew, queue, memory, health, history, today, week, recurring, on/off",

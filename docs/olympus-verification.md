@@ -73,6 +73,16 @@ OLYMPUS_AUTH_LIVE=1 bash tests/olympus-auth-live.test.sh
 
 This verifies selected-model credential availability according to Pi's registry, not a paid model-response benchmark.
 
+## Decision-first workbook verification (2026-11-04)
+
+The decision-first workbook passed 36 UI/runtime tests plus the pinned Pi typecheck and real Pi interactive guard.
+The tests cover aligned table cells at narrow and wide widths, priority operator actions, condensed outcomes, suppressed routine payloads, native risk conflicts, explicit chief-assessment provenance, stale-animation freezing, reduced motion and preservation of task acceptance authority.
+The real WezTerm GUI guard was rerun with the same installed build above and passed all dashboard tabs, colored segments, Unicode paste, pane-split resizing and draft restoration.
+The structured brief tool was exercised through the real pinned Pi module loader with synthetic coordinator reads; this is UI-contract evidence, not a paid model-quality benchmark.
+The default tool renderers collapse coordinator JSON and reference text without removing those records from model context or expanded detail.
+`node tests/olympus-snapshots.mjs` also produces `assets/olympus-workbook.svg` and its segment record from the production workbook renderer and a running, explicitly synthetic demo.
+The preview is not concept art or evidence of real worker throughput.
+
 ## Blueprint coverage
 
 These IDs map to the previously delivered 29-feature, 41-screen blueprint.

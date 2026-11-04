@@ -11,7 +11,7 @@ const { visibleWidth } = require("@earendil-works/pi-tui");
 const install = await createJiti(import.meta.url).import(modulePath, { default: true });
 
 function runtime(mode = "tui") {
-  const hooks = new Map(), commands = new Map(), shortcuts = new Map(), reads = [], scoped = [], widgets = [];
+  const hooks = new Map(), commands = new Map(), shortcuts = new Map(), tools = new Map(), entries = [], reads = [], scoped = [], widgets = [];
   let component;
   const context = { mode, ui: {
     setWidget(_key, factory) {
@@ -28,11 +28,11 @@ function runtime(mode = "tui") {
     notify() {}, select: async (_title, choices) => choices[0],
     setEditorText() { throw new Error("The panel must never replace the user's input"); },
   } };
-  install({ on(name, hook) { hooks.set(name, hook); }, registerCommand(name, command) { commands.set(name, command); }, registerShortcut(name, shortcut) { shortcuts.set(name, shortcut); } }, {
+  install({ on(name, hook) { hooks.set(name, hook); }, registerCommand(name, command) { commands.set(name, command); }, registerShortcut(name, shortcut) { shortcuts.set(name, shortcut); }, registerTool(tool) { tools.set(tool.name, tool); }, appendEntry(type, data) { entries.push({ type, data }); } }, {
     read: async request => { reads.push(request); return { counts: {}, chief: "idle", tasks: [{ id: "T1", title: "Importer", state: "ready" }], projects: [{ id: "P1", name: "Data", state: "active" }], incidents: [], responses: [], completed: [] }; },
     agent: async request => { scoped.push(request); return { task: { id: request.task, requirements: "Current acceptance" } }; },
   });
-  return { hooks, commands, shortcuts, reads, scoped, widgets, context, get component() { return component; } };
+  return { hooks, commands, shortcuts, tools, entries, reads, scoped, widgets, context, get component() { return component; } };
 }
 
 test("panel commands preserve input and focus supplies fresh scoped context", async () => {
@@ -42,7 +42,7 @@ test("panel commands preserve input and focus supplies fresh scoped context", as
   try {
     await r.hooks.get("session_start")({}, r.context);
     await r.commands.get("olympus-focus").handler("T1", r.context);
-    assert.ok(r.component.render(80).join("\n").includes("T1"));
+    assert.ok(r.component.render(80).join("\n").includes("Importer"));
     for (const width of [20, 40, 80, 144]) {
       assert.ok(r.component.render(width).every(line => visibleWidth(line) <= width));
     }
@@ -69,24 +69,42 @@ test("panel commands preserve input and focus supplies fresh scoped context", as
   }
 });
 
-test("compact widget pairs prompts with streamed reply and command output without claiming task acceptance", async () => {
+test("workbook suppresses working notes and raw command payloads, then shows a concise outcome",  async () => {
   const r = runtime();
   try {
     await r.hooks.get("session_start")({}, r.context);
     await r.hooks.get("message_start")({ message: { role: "user", content: [{ type: "text", text: "Count the accepted reports" }] } });
     await r.hooks.get("message_update")({ message: { role: "assistant", content: [{ type: "text", text: "There are 42 accepted reports" }] } });
     let out = r.component.render(144).join("\n");
-    assert.ok(out.includes("PROMPT Count the accepted reports"));
-    assert.ok(out.includes("OUTPUT There are 42 accepted reports"));
-    assert.ok(out.includes("[Responding]"));
+    assert.ok(out.includes("Count the accepted reports"));
+    assert.ok(!out.includes("There are 42 accepted reports"));
+    assert.ok(out.includes("Reply running"));
     await r.hooks.get("agent_settled")({ aborted: false });
-    assert.ok(r.component.render(144).join("\n").includes("[Reply finished]"));
+    assert.ok(r.component.render(144).join("\n").includes("There are 42 accepted reports"));
+    assert.ok(r.component.render(144).join("\n").includes("Reply ready"));
     await r.hooks.get("message_start")({ message: { role: "user", content: "Next command" } });
     await r.hooks.get("tool_execution_start")({ toolName: "olympus_control" });
     await r.hooks.get("message_end")({ message: { role: "toolResult", toolName: "olympus_control", content: [{ type: "text", text: "Command output received" }] } });
     out = r.component.render(144).join("\n");
-    assert.ok(out.includes("Running command"));
-    assert.ok(out.includes("Command output received"));
+    assert.ok(out.includes("Reply running"));
+    assert.ok(!out.includes("Command output received"));
+  } finally { await r.hooks.get("session_shutdown")(); }
+});
+
+test("structured chief brief updates presentation only, with explicit risk basis", async () => {
+  const r = runtime();
+  try {
+    await r.hooks.get("session_start")({}, r.context);
+    const tool = r.tools.get("olympus_summary");
+    assert.ok(tool);
+    await tool.execute("test", { headline: "Importer needs review", decision: "Review acceptance", nextAction: "Check the 42-row evidence", risk: "medium", riskBasis: "Review is not complete", task: "T1" });
+    const out = r.component.render(176).join("\n");
+    assert.ok(out.includes("Check the 42-row evidence"));
+    assert.ok(out.includes("MEDIUM*"));
+    assert.ok(out.includes("QUEUED"));
+    assert.equal(r.entries.at(-1).type, "olympus-workbook-brief");
+    assert.ok(r.reads.every(request => ["snapshot", "task.get"].includes(request.action)));
+    await assert.rejects(tool.execute("bad", { headline: "Invalid", decision: "None", nextAction: "None", risk: "high", riskBasis: " " }));
   } finally { await r.hooks.get("session_shutdown")(); }
 });
 

@@ -5,7 +5,7 @@
 > Real Claude, Codex and Muse lifecycle compatibility still needs authenticated testing on the target machine.
 > The upstream Firstmate guide continues below.
 
-![Olympus daily command view](docs/assets/olympus-today.png)
+![Olympus decision-first workbook - synthetic sample data](docs/assets/olympus-workbook.svg)
 
 <h1 align="center">firstmate</h1>
 <p align="center">

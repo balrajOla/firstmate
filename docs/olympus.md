@@ -46,11 +46,19 @@ balraj-work
 # Optional: /olympus-auto on
 ```
 
-The daily entry point opens one Pi terminal with a compact prompt/output/status panel docked above the ordinary chat editor.
-The default `tasks` view uses at most 35 percent of the terminal, capped at fourteen rows, so normal Pi command output and the conversation remain visible.
-It pairs the current user prompt with streamed Pi reply or command output and distinguishes a finished chat reply from independently accepted task work.
-A selected task shows its exact current requirements, latest candidate output and task status; accepted tasks are labeled completed, while unknown observations remain explicitly unverified.
-A blocked task with a human decision is labeled awaiting feedback, without treating every technical incident as a feedback request.
+The daily entry point opens one Pi terminal with a compact, decision-first workbook above the ordinary chat editor.
+The default `tasks` view uses at most 35 percent of the terminal, capped at fourteen rows, so the conversation remains visible.
+Its table separates task/request, status, risk signal and decision/result/next action; narrower panes retain status and action columns instead of squeezing every field into unreadable text.
+A highlighted next-move strip prioritizes an observed operator action or clearly labeled chief suggestion.
+Queued work, user actions, unverified sessions and independently accepted results have separate statuses and colors.
+Raw API payloads, code blocks and routine working notes are omitted from the workbook; tool responses and action references are collapsed in the transcript unless Ctrl+O expands them.
+The complete model context, stored records and full detail views remain intact.
+The chief publishes a bounded `olympus_summary` assessment with an outcome, actual decision or None, next action and risk basis.
+Risk labels marked with `*` are chief assessments, not verified task acceptance or calibrated risk probabilities, and cannot downgrade a native runtime conflict.
+Unrated risk remains unrated instead of defaulting to low.
+Indeterminate progress animates only a live local reply or fresh worker activity; an attention marker pulses for a current operator action.
+Stale worker observations freeze progress animation, and no progress percentage is invented.
+Set `OLYMPUS_REDUCED_MOTION=1` before launch for static status and attention indicators.
 Your conversation and input stay available while the panel refreshes, and existing projects, results and recovery obligations come from the same saved coordinator home.
 Use `/olympus-panel tasks` for this compact view.
 The optional `live` view uses the same dashboard renderer as the standalone terminal and the GitHub screenshots, rather than a separate compact summary.
@@ -62,10 +70,12 @@ Cyan identifies the panel and explicit focus, green identifies work and results,
 Text labels carry the same meaning so color is never the only status cue.
 Use Alt+1 through Alt+9 and Alt+0 to change dashboard tabs without replacing your typed draft, or name a tab with `/olympus-panel`.
 The larger dashboard tabs are live, projects, crew, queue, memory, health, history, today, week and recurring.
-The GitHub screenshots illustrate these optional full dashboard layouts, not the default compact task view.
+The workbook preview below comes from the production segment renderer and an explicitly synthetic portfolio; the larger Live/Today screenshots illustrate optional full dashboard layouts.
+
+![Decision-first workbook sample](assets/olympus-workbook.svg)
 Use `/olympus-panel off` to reclaim space and `/olympus-panel on` to restore the dashboard.
 Use `/olympus-focus` to select a task or project with the arrow keys and Enter, or provide its exact ID; `/olympus-focus clear` clears the selection.
-The selected identity is shown in the panel and a fresh, scoped record is added to the next user turn so references to the selected work have explicit context.
+The selected task row is highlighted, exact identities remain in the selection menu, and a fresh scoped record is added to the next user turn so references to that work have explicit context.
 Cached observations are labeled disconnected and never presented to the model as fresh evidence.
 Use Alt+o or `/olympus` for full-screen interactive detail, then Escape or `q` to return to the conversation and preserve your typed draft without opening a separate window.
 Each user turn also includes the exact UI controls, so the chief can explain the installed dashboard instead of directing you to a separate terminal.
@@ -79,7 +89,8 @@ Pi uses your existing provider configuration or its own login flow.
 `OLYMPUS_PI_COMMAND` can name an exact account-aware Pi executable for chief startup; it is never evaluated as shell text.
 Extra Pi arguments follow `--`, for example `olympus chief -- --help`.
 The extension never falls back to the operator credential for model tool requests.
-`olympus chief` exposes only the broker and action-reference tools to its model and blocks other tool calls, so routine coordination cannot issue a direct shell command to shut down its own service.
+`olympus chief` exposes the broker, action-reference and presentation-only summary tools, and blocks other tool calls, so routine coordination cannot issue a direct shell command to shut down its own service.
+The summary tool changes session presentation only; it cannot accept work, alter task status, or control a runtime.
 Workers still require separate OS isolation for a strict system-wide security boundary.
 The interactive dashboard uses the operator connection for your own manual actions.
 The chief can submit work and define recurring tasks within its scope, but cannot enable execution policies, change backup settings, forge runtime evidence or shut down the coordinator.
