@@ -90,6 +90,17 @@ The daemon continues when the chief pauses, hits a budget, exits or loses contex
 Project automation runs in the coordinator and continues after the chief session ends or reaches its wake budget.
 The optional interactive Pi conversation is not restarted automatically; reopening `olympus chief` reuses its durable identity and retrieves current project context.
 
+## Workstation authentication checks
+
+The authenticated Pi launcher setting is implemented in the Olympus CLI, not in the widget.
+Install the CLI, launcher and UI assets from the same reviewed source revision; copying newer widget files onto an older CLI does not add that launch support.
+`balraj-work` selects an existing account-aware Pi executable through `OLYMPUS_PI_COMMAND` and suppresses the self-update check for the installer-managed workstation session.
+Provider credentials remain in their existing native store or launcher environment.
+A widget appearing does not prove model authentication; the GUI-only simulator test deliberately submits no model requests and is not an authentication check.
+With an installed, already-authenticated workstation, `OLYMPUS_AUTH_LIVE=1 bash tests/olympus-auth-live.test.sh` checks a fresh login-shell command, its resolved executable and a separate user wrapper when present.
+It requires the selected model to appear in Pi's authenticated model list and checks that Olympus commands registered, without submitting a model prompt or printing credentials.
+The guard's header owns shell and executable overrides.
+
 ## WezTerm compatibility
 
 The Pi widgets use Pi's terminal renderer, not a separate terminal process or browser window.

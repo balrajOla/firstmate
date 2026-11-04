@@ -58,6 +58,21 @@ The guard's header owns optional installed-binary overrides.
 The measured result was `test_real_wezterm_colors_unicode_resize_and_draft ... ok`, `Ran 1 test`, `OK`.
 Without explicit opt-in the GUI test skips, so ordinary headless tests never open a terminal window.
 
+## Installed authentication-path verification (2026-11-04)
+
+The fresh-login startup guard passed with the installed Pi 1.4.0 runtime after the Olympus CLI was updated to honor `OLYMPUS_PI_COMMAND`.
+The login-shell PATH command, its resolved executable and the separate user wrapper each selected `meta/muse-latest`, reported 34 available models, and registered the Olympus UI commands.
+The interactive fresh-login PTY check also displayed the compact widget and selected model without the missing-model or self-update warning.
+The GUI-only simulator test above does not establish authentication; the account-path guard is separate and opt-in.
+No credential contents are printed by this check and it sends no model prompts.
+Reproduce on an installed workstation with existing provider authentication:
+
+```bash
+OLYMPUS_AUTH_LIVE=1 bash tests/olympus-auth-live.test.sh
+```
+
+This verifies selected-model credential availability according to Pi's registry, not a paid model-response benchmark.
+
 ## Blueprint coverage
 
 These IDs map to the previously delivered 29-feature, 41-screen blueprint.

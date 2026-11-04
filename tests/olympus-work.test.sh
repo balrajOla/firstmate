@@ -25,7 +25,7 @@ cat > "$area/tools/olympus" <<'CLI'
 #!/bin/sh
 printf 'cli' >> "$WORK_LOG"
 printf ' <%s>' "$@" >> "$WORK_LOG"
-printf ' launcher=%s cwd=%s\n' "${OLYMPUS_PI_COMMAND:-bundled}" "$PWD" >> "$WORK_LOG"
+printf ' launcher=%s cwd=%s skip-version=%s\n' "${OLYMPUS_PI_COMMAND:-bundled}" "$PWD" "${PI_SKIP_VERSION_CHECK:-unset}" >> "$WORK_LOG"
 CLI
 chmod +x "$area/tools/"{balraj-stack-start,pi,olympus}
 
@@ -36,6 +36,10 @@ test_one_command_uses_saved_home_and_account_launcher() {
   grep -q 'cli <chief> <--> <--provider> <example> <--model> <exact>' "$WORK_LOG" || fail 'chief options were not preserved'
   grep -q "launcher=$area/tools/pi cwd=$OLYMPUS_HOME" "$WORK_LOG" || fail 'account launcher or saved home was lost'
   [ "$(wc -l < "$WORK_LOG" | tr -d ' ')" = 2 ] || fail 'startup performed unexpected extra work'
+  grep -q 'skip-version=1' "$WORK_LOG" || fail 'installer-managed runtime showed a self-update check'
+  : > "$WORK_LOG"
+  PI_SKIP_VERSION_CHECK=0 bash "$ROOT/bin/balraj-work.sh" -- --no-session
+  grep -q 'skip-version=0' "$WORK_LOG" || fail 'explicit version-check override was ignored'
   pass 'one command starts services and one account-aware Pi chief in the saved home'
 }
 
