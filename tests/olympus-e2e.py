@@ -338,6 +338,21 @@ class ProcessContract(unittest.TestCase):
             self.assertEqual(self.request("task.get",task=task)["task"]["state"],"ready")
         finally:os.close(master)
 
+    def test_chief_uses_exact_account_launcher_and_retains_scoped_identity(self):
+        launcher = Path(self.area.name) / "pi launcher"
+        launcher.write_text("#!/usr/bin/env python3\nimport json, os, sys\nprint(json.dumps({'args': sys.argv[1:], 'chief': os.environ.get('OLYMPUS_CHIEF_MODE'), 'scoped': os.path.isfile(os.environ.get('OLYMPUS_AGENT_TOKEN_FILE', '')), 'home': os.environ.get('OLYMPUS_HOME')}))\n")
+        launcher.chmod(0o700)
+        result = subprocess.run([str(BIN), "--home", str(self.home), "chief", "--", "--no-session"],
+                                env={**os.environ, "OLYMPUS_PI_COMMAND": str(launcher)},
+                                capture_output=True, text=True, timeout=20)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        record = json.loads(result.stdout)
+        self.assertEqual(record["chief"], "1")
+        self.assertTrue(record["scoped"])
+        self.assertEqual(record["home"], str(self.home))
+        self.assertEqual(record["args"][0], "-e")
+        self.assertIn("--no-session", record["args"])
+
     @unittest.skipUnless(os.environ.get("OLYMPUS_PI_CLI"), "Set OLYMPUS_PI_CLI for the pinned real Pi token-free extension guard")
     def test_real_pi_loads_extension_and_registers_commands_without_model_call(self):
         env={**os.environ,"PI_CODING_AGENT_DIR":str(Path(self.area.name)/"pi"),"OLYMPUS_HOME":str(self.home),"OLYMPUS_BIN":str(BIN)}
@@ -353,7 +368,58 @@ class ProcessContract(unittest.TestCase):
                 if response.get("id")=="commands":
                     self.assertTrue(response.get("success"),response)
                     names=[x["name"] for x in response["data"]["commands"]]
-                    self.assertIn("olympus",names);self.assertIn("olympus-auto",names);return
+                    for name in ["olympus", "olympus-auto", "olympus-panel", "olympus-focus"]:
+                        self.assertIn(name, names)
+                    return
         self.fail(f"Pi did not register commands: {received}")
+
+    @unittest.skipUnless(os.environ.get("OLYMPUS_PI_CLI"), "Set OLYMPUS_PI_CLI for the real Pi widget guard")
+    def test_real_pi_docked_panel_keeps_editor_and_workspace_connected(self):
+        _, _, _, task = self.fixture()
+        env = {**os.environ, "PI_CODING_AGENT_DIR": str(Path(self.area.name) / "pi"),
+               "OLYMPUS_HOME": str(self.home), "OLYMPUS_BIN": str(BIN), "PI_OFFLINE": "1"}
+        master, slave = pty.openpty()
+        fcntl.ioctl(slave, termios.TIOCSWINSZ, struct.pack("HHHH", 40, 120, 0, 0))
+        proc = subprocess.Popen(["node", os.environ["OLYMPUS_PI_CLI"], "--no-session", "--no-extensions",
+                                 "--no-mcp", "--no-skills", "--no-context-files", "--no-approve", "-e",
+                                 os.environ.get("OLYMPUS_PI_EXTENSION", str(ROOT / "packages/olympus-pi/index.ts"))],
+                                stdin=slave, stdout=slave, stderr=slave, env=env, cwd=self.home)
+        self.children.append(proc); os.close(slave)
+        def wait_for(marker):
+            output = b""; deadline = time.monotonic() + 15
+            while time.monotonic() < deadline:
+                if select.select([master], [], [], .1)[0]:
+                    try: output += os.read(master, 65536)
+                    except OSError: break
+                    if marker in output: return output
+            self.fail(f"Pi did not show {marker!r}: {output[-2000:]!r}")
+        try:
+            wait_for(b"OLYMPUS / LIVE")
+            os.write(master, b"/olympus-panel projects\r")
+            wait_for(b"OLYMPUS / PROJECTS")
+            os.write(master, ("/olympus-focus " + task + "\r").encode())
+            wait_for(("Focus: " + task).encode())
+            os.write(master, b"/olympus\r")
+            wait_for(b"OLYMPUS / Live")
+            os.write(master, b"q")
+            wait_for(b"OLYMPUS / LIVE")
+            # Type but do not submit: this proves dashboard refreshes leave the
+            # standard editor usable without spending model tokens.
+            os.write(master, b"Discuss the selected importer task")
+            wait_for(b"Discuss the selected importer task")
+            fcntl.ioctl(master, termios.TIOCSWINSZ, struct.pack("HHHH", 24, 80, 0, 0))
+            proc.send_signal(signal.SIGWINCH)
+            wait_for(b"OLYMPUS")
+            self.assertIsNone(proc.poll())
+            self.assertEqual(self.request("task.get", task=task)["task"]["state"], "ready")
+        finally:
+            proc.terminate()
+            deadline = time.monotonic() + 5
+            while proc.poll() is None and time.monotonic() < deadline:
+                if select.select([master], [], [], .05)[0]:
+                    try: os.read(master, 65536)
+                    except OSError: break
+            if proc.poll() is None: proc.kill()
+            proc.wait(timeout=3); os.close(master)
 
 if __name__=="__main__":unittest.main(verbosity=2)

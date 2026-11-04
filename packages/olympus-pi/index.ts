@@ -1,6 +1,7 @@
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { Type } from "typebox";
 import { readFile } from "node:fs/promises";
+import installPanel from "./panel.js";
 // The JavaScript view is also used by the standalone terminal and semantic UI tests.
 // @ts-ignore JavaScript module has an intentionally runtime-only interface.
 import { Dashboard } from "./view.mjs";
@@ -14,6 +15,7 @@ import { WakeGate } from "./wake.mjs";
 import { chiefTools, chiefToolPolicy } from "./policy.mjs";
 
 export default function (pi: ExtensionAPI) {
+  installPanel(pi);
   const read = client();
   const agent = client({ agent: true });
   const gate = new WakeGate();
@@ -60,7 +62,7 @@ export default function (pi: ExtensionAPI) {
   pi.registerCommand("olympus", {
     description: "Open the live portfolio, crew, recovery queue and retained responses",
     handler: async (_args, ctx) => {
-      if (!ctx.hasUI) { ctx.ui.notify("Use olympus status for a non-interactive view.", "info"); return; }
+      if (ctx.mode !== "tui") { ctx.ui.notify("Use olympus status for a non-interactive view.", "info"); return; }
       await ctx.ui.custom<void>((tui, _theme, _keys, done) => {
         const dashboard = new Dashboard(read, { reducedMotion: process.env.OLYMPUS_REDUCED_MOTION === "1", repaint: () => tui.requestRender(), close: () => done() });
         void dashboard.start();

@@ -96,3 +96,45 @@ test("project learning displays evidence and does not imply model training",asyn
   await d.key("2");await d.key("l");
   assert.ok(d.detail.body.includes("not model fine-tuning"));assert.ok(d.detail.body.includes("accepted_after_rework"));assert.ok(d.detail.body.includes("artifact-1"));
 });
+
+import { PanelState, panelLines, panelColor } from "../packages/olympus-pi/panel-view.mjs";
+test("docked panel leaves room for typing and uses labeled semantic colors", () => {
+  for (const rows of [12, 24, 40, 80]) {
+    const lines = panelLines(fixture(), { rows, lastSuccess: 100000, now: 100000 });
+    assert.ok(lines.length <= Math.max(3, Math.min(12, Math.floor(rows * .4))));
+    assert.ok(lines[0].includes("SIMULATOR"));
+    assert.ok(lines[1].includes("3 blocked"));
+    assert.equal(panelColor(lines[0], 0, lines.length), "accent");
+  }
+  assert.equal(panelColor("WORK T1", 2, 8), "success");
+  assert.equal(panelColor("ACTION T1", 3, 8), "warning");
+  assert.equal(panelColor("STALE / DISCONNECTED", 1, 8), "error");
+});
+test("docked tabs and explicit focus display stable task/project identities", () => {
+  const opts = { rows: 40, lastSuccess: 100000, now: 100000 };
+  assert.ok(panelLines(fixture(), { ...opts, tab: "projects" }).join("\n").includes("P0 [active] Project 0"));
+  assert.ok(panelLines(fixture(), { ...opts, tab: "queue" }).join("\n").includes("T1 / Project 1"));
+  assert.ok(panelLines(fixture(), { ...opts, tab: "crew" }).join("\n").includes("worker / rust"));
+  assert.ok(panelLines(fixture(), { ...opts, focus: { id: "T1" } }).join("\n").includes("FOCUS T1 [blocked]"));
+});
+test("docked panel sanitizes model output and clearly marks cached data stale", () => {
+  const data = fixture(); data.tasks[2].title = "\x1b[2Jmalicious\nrow";
+  const lines = panelLines(data, { rows: 40, lastSuccess: 100000, now: 110000 });
+  assert.ok(lines[1].includes("STALE"));
+  assert.ok(!lines.join("").includes("\x1b"));
+  assert.ok(!lines.some(line => line.includes("\n")));
+});
+test("panel refreshes are read-only, coalesced, retain cache and stop on disposal", async () => {
+  let resolve; let calls = 0; let repaint = 0;
+  const state = new PanelState(request => {
+    assert.equal(request.action, "snapshot"); calls++;
+    return new Promise(done => { resolve = done; });
+  }, () => repaint++);
+  const first = state.refresh(); const second = state.refresh(); assert.equal(calls, 1);
+  resolve(fixture()); await Promise.all([first, second]); assert.equal(repaint, 1);
+  state.request = async () => { throw new Error("offline"); };
+  await state.refresh(); assert.ok(state.snapshot); assert.equal(state.error, "offline");
+  state.request = () => new Promise(done => { resolve = done; });
+  const pending = state.refresh(); state.dispose(); resolve({ counts: {} }); await pending;
+  assert.equal(state.snapshot.tasks.length, 14); assert.equal(repaint, 2);
+});

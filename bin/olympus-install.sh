@@ -71,7 +71,7 @@ for binary in olympus olympusd; do
   chmod 755 "$prefix/bin/$binary.new"
   mv "$prefix/bin/$binary.new" "$prefix/bin/$binary"
 done
-for asset in index.ts client.mjs view.mjs wake.mjs policy.mjs terminal.mjs package.json; do
+for asset in index.ts panel.ts panel-view.mjs client.mjs view.mjs wake.mjs policy.mjs terminal.mjs package.json; do
   cp "$source_dir/packages/olympus-pi/$asset" "$prefix/lib/olympus/$asset"
 done
 mkdir -p "$prefix/lib/olympus/docs"
@@ -96,10 +96,13 @@ export PATH="$prefix/lib/olympus/node-runtime/bin:$prefix/lib/olympus/pi-runtime
 exec "$prefix/lib/olympus/olympus-real" "$@"
 WRAPPER
 chmod 755 "$prefix/bin/olympus"
+cp "$source_dir/bin/balraj-work.sh" "$prefix/bin/balraj-work"
+chmod 755 "$prefix/bin/balraj-work"
 # The detached executable resolves its sibling daemon and terminal assets here.
 cp "$prefix/bin/olympusd" "$prefix/lib/olympus/olympusd"
 printf '\nInstalled Olympus in %s\n' "$prefix"
 printf 'Start: %s/bin/olympus init && %s/bin/olympus start && %s/bin/olympus ui\n' "$prefix" "$prefix" "$prefix"
+printf 'Workstation (Olympus widget + Pi input): %s/bin/balraj-work\n' "$prefix"
 printf 'Pi chief: %s/bin/olympus chief\n' "$prefix"
 # shellcheck disable=SC2016 # Print a copyable command with the user's future PATH expansion.
 printf 'If needed, add to PATH: export PATH="%s/bin:$PATH"\n' "$prefix"

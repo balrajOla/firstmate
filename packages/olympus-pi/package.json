@@ -15,10 +15,11 @@
   },
   "dependencies": {
     "@earendil-works/pi-coding-agent": "1.4.0",
+    "@earendil-works/pi-tui": "1.4.0",
     "typebox": "1.4.3"
   },
   "devDependencies": {
-    "typescript": "5.9.3",
-    "@types/node": "24.19.2"
+    "@types/node": "24.19.2",
+    "typescript": "5.9.3"
   }
 }

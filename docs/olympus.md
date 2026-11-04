@@ -41,13 +41,29 @@ Closing the terminal leaves the coordinator running.
 ## Work through Pi
 
 ```bash
-olympus chief
-# In Pi: /olympus
+balraj-work
+# In Pi: /olympus-focus to choose the work you want to discuss
 # Optional: /olympus-auto on
 ```
 
+The daily entry point opens one Pi terminal with a live Olympus panel docked above the ordinary chat editor.
+Your conversation and input stay available while the panel refreshes, and existing projects, results and recovery obligations come from the same saved coordinator home.
+The panel occupies at most 40 percent of the terminal, capped at twelve rows, and adapts when the terminal resizes.
+Cyan identifies the panel and explicit focus, green identifies work and results, amber identifies actions, and red identifies disconnected observations.
+Text labels carry the same meaning so color is never the only status cue.
+Use `/olympus-panel projects`, `/olympus-panel queue` or `/olympus-panel crew` to change the compact view, and `/olympus-panel off` to reclaim space.
+Use `/olympus-focus` to select a task or project with the arrow keys and Enter, or provide its exact ID; `/olympus-focus clear` clears the selection.
+The selected identity is shown in the panel and a fresh, scoped record is added to the next user turn so references to the selected work have explicit context.
+Cached observations are labeled disconnected and never presented to the model as fresh evidence.
+Use `/olympus` for the complete interactive dashboard, then Escape or `q` to return to the conversation without opening a separate window.
+`olympus chief` also loads the docked panel.
+The portable installer includes the command and panel assets; `balraj-work --help` owns launcher options and `--check` provides a model-free startup check.
+The launcher uses an existing account-aware Pi executable when one is available, otherwise the bundled Pi remains the fallback.
+Provider login is still required on a new machine; installation never copies credentials or automatically enables work.
+
 The command creates a durable chief identity once, loads the extension, and gives its tool a scoped credential.
 Pi uses your existing provider configuration or its own login flow.
+`OLYMPUS_PI_COMMAND` can name an exact account-aware Pi executable for chief startup; it is never evaluated as shell text.
 Extra Pi arguments follow `--`, for example `olympus chief -- --help`.
 The extension never falls back to the operator credential for model tool requests.
 `olympus chief` exposes only the broker and action-reference tools to its model and blocks other tool calls, so routine coordination cannot issue a direct shell command to shut down its own service.

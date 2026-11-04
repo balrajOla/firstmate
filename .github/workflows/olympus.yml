@@ -2,7 +2,7 @@ name: Olympus contracts
 
 on:
   push:
-    branches: ["codex/olympus-control-room"]
+    branches: ["codex/olympus-control-room", "feat/olympus-*"]
   pull_request:
     paths:
       - "Cargo.toml"
@@ -11,6 +11,7 @@ on:
       - "packages/olympus-pi/**"
       - "tests/olympus*"
       - "bin/olympus-install.sh"
+      - "bin/balraj-work.sh"
       - ".github/workflows/olympus.yml"
   workflow_dispatch:
 
@@ -56,6 +57,7 @@ jobs:
           "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" demo
           "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" start
           "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" ui --reduced-motion
+          OLYMPUS_HOME="$RUNNER_TEMP/olympus-home" "$RUNNER_TEMP/olympus/bin/balraj-work" --check
           "$RUNNER_TEMP/olympus/bin/olympus" --home "$RUNNER_TEMP/olympus-home" stop
           OLYMPUS_TEST_BIN="$RUNNER_TEMP/olympus/bin/olympus" \
             OLYMPUS_PI_CLI="$RUNNER_TEMP/olympus/lib/olympus/pi-runtime/node_modules/@earendil-works/pi-coding-agent/dist/cli.js" \
@@ -65,7 +67,9 @@ jobs:
         run: |
           mkdir -p dist/olympus/bin dist/olympus/lib/olympus
           cp target/release/olympus target/release/olympusd dist/olympus/bin/
-          cp packages/olympus-pi/*.mjs packages/olympus-pi/index.ts packages/olympus-pi/package*.json dist/olympus/lib/olympus/
+          cp packages/olympus-pi/*.mjs packages/olympus-pi/*.ts packages/olympus-pi/package*.json dist/olympus/lib/olympus/
+          cp bin/balraj-work.sh dist/olympus/bin/balraj-work
+          chmod +x dist/olympus/bin/balraj-work
           mkdir -p dist/olympus/lib/olympus/docs
           cp docs/olympus*.md dist/olympus/lib/olympus/docs/
           tar -czf "dist/olympus-${{ runner.os }}-${{ runner.arch }}.tar.gz" -C dist olympus

@@ -277,7 +277,11 @@ fn run() -> Result<()> {
             let assets = terminal_assets(&exe)?;
             let bundled =
                 assets.join("pi-runtime/node_modules/@earendil-works/pi-coding-agent/dist/cli.js");
-            let mut cmd = if bundled.is_file() {
+            // An account-aware Pi launcher can own provider authentication while
+            // Olympus continues supplying its scoped chief identity and UI.
+            let mut cmd = if let Some(launcher) = std::env::var_os("OLYMPUS_PI_COMMAND") {
+                Command::new(launcher)
+            } else if bundled.is_file() {
                 let mut c = Command::new("node");
                 c.arg(bundled);
                 c
