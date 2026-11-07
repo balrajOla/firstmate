@@ -1,0 +1,17 @@
+{
+  "classification": "real LCM daemon and adapter; summarizer disabled; synthetic input",
+  "checks": [
+    {
+      "check": "real_lcm_capture",
+      "passed": true
+    },
+    {
+      "check": "real_lcm_recall",
+      "passed": true
+    },
+    {
+      "check": "real_lcm_cross_project_negative",
+      "passed": true
+    }
+  ]
+}

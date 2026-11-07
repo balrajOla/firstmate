@@ -1,0 +1,84 @@
+# Every executed pytest case
+
+78 cases from the captured [JUnit file](pytest.xml). Image coverage is checked by `scripts/render_test_evidence.py`.
+
+| # | Test ID | Result | Seconds | Image |
+|---|---|---|---|---|
+| 1 | `tests.test_boundaries::test_group_withdrawal_preserves_surviving_demand` | PASS | 0.079 | [capture](../assets/tests/cases-1.png) |
+| 2 | `tests.test_boundaries::test_message_receipts_have_distinct_ordered_meanings` | PASS | 0.028 | [capture](../assets/tests/cases-1.png) |
+| 3 | `tests.test_boundaries::test_current_assertions_surface_conflicts_without_inventing_resolution` | PASS | 0.031 | [capture](../assets/tests/cases-1.png) |
+| 4 | `tests.test_boundaries::test_purge_keeps_shared_original_until_last_owner_removed` | PASS | 0.047 | [capture](../assets/tests/cases-1.png) |
+| 5 | `tests.test_boundaries::test_original_prompt_history_survives_fresh_application` | PASS | 0.030 | [capture](../assets/tests/cases-1.png) |
+| 6 | `tests.test_boundaries::test_profile_change_invalidates_qualification` | PASS | 0.001 | [capture](../assets/tests/cases-1.png) |
+| 7 | `tests.test_boundaries::test_telemetry_is_disabled_before_integration_process_start` | PASS | 0.016 | [capture](../assets/tests/cases-1.png) |
+| 8 | `tests.test_boundaries::test_explicit_missing_superpowers_is_visible_blocker` | PASS | 0.029 | [capture](../assets/tests/cases-1.png) |
+| 9 | `tests.test_context_quality::test_scope_originals_and_corruption` | PASS | 0.034 | [capture](../assets/tests/cases-1.png) |
+| 10 | `tests.test_context_quality::test_source_supersession_and_packet_qualification` | PASS | 0.028 | [capture](../assets/tests/cases-1.png) |
+| 11 | `tests.test_context_quality::test_oversized_passage_is_visible_omission` | PASS | 0.027 | [capture](../assets/tests/cases-1.png) |
+| 12 | `tests.test_context_quality::test_coverage_does_not_treat_extraction_as_review` | PASS | 0.027 | [capture](../assets/tests/cases-1.png) |
+| 13 | `tests.test_context_quality::test_grounded_outcome_review_and_revocation` | PASS | 0.044 | [capture](../assets/tests/cases-1.png) |
+| 14 | `tests.test_context_quality::test_fabricated_quote_and_stale_revision_rejected` | PASS | 0.035 | [capture](../assets/tests/cases-2.png) |
+| 15 | `tests.test_context_quality::test_obligations_gate_acceptance` | PASS | 0.034 | [capture](../assets/tests/cases-2.png) |
+| 16 | `tests.test_context_quality::test_lint_is_advisory_not_truth_detector` | PASS | 0.000 | [capture](../assets/tests/cases-2.png) |
+| 17 | `tests.test_context_quality::test_extracted_text_tampering_is_detected` | PASS | 0.022 | [capture](../assets/tests/cases-2.png) |
+| 18 | `tests.test_evaluation::test_judges_report_false_accepts` | PASS | 0.000 | [capture](../assets/tests/cases-2.png) |
+| 19 | `tests.test_evaluation::test_routing_reports_misses_instead_of_hiding_them` | PASS | 0.000 | [capture](../assets/tests/cases-2.png) |
+| 20 | `tests.test_evaluation::test_policy_review_and_conflicting_rollback` | PASS | 0.023 | [capture](../assets/tests/cases-2.png) |
+| 21 | `tests.test_evaluation::test_invalid_policy_is_not_applied` | PASS | 0.022 | [capture](../assets/tests/cases-2.png) |
+| 22 | `tests.test_execution::test_parallel_team_has_distinct_peers_and_review_dependencies` | PASS | 0.058 | [capture](../assets/tests/cases-2.png) |
+| 23 | `tests.test_execution::test_bridge_replay_is_idempotent` | PASS | 0.070 | [capture](../assets/tests/cases-2.png) |
+| 24 | `tests.test_execution::test_uncertain_agent_create_does_not_duplicate` | PASS | 0.036 | [capture](../assets/tests/cases-2.png) |
+| 25 | `tests.test_execution::test_cancel_reaches_remote_issues` | PASS | 0.047 | [capture](../assets/tests/cases-2.png) |
+| 26 | `tests.test_execution::test_paused_project_does_not_block_other_projects` | PASS | 0.056 | [capture](../assets/tests/cases-2.png) |
+| 27 | `tests.test_execution::test_concurrent_bridge_calls_claim_once` | PASS | 0.059 | [capture](../assets/tests/cases-3.png) |
+| 28 | `tests.test_execution::test_model_override_and_missing_qualification` | PASS | 0.015 | [capture](../assets/tests/cases-3.png) |
+| 29 | `tests.test_execution::test_plan_cycles_and_child_limits` | PASS | 0.034 | [capture](../assets/tests/cases-3.png) |
+| 30 | `tests.test_execution::test_effort_maps_to_pinned_codex_field` | PASS | 0.047 | [capture](../assets/tests/cases-3.png) |
+| 31 | `tests.test_execution::test_checkpoint_generation_budget_progress_and_effects` | PASS | 0.034 | [capture](../assets/tests/cases-3.png) |
+| 32 | `tests.test_execution::test_checkpoint_cannot_invent_artifact_progress` | PASS | 0.018 | [capture](../assets/tests/cases-3.png) |
+| 33 | `tests.test_execution::test_rollover_waits_for_stop_receipt_then_requests_fresh_session` | PASS | 0.047 | [capture](../assets/tests/cases-3.png) |
+| 34 | `tests.test_execution::test_rollover_cancelled_request_never_restarts` | PASS | 0.043 | [capture](../assets/tests/cases-3.png) |
+| 35 | `tests.test_execution::test_cancellation_during_remote_mutation_cancels_new_issue` | PASS | 0.035 | [capture](../assets/tests/cases-3.png) |
+| 36 | `tests.test_execution::test_oversized_packet_is_not_silently_truncated` | PASS | 0.032 | [capture](../assets/tests/cases-3.png) |
+| 37 | `tests.test_installed::test_installed_prompt_outcome_backup_restore` | PASS | 0.528 | [capture](../assets/tests/cases-3.png) |
+| 38 | `tests.test_intake::test_concurrent_unique_and_retry_receipts` | PASS | 0.082 | [capture](../assets/tests/cases-3.png) |
+| 39 | `tests.test_intake::test_retry_conflict_and_intentional_repeat` | PASS | 0.023 | [capture](../assets/tests/cases-3.png) |
+| 40 | `tests.test_intake::test_routing_ambiguity_does_not_block_other_work` | PASS | 0.025 | [capture](../assets/tests/cases-4.png) |
+| 41 | `tests.test_intake::test_revision_cas_and_originals` | PASS | 0.020 | [capture](../assets/tests/cases-4.png) |
+| 42 | `tests.test_intake::test_reply_cannot_move_project` | PASS | 0.021 | [capture](../assets/tests/cases-4.png) |
+| 43 | `tests.test_intake::test_cancel_before_dispatch_and_reopen_preserves_history` | PASS | 0.024 | [capture](../assets/tests/cases-4.png) |
+| 44 | `tests.test_intake::test_group_preserves_requests_and_creates_obligations` | PASS | 0.025 | [capture](../assets/tests/cases-4.png) |
+| 45 | `tests.test_intake::test_cross_project_group_rejected` | PASS | 0.023 | [capture](../assets/tests/cases-4.png) |
+| 46 | `tests.test_intake::test_mail_replay_and_recipient_check` | PASS | 0.020 | [capture](../assets/tests/cases-4.png) |
+| 47 | `tests.test_intake::test_schedule_coalesces_missed_ticks_without_duplicates` | PASS | 0.023 | [capture](../assets/tests/cases-4.png) |
+| 48 | `tests.test_intake::test_invalid_prompt_is_not_saved[-a]` | PASS | 0.014 | [capture](../assets/tests/cases-4.png) |
+| 49 | `tests.test_intake::test_invalid_prompt_is_not_saved[ -b]` | PASS | 0.014 | [capture](../assets/tests/cases-4.png) |
+| 50 | `tests.test_intake::test_invalid_prompt_is_not_saved[hello-]` | PASS | 0.015 | [capture](../assets/tests/cases-4.png) |
+| 51 | `tests.test_intake::test_invalid_prompt_is_not_saved[text3-a]` | PASS | 0.015 | [capture](../assets/tests/cases-4.png) |
+| 52 | `tests.test_operations::test_snapshot_restore_and_tamper_detection` | PASS | 0.025 | [capture](../assets/tests/cases-4.png) |
+| 53 | `tests.test_operations::test_migration_preserves_local_edits_ignored_files_and_git_history` | PASS | 0.035 | [capture](../assets/tests/cases-5.png) |
+| 54 | `tests.test_operations::test_migration_rejects_overlap_and_account_root` | PASS | 0.001 | [capture](../assets/tests/cases-5.png) |
+| 55 | `tests.test_operations::test_migration_never_retires_without_target_evidence` | PASS | 0.005 | [capture](../assets/tests/cases-5.png) |
+| 56 | `tests.test_operations::test_verified_retire_is_recoverable_and_does_not_overwrite_new_changes` | PASS | 0.009 | [capture](../assets/tests/cases-5.png) |
+| 57 | `tests.test_operations::test_backup_inventory_tampering_is_detected` | PASS | 0.005 | [capture](../assets/tests/cases-5.png) |
+| 58 | `tests.test_operations::test_symlink_backups_do_not_follow_targets` | PASS | 0.005 | [capture](../assets/tests/cases-5.png) |
+| 59 | `tests.test_operations::test_terminal_include_preserves_theme_and_local_edits` | PASS | 0.021 | [capture](../assets/tests/cases-5.png) |
+| 60 | `tests.test_operations::test_complex_lua_config_is_not_guessed` | PASS | 0.019 | [capture](../assets/tests/cases-5.png) |
+| 61 | `tests.test_operations::test_service_paths_are_argument_safe` | PASS | 0.019 | [capture](../assets/tests/cases-5.png) |
+| 62 | `tests.test_operations::test_missing_or_expired_qualification_is_not_a_pass` | PASS | 0.020 | [capture](../assets/tests/cases-5.png) |
+| 63 | `tests.test_operations::test_pass_requires_evidence` | PASS | 0.015 | [capture](../assets/tests/cases-5.png) |
+| 64 | `tests.test_surfaces::test_http_token_origin_and_durable_prompt` | PASS | 0.532 | [capture](../assets/tests/cases-5.png) |
+| 65 | `tests.test_surfaces::test_mcp_stdio_round_trip_and_argument_validation` | PASS | 0.022 | [capture](../assets/tests/cases-5.png) |
+| 66 | `tests.test_surfaces::test_cli_exit_codes_and_restart` | PASS | 0.230 | [capture](../assets/tests/cases-6.png) |
+| 67 | `tests.test_surfaces::test_process_timeout_output_and_no_shell_interpolation` | PASS | 0.154 | [capture](../assets/tests/cases-6.png) |
+| 68 | `tests.test_surfaces::test_named_integrations_never_silently_use_subscription_as_api` | PASS | 0.020 | [capture](../assets/tests/cases-6.png) |
+| 69 | `tests.test_surfaces::test_export_escapes_untrusted_content` | PASS | 0.028 | [capture](../assets/tests/cases-6.png) |
+| 70 | `tests.test_surfaces::test_terminal_controls_are_removed[\x1b]52;c;clipboard\x07danger]` | PASS | 0.000 | [capture](../assets/tests/cases-6.png) |
+| 71 | `tests.test_surfaces::test_terminal_controls_are_removed[\x1b[31mred]` | PASS | 0.000 | [capture](../assets/tests/cases-6.png) |
+| 72 | `tests.test_surfaces::test_terminal_controls_are_removed[\x1b]8;;https://bad\x1b\\link\x1b]8;;\x1b\\]` | PASS | 0.000 | [capture](../assets/tests/cases-6.png) |
+| 73 | `tests.test_surfaces::test_terminal_controls_are_removed[a\x00b]` | PASS | 0.000 | [capture](../assets/tests/cases-6.png) |
+| 74 | `tests.test_surfaces::test_tui_submit_outcomes_and_log_flood[size0]` | PASS | 1.135 | [capture](../assets/tests/cases-6.png) |
+| 75 | `tests.test_surfaces::test_tui_submit_outcomes_and_log_flood[size1]` | PASS | 1.149 | [capture](../assets/tests/cases-6.png) |
+| 76 | `tests.test_surfaces::test_tui_submit_outcomes_and_log_flood[size2]` | PASS | 1.217 | [capture](../assets/tests/cases-6.png) |
+| 77 | `tests.test_surfaces::test_mcp_malformed_request_recovers_for_next_request` | PASS | 0.034 | [capture](../assets/tests/cases-6.png) |
+| 78 | `tests.test_surfaces::test_fast_process_output_overflow_is_not_silently_truncated` | PASS | 0.026 | [capture](../assets/tests/cases-6.png) |

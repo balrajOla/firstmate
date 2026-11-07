@@ -1,7 +1,7 @@
 name: Core and installed package
 on:
   push:
-    branches: [codex/assistant-workbench]
+    branches: [main, codex/assistant-workbench]
   pull_request:
   workflow_dispatch:
 permissions:
@@ -28,13 +28,14 @@ jobs:
         run: |
           python -m venv "$RUNNER_TEMP/awb-release"
           "$RUNNER_TEMP/awb-release/bin/python" -m pip install -c requirements-runtime.lock dist/*.whl textual==8.2.8
-          AWB_INSTALLED_CLI="$RUNNER_TEMP/awb-release/bin/awb" python -m pytest -q tests/test_installed.py
+          AWB_INSTALLED_CLI="$RUNNER_TEMP/awb-release/bin/awb" python -m pytest -q tests/test_installed.py --junitxml=installed-results.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: evidence-${{ matrix.os }}
           path: |
             test-results.xml
+            installed-results.xml
             dist/
   release-boundary:
     runs-on: ubuntu-latest

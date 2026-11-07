@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "created": 1794090570.121044,
+  "profile": "subscription",
+  "host": "f1c2ab2391b8",
+  "qualified": false,
+  "qualified_for_cutover": false,
+  "gates": {
+    "installed_cli": "not_run",
+    "coordinator": "not_run",
+    "real_workers": "not_run",
+    "context_recovery": "not_run",
+    "terminal_gui": "not_run",
+    "migration_restore": "not_run",
+    "research": "not_run",
+    "quality": "not_run",
+    "soak": "not_run"
+  },
+  "evidence": {},
+  "notice": "This report cannot certify unexecuted features, exhaustive edge cases or zero hallucinations."
+}

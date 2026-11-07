@@ -1,0 +1,68 @@
+{
+  "kind": "deterministic workflow classification",
+  "total": 10,
+  "correct": 9,
+  "accuracy": 0.9,
+  "cases": [
+    {
+      "id": "code-1",
+      "expected": "code",
+      "predicted": "code",
+      "passed": true
+    },
+    {
+      "id": "code-2",
+      "expected": "code",
+      "predicted": "code",
+      "passed": true
+    },
+    {
+      "id": "design-1",
+      "expected": "design",
+      "predicted": "design",
+      "passed": true
+    },
+    {
+      "id": "design-2",
+      "expected": "design",
+      "predicted": "design",
+      "passed": true
+    },
+    {
+      "id": "research-1",
+      "expected": "research",
+      "predicted": "research",
+      "passed": true
+    },
+    {
+      "id": "research-2",
+      "expected": "research",
+      "predicted": "research",
+      "passed": true
+    },
+    {
+      "id": "report-1",
+      "expected": "report",
+      "predicted": "report",
+      "passed": true
+    },
+    {
+      "id": "report-2",
+      "expected": "report",
+      "predicted": "report",
+      "passed": true
+    },
+    {
+      "id": "simple-1",
+      "expected": "simple",
+      "predicted": "simple",
+      "passed": true
+    },
+    {
+      "id": "ambiguous-1",
+      "expected": "report",
+      "predicted": "design",
+      "passed": false
+    }
+  ]
+}

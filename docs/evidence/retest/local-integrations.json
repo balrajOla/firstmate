@@ -1,0 +1,30 @@
+{
+  "classification": "real local-package integration; synthetic corpus; no LLM or GUI evidence",
+  "telemetry": "ORT_DISABLED before startup; OTEL/HF/Promptfoo opt-outs enabled",
+  "checks": [
+    {
+      "check": "basic_memory_register",
+      "passed": true
+    },
+    {
+      "check": "basic_memory_write",
+      "passed": true
+    },
+    {
+      "check": "basic_memory_fresh_process_search",
+      "passed": true
+    },
+    {
+      "check": "docling_preserves_quantity_and_qualification",
+      "passed": true
+    },
+    {
+      "check": "qmd_register_collection",
+      "passed": true
+    },
+    {
+      "check": "qmd_exact_retrieval",
+      "passed": true
+    }
+  ]
+}

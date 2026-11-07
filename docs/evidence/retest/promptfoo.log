@@ -1,0 +1,24 @@
+Cache is disabled.
+Starting evaluation eval-kg4-2026-11-07T22:29:29
+Running 2 test cases (up to 4 at a time)...
+
+┌────────────────────────────────────────────────────────────┬────────────────────────────────────────────────────────────┐
+│ case                                                       │ [local-grounded-fixture] {{case}}                          │
+├────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ positive-control                                           │ [PASS] Alpha uses PostgreSQL. Beta is undecided. Source:   │
+│                                                            │ decision-471.                                              │
+├────────────────────────────────────────────────────────────┼────────────────────────────────────────────────────────────┤
+│ negative-control                                           │ [FAIL] Beta uses PostgreSQL.                               │
+└────────────────────────────────────────────────────────────┴────────────────────────────────────────────────────────────┘
+✓ Eval complete (ID: eval-kg4-2026-11-07T22:29:29)
+
+» View results: promptfoo view
+» Share with your team: https://promptfoo.app
+» Feedback: https://promptfoo.dev/feedback
+
+
+Results:
+  ✓ 1 passed (50.00%)
+  ✗ 1 failed (50.00%)
+  0 errors (0%)
+Duration: 0s (concurrency: 4)

@@ -4,7 +4,7 @@ Use the following prompt in a local Codex or Claude Code session with filesystem
 
 ---
 
-Replace my customized Olympus installation with Assistant Workbench from `https://github.com/balrajOla/firstmate`, branch `codex/assistant-workbench`. Resolve and record the exact commit before installing. Read its README, feature register, compatibility matrix, migration instructions and verification report first.
+Replace my customized Olympus installation with Assistant Workbench from `https://github.com/balrajOla/firstmate`, branch `main`. Resolve and record the exact commit before installing. Read its README, feature register, compatibility matrix, migration instructions and verification report first.
 
 My final active setup must have no Olympus runtime, scheduler, launcher, service or terminal include. Preserve my project repositories, local changes, untracked/ignored files, Git history, credentials, documents, prompt history and authorized schedules. A private recovery archive is allowed; it must not be an active dependency.
 
