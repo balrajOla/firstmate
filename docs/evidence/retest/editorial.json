@@ -1,0 +1,12 @@
+{
+  "vale": {
+    "clear_alerts": 0,
+    "seeded_verbose_alerts": 3,
+    "clear_exit_code": 0,
+    "verbose_exit_code": 0
+  },
+  "promptfoo": {
+    "exit_code": 100,
+    "classification": "deterministic local provider; no live LLM judge"
+  }
+}

@@ -1,0 +1,196 @@
+{
+  "schema": 1,
+  "date": "2026-11-07",
+  "status": "experimental; not qualified for full-profile replacement",
+  "source_fingerprint": "52b336a16589a6a8fdbb709d4a24ac7fd5b71b1f6c0539e5a72fafe4edfb0dad",
+  "core_and_installed_tests": {
+    "tests": 78,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0
+  },
+  "seconds": 6.979,
+  "local_integrations": {
+    "classification": "real local-package integration; synthetic corpus; no LLM or GUI evidence",
+    "telemetry": "ORT_DISABLED before startup; OTEL/HF/Promptfoo opt-outs enabled",
+    "checks": [
+      {
+        "check": "basic_memory_register",
+        "passed": true
+      },
+      {
+        "check": "basic_memory_write",
+        "passed": true
+      },
+      {
+        "check": "basic_memory_fresh_process_search",
+        "passed": true
+      },
+      {
+        "check": "docling_preserves_quantity_and_qualification",
+        "passed": true
+      },
+      {
+        "check": "qmd_register_collection",
+        "passed": true
+      },
+      {
+        "check": "qmd_exact_retrieval",
+        "passed": true
+      }
+    ]
+  },
+  "lcm": {
+    "classification": "real LCM daemon and adapter; summarizer disabled; synthetic input",
+    "checks": [
+      {
+        "check": "real_lcm_capture",
+        "passed": true
+      },
+      {
+        "check": "real_lcm_recall",
+        "passed": true
+      },
+      {
+        "check": "real_lcm_cross_project_negative",
+        "passed": true
+      }
+    ]
+  },
+  "intake_soak": {
+    "classification": "local durable-intake soak; no real worker/model/GUI",
+    "seconds": 30.1,
+    "submitted": 3920,
+    "restart_cycles": 98,
+    "lost_prompts": 0,
+    "passed": true
+  },
+  "vale": {
+    "clear_alerts": 0,
+    "seeded_verbose_alerts": 3,
+    "clear_exit_code": 0,
+    "verbose_exit_code": 0,
+    "notice": "Warnings are present even though Vale exits zero at this severity."
+  },
+  "promptfoo": {
+    "exit_code": 100,
+    "classification": "deterministic local provider; no live LLM judge",
+    "positive_control": "passed",
+    "seeded_false_claim": "correctly_rejected",
+    "real_llm_judge": "not_run"
+  },
+  "routing_demo": {
+    "kind": "deterministic workflow classification",
+    "total": 10,
+    "correct": 9,
+    "accuracy": 0.9,
+    "cases": [
+      {
+        "id": "code-1",
+        "expected": "code",
+        "predicted": "code",
+        "passed": true
+      },
+      {
+        "id": "code-2",
+        "expected": "code",
+        "predicted": "code",
+        "passed": true
+      },
+      {
+        "id": "design-1",
+        "expected": "design",
+        "predicted": "design",
+        "passed": true
+      },
+      {
+        "id": "design-2",
+        "expected": "design",
+        "predicted": "design",
+        "passed": true
+      },
+      {
+        "id": "research-1",
+        "expected": "research",
+        "predicted": "research",
+        "passed": true
+      },
+      {
+        "id": "research-2",
+        "expected": "research",
+        "predicted": "research",
+        "passed": true
+      },
+      {
+        "id": "report-1",
+        "expected": "report",
+        "predicted": "report",
+        "passed": true
+      },
+      {
+        "id": "report-2",
+        "expected": "report",
+        "predicted": "report",
+        "passed": true
+      },
+      {
+        "id": "simple-1",
+        "expected": "simple",
+        "predicted": "simple",
+        "passed": true
+      },
+      {
+        "id": "ambiguous-1",
+        "expected": "report",
+        "predicted": "design",
+        "passed": false
+      }
+    ]
+  },
+  "package": {
+    "wheel": "built",
+    "sdist": "built",
+    "private_prefix_with_spaces": "installed and exercised"
+  },
+  "terminal": {
+    "headless_sizes": [
+      [
+        80,
+        24
+      ],
+      [
+        120,
+        36
+      ],
+      [
+        160,
+        48
+      ]
+    ],
+    "render_inspected": "New 80- and 120-column headless Textual captures; synthetic demonstration",
+    "real_wezterm_gui": "not_run"
+  },
+  "open_gates": {
+    "paperclip_live": "blocked: embedded PostgreSQL refuses root; container rejected non-root ownership setup",
+    "real_claude_codex_workers": "not_run: no installed authenticated harness",
+    "fresh_model_sessions": "not_run; only protocol fixtures",
+    "open_notebook_gpt_researcher_generation": "not_run; subscription bridge unqualified",
+    "mac_gui": "not_run: no target desktop",
+    "full_system_72_hour_soak": "not_run",
+    "linked_project_contract": "shared conversation fetch disabled; not certified"
+  },
+  "approval_review": {
+    "initial_probe": "blocked for attempted external Microsoft telemetry",
+    "resolution": "Documented ORT_DISABLE_TELEMETRY=1 set before subprocess initialization; subsequent synthetic local probes passed",
+    "source": "https://github.com/microsoft/onnxruntime/blob/main/docs/Privacy.md"
+  },
+  "tested_at": "2026-11-07T22:26:55.323474+00:00",
+  "source_commit_tested": "a55dadc6df99da680dd341361caa3fd60043a58e",
+  "source_scope": "Application and test source at the recorded commit; this documentation commit adds evidence rendering and main-branch CI.",
+  "qualification_check": {
+    "exit_code": 3,
+    "expected_exit_code": 3,
+    "qualified": false,
+    "notice": "Fresh empty state correctly refuses target-machine qualification; this is a negative control."
+  }
+}

@@ -1,0 +1,3 @@
+# Test And Review
+
+Inspect the repository instructions and dependency locks. Choose its existing language tools and relevant tests. Use the smallest meaningful reproduction, implement the change, run focused tests and required checks, then review the diff. Python: configured pytest/ruff/type checks; TypeScript: lockfile-respecting install and package scripts; Rust: cargo test and configured fmt/clippy checks. Do not install arbitrary missing providers during a task. Keep commands and exit evidence. An independent reviewer checks behavior, failure cases, scope, credentials and migration. Bound repair attempts. Report blocked live tests accurately.

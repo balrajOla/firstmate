@@ -1,0 +1,133 @@
+{
+  "paperclip": {
+    "kind": "git",
+    "url": "https://github.com/paperclipai/paperclip.git",
+    "revision": "d69631b01b9c658f80bf8bed389863dce82643e1",
+    "release": "v2026.1106.0",
+    "build": [
+      [
+        "pnpm",
+        "install",
+        "--frozen-lockfile"
+      ],
+      [
+        "pnpm",
+        "build"
+      ]
+    ],
+    "qualification": "not implied by installation"
+  },
+  "basic-memory": {
+    "kind": "python",
+    "url": "https://github.com/basicmachines-co/basic-memory.git",
+    "revision": "1.0.0",
+    "release": "v1.0.0",
+    "build": [],
+    "qualification": "not implied by installation",
+    "package": "basic-memory",
+    "source_revision": "c9bd187b83baba549d5cd16bacc180f8023d51c8"
+  },
+  "qmd": {
+    "kind": "git",
+    "url": "https://github.com/tobi/qmd.git",
+    "revision": "facd35e01359e59d938bc9418e93fb9318addee3",
+    "release": "v2.8.3",
+    "build": [],
+    "qualification": "not implied by installation",
+    "caveat": "Pinned source installation only. Upstream release lock mismatch requires a reviewed dependency resolution before activation.",
+    "requires_manual_build": true
+  },
+  "lcm": {
+    "kind": "git",
+    "url": "https://github.com/lossless-claude/lcm.git",
+    "revision": "0c17dbffda452cf7fae46929af427dff355aeaa3",
+    "release": "v0.16.0",
+    "build": [
+      [
+        "npm",
+        "ci"
+      ],
+      [
+        "node",
+        "node_modules/typescript/bin/tsc"
+      ]
+    ],
+    "qualification": "not implied by installation"
+  },
+  "docling": {
+    "kind": "python",
+    "url": "https://github.com/docling-project/docling.git",
+    "revision": "2.148.0",
+    "release": "v2.148.0",
+    "build": [],
+    "qualification": "not implied by installation",
+    "package": "docling",
+    "source_revision": "0fa0918d16de7769d942f9b06ca18cb673cbbc2e"
+  },
+  "open-notebook": {
+    "kind": "git",
+    "url": "https://github.com/lfnovo/open-notebook.git",
+    "revision": "5e285b7a2e435895c4ee99ad7e4b8d2af64c3239",
+    "release": "v1.15.1",
+    "build": [],
+    "qualification": "not implied by installation"
+  },
+  "gpt-researcher": {
+    "kind": "git",
+    "url": "https://github.com/assafelovic/gpt-researcher.git",
+    "revision": "0957c301ed06c2a5857b834358c7227c739041d4",
+    "release": "v3.7.0",
+    "build": [],
+    "qualification": "not implied by installation"
+  },
+  "superpowers": {
+    "kind": "git",
+    "url": "https://github.com/obra/superpowers.git",
+    "revision": "22f0b463e7a5e579904dd6211a520321035526f7",
+    "release": "v7.0.2",
+    "build": [],
+    "qualification": "not implied by installation"
+  },
+  "elements-of-style": {
+    "kind": "git",
+    "url": "https://github.com/obra/the-elements-of-style.git",
+    "revision": "05fc4f0d2b97b7c042dd9949ad658568e4a1324e",
+    "release": null,
+    "build": [],
+    "qualification": "not implied by installation"
+  },
+  "humanizer": {
+    "kind": "git",
+    "url": "https://github.com/blader/humanizer.git",
+    "revision": "225a6f39ac85f76ee48dbad772ea4abe4ed6c9d8",
+    "release": "v3.1.0",
+    "build": [],
+    "qualification": "not implied by installation"
+  },
+  "vale": {
+    "kind": "platform",
+    "url": "https://github.com/vale-cli/vale.git",
+    "revision": "e2d4374b1c66c8a1dd6d912bebc135040d8833fa",
+    "release": "v3.26.0",
+    "build": [],
+    "qualification": "not implied by installation"
+  },
+  "promptfoo": {
+    "kind": "git",
+    "url": "https://github.com/promptfoo/promptfoo.git",
+    "revision": "8569e72ed6cf7737082a6042be8d925e40f9739d",
+    "release": "0.125.1",
+    "build": [
+      [
+        "npm",
+        "ci"
+      ],
+      [
+        "npm",
+        "run",
+        "build"
+      ]
+    ],
+    "qualification": "not implied by installation"
+  }
+}

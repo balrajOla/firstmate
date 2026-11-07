@@ -1,0 +1,9 @@
+extends: existence
+message: "Replace inflated phrasing '%s' with a concrete statement."
+level: warning
+ignorecase: true
+tokens:
+  - seamlessly
+  - game-changing
+  - delve
+  - unlock the potential

@@ -1,0 +1,8 @@
+{
+  "classification": "local durable-intake soak; no real worker/model/GUI",
+  "seconds": 30.1,
+  "submitted": 3920,
+  "restart_cycles": 98,
+  "lost_prompts": 0,
+  "passed": true
+}

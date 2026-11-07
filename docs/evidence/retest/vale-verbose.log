@@ -1,0 +1,58 @@
+{
+  "$REPO/evals/verbose.md": [
+    {
+      "Action": {
+        "Name": "",
+        "Params": null
+      },
+      "Suggestions": [],
+      "Span": [
+        1,
+        5
+      ],
+      "Check": "Workbench.Clarity",
+      "Description": "",
+      "Link": "",
+      "Message": "Replace inflated phrasing 'Delve' with a concrete statement.",
+      "Severity": "warning",
+      "Match": "Delve",
+      "Line": 1
+    },
+    {
+      "Action": {
+        "Name": "",
+        "Params": null
+      },
+      "Suggestions": [],
+      "Span": [
+        17,
+        29
+      ],
+      "Check": "Workbench.Clarity",
+      "Description": "",
+      "Link": "",
+      "Message": "Replace inflated phrasing 'game-changing' with a concrete statement.",
+      "Severity": "warning",
+      "Match": "game-changing",
+      "Line": 1
+    },
+    {
+      "Action": {
+        "Name": "",
+        "Params": null
+      },
+      "Suggestions": [],
+      "Span": [
+        45,
+        54
+      ],
+      "Check": "Workbench.Clarity",
+      "Description": "",
+      "Link": "",
+      "Message": "Replace inflated phrasing 'seamlessly' with a concrete statement.",
+      "Severity": "warning",
+      "Match": "seamlessly",
+      "Line": 1
+    }
+  ]
+}
