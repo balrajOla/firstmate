@@ -1,0 +1,20 @@
+description: Local deterministic assertion transport; no model-quality claim
+prompts:
+  - '{{case}}'
+providers:
+  - file://provider.cjs
+tests:
+  - vars:
+      case: positive-control
+    assert:
+      - type: contains
+        value: 'Beta is undecided.'
+      - type: contains
+        value: 'decision-471'
+  - vars:
+      case: negative-control
+    assert:
+      - type: contains
+        value: 'Beta is undecided.'
+      - type: not-contains
+        value: 'Beta uses PostgreSQL.'

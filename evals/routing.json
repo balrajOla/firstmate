@@ -1,0 +1,12 @@
+[
+ {"id":"code-1","prompt":"Fix the failing import","workflow":"code"},
+ {"id":"code-2","prompt":"Implement CSV validation","workflow":"code"},
+ {"id":"design-1","prompt":"Design a bounded agent queue","workflow":"design"},
+ {"id":"design-2","prompt":"Brainstorm approaches to session recovery","workflow":"design"},
+ {"id":"research-1","prompt":"Compare the source evidence","workflow":"research"},
+ {"id":"research-2","prompt":"Investigate the memory tools","workflow":"research"},
+ {"id":"report-1","prompt":"Summarize the results for the team","workflow":"report"},
+ {"id":"report-2","prompt":"Write a concise release report","workflow":"report"},
+ {"id":"simple-1","prompt":"What is saved here?","workflow":"simple"},
+ {"id":"ambiguous-1","prompt":"Report the architecture review","workflow":"report"}
+]

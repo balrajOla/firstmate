@@ -1,0 +1,23 @@
+name: Target machine qualification
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: Previously configured and tested local profile
+        required: true
+        default: subscription
+permissions:
+  contents: read
+jobs:
+  qualify:
+    # Must be an explicitly configured private runner with a logged-in Mac desktop.
+    # No secrets or GUI access are provided to public pull requests.
+    runs-on: [self-hosted, macOS, assistant-workbench]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate retained target-machine evidence
+        env:
+          AWB_PROFILE: ${{ inputs.profile }}
+        run: awb qualify --profile "$AWB_PROFILE" --output "$RUNNER_TEMP/target-qualification.json"
+      - name: Report gate status without uploading private artifacts
+        run: python3 -c 'import json,os; r=json.load(open(os.environ["RUNNER_TEMP"]+"/target-qualification.json")); print(json.dumps(r["gates"],indent=2))'
