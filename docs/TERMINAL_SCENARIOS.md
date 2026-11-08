@@ -52,3 +52,20 @@ The existing `test_tui_submit_outcomes_and_log_flood` journeys remain in `tests/
 ```
 
 The main scenario runner records screenshots of actual state during its 30-prompt exercise. Captures produced by the headless driver must remain labelled headless. A complete native-desktop qualification still requires opening this build in WezTerm, inspecting font/keyboard/resize behavior and testing reconnect, sleep and reboot on the target operating system.
+
+## Native macOS WezTerm
+
+`scripts/capture_wezterm_macos.py` runs the TUI inside the installed WezTerm application on a Mac. For each size (default 80×24, 120×36 and 160×48) it does the following:
+
+1. Starts a separate WezTerm GUI process. Its config is a copy of `~/.wezterm.lua` plus the managed include, installed by the given release `awb`; the operator's own config file is not changed.
+2. Reaches the tab strip with real key input through `wezterm cli` (Ctrl+N, then Tab) and walks every view with the arrow keys, then opens F1.
+3. Records the pane geometry WezTerm reports, the text WezTerm rendered for each view and, when the login session is unlocked, a PNG of that window only.
+
+If the display cannot fit the requested rows at the configured font, the size is retried with a slightly smaller font, and the font used is recorded. A locked screen composites no windows, so screenshots are then recorded as not captured. The script shows whatever the given state holds and never manufactures outcomes. It needs macOS, WezTerm and `swiftc` (Xcode command line tools).
+
+```sh
+.venv/bin/python scripts/capture_wezterm_macos.py --home /absolute/demo-state \
+  --executable "/absolute/release prefix/bin/awb" \
+  --work /absolute/private/wezterm-work --output /absolute/private/wezterm-evidence
+```
+
