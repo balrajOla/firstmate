@@ -1,0 +1,49 @@
+"""Record a Paperclip worker's own task disposition.
+
+Paperclip asks a worker to close its task through the API with its injected
+PAPERCLIP_* settings. Claude Code refuses commands that expand environment
+variables, so without a permission bypass the worker cannot do that. This
+command reads the settings itself, never prints the token and changes only
+the status of the task that woke the run.
+
+Usage: python -m assistant_workbench.worker_disposition done|blocked
+"""
+
+import os
+import sys
+
+from .paperclip import CoordinatorError, Paperclip
+from .util import WorkbenchError
+
+DISPOSITIONS = ("done", "blocked")
+SETTINGS = ("PAPERCLIP_API_URL", "PAPERCLIP_API_KEY", "PAPERCLIP_RUN_ID", "PAPERCLIP_TASK_ID")
+
+
+def main(argv=None, environ=None):
+    argv = sys.argv[1:] if argv is None else argv
+    environ = os.environ if environ is None else environ
+    if len(argv) != 1 or argv[0] not in DISPOSITIONS:
+        print("usage: worker_disposition done|blocked", file=sys.stderr)
+        return 2
+    missing = [k for k in SETTINGS if not environ.get(k)]
+    if missing:
+        print("Paperclip run settings are missing: " + ", ".join(missing), file=sys.stderr)
+        return 1
+    url = environ["PAPERCLIP_API_URL"].rstrip("/")
+    if url.endswith("/api"):
+        url = url[: -len("/api")]
+    try:
+        api = Paperclip({"url": url, "token_env": "PAPERCLIP_API_KEY"})
+        api.token = environ["PAPERCLIP_API_KEY"]
+        # Paperclip links agent mutations to the run that made them.
+        api.headers["X-Paperclip-Run-Id"] = environ["PAPERCLIP_RUN_ID"]
+        api.update_issue(environ["PAPERCLIP_TASK_ID"], {"status": argv[0]})
+    except (CoordinatorError, WorkbenchError) as exc:
+        print(str(exc), file=sys.stderr)
+        return 1
+    print("Recorded task disposition: " + argv[0])
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

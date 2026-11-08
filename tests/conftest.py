@@ -48,6 +48,7 @@ class FakePaperclip:
         self.issues_ = {}
         self.wakes = []
         self.runs = {}
+        self.activity = {}
         self.stop_ack = True
 
     def agents(self):
@@ -106,8 +107,14 @@ class FakePaperclip:
     def issue_runs(self, identity):
         return [r for r in self.runs.values() if r.get("issueId") == identity]
 
-    def finish(self, issue_id, status, results, agent="agent-0"):
-        """Record runs for an issue as the coordinator would after execution."""
+    def issue_activity(self, identity):
+        return list(self.activity.get(identity, []))
+
+    def finish(self, issue_id, status, results, agent="agent-0", by_worker=False):
+        """Record runs for an issue as the coordinator would after execution.
+
+        by_worker records the status change as the assigned worker's own;
+        otherwise a blocked status is Paperclip's escalation after repairs."""
         for i, (outcome, text) in enumerate(results):
             run_id = issue_id + "-run-" + str(len(self.runs))
             self.runs[run_id] = {
@@ -117,7 +124,17 @@ class FakePaperclip:
                 "usageJson": {"inputTokens": 100 + i, "outputTokens": 10, "billingType": "subscription_included"},
                 "resultJson": {"result": text} if text is not None else {},
             }
-        self.issue(issue_id)["status"] = status
+        issue = self.issue(issue_id)
+        if by_worker:
+            row = {"actorType": "agent", "agentId": issue.get("assigneeAgentId"),
+                   "action": "issue.updated",
+                   "details": {"changes": {"status": {"from": issue.get("status"), "to": status}}}}
+        else:
+            row = {"actorType": "system", "actorId": "recovery", "agentId": None,
+                   "action": "issue.disposition_repair_escalated", "details": {"status": status}}
+        self.activity.setdefault(issue_id, []).append(
+            {"createdAt": "2026-11-08T10:01:0" + str(len(self.activity.get(issue_id, []))), **row})
+        issue["status"] = status
 
     def wakeup(self, agent, body):
         prior = next(

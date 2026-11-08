@@ -40,9 +40,10 @@ class Paperclip:
             raise WorkbenchError("Remote coordinators require HTTPS")
         self.company = settings.get("company_id")
         self.token = os.environ.get(settings.get("token_env", "AWB_PAPERCLIP_TOKEN"))
+        self.headers = {}
 
     def request(self, method, path, payload=None):
-        headers = {"Accept": "application/json"}
+        headers = {"Accept": "application/json", **self.headers}
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
         data = None if payload is None else json.dumps(payload).encode()
@@ -131,6 +132,11 @@ class Paperclip:
 
     def experimental_settings(self):
         return self.request("GET", "/instance/settings/experimental")
+
+    def issue_activity(self, identity):
+        return self.request(
+            "GET", "/issues/" + urllib.parse.quote(identity, safe="") + "/activity"
+        )
 
     def issue_runs(self, identity):
         return self.request(
