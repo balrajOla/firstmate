@@ -14,6 +14,52 @@ class SupersededDelivery(WorkbenchError):
     """The saved scope changed; this outbox job must not be retried."""
 
 
+# Pinned Paperclip's native runner replaces official CLIs with its bundled
+# provider binary (without this machine's sign-in) and defaults to approving
+# every tool. Official-CLI workers therefore use its legacy CLI runner.
+# --bare keeps the user's personal plugins, hooks and CLAUDE.md out of
+# product workers; acceptEdits allows workspace edits; local commits on the
+# task branch hand work to dependent tasks. Other tools stay unapproved.
+WORKER_ADAPTERS = {"claude": "claude_local", "codex": "codex_local"}
+CLAUDE_WORKER_ARGS = [
+    "--bare", "--permission-mode", "acceptEdits", "--allowedTools",
+    "Bash(git status:*)", "Bash(git diff:*)", "Bash(git add:*)", "Bash(git commit:*)",
+]
+BYPASS_KEYS = {
+    "claude": "dangerouslySkipPermissions",
+    "codex": "dangerouslyBypassApprovalsAndSandbox",
+}
+# Profile CLI flags that would undo that boundary.
+BYPASS_FLAGS = {
+    "--dangerously-skip-permissions",
+    "--allow-dangerously-skip-permissions",
+    "--permission-mode",
+    "--dangerously-bypass-approvals-and-sandbox",
+    "--yolo",
+}
+
+
+def verify_worker_agent(agent, harness):
+    """Refuse a coordinator agent that is not the requested official CLI."""
+    if harness not in WORKER_ADAPTERS:
+        return
+    config = agent.get("adapterConfig") or {}
+    if agent.get("adapterType") != WORKER_ADAPTERS[harness]:
+        raise WorkbenchError(
+            "Paperclip agent uses " + str(agent.get("adapterType"))
+            + " instead of the official " + harness
+            + " CLI runner; reconcile or retire it before dispatch"
+        )
+    if harness == "claude" and config.get("engine") != "cli":
+        raise WorkbenchError(
+            "Paperclip Claude agent is not on the CLI engine; reconcile it before dispatch"
+        )
+    if config.get(BYPASS_KEYS[harness]) is not False:
+        raise WorkbenchError(
+            "Paperclip agent permission bypass is not explicitly disabled; reconcile it before dispatch"
+        )
+
+
 class Engine:
     def __init__(self, store, coordinator=None):
         from .workflow import Workflow
@@ -68,9 +114,62 @@ class Engine:
         # existing default-budget identity, with its timeout checked on reuse.
         if timeout != self.settings["limits"]["max_seconds"]:
             runtime["timeout_seconds"] = timeout
+        adapter = {**WORKER_ADAPTERS, "process": "process"}[model["harness"]]
+        adapter_config = dict(model.get("adapter_config", {}))
+        adapter_config.update(
+            model=model["model"], timeoutSec=timeout
+        )
+        if model["harness"] in BYPASS_KEYS:
+            adapter_config.setdefault(BYPASS_KEYS[model["harness"]], False)
+            extra = [str(a) for a in adapter_config.get("extraArgs", [])]
+            # Refuse before any remote call, so no bypassing agent is created.
+            if (
+                adapter_config[BYPASS_KEYS[model["harness"]]] is not False
+                or {a.split("=", 1)[0] for a in extra} & BYPASS_FLAGS
+                or any("danger-full-access" in a for a in extra)
+            ):
+                raise WorkbenchError(
+                    "Profile adapter_config would bypass worker permissions; "
+                    "Paperclip workers run with them enforced"
+                )
+        if model["harness"] == "claude":
+            adapter_config["engine"] = "cli"
+            adapter_config["extraArgs"] = CLAUDE_WORKER_ARGS + list(
+                adapter_config.get("extraArgs", [])
+            )
+        field = {"claude": "effort", "codex": "modelReasoningEffort"}.get(
+            model["harness"]
+        )
+        if model.get("effort_field") and model["effort_field"] != field:
+            raise WorkbenchError("Effort mapping does not match the pinned adapter")
+        if field and model["effort"] != "default":
+            adapter_config[field] = model["effort"]
+        # Only instruct what this worker can actually do: it has its task
+        # packet and workspace, not the Workbench CLI or other projects.
+        text = (
+            "You are the "
+            + node["role"]
+            + " in an Assistant Workbench team. Your Paperclip task carries the saved request, "
+            "its revision, the execution contract and pinned procedures; follow them. "
+            "Work only in the task's workspace; do not touch other projects or unrelated files. "
+            "Commit your changes to the task branch (git add, git commit; never push) before reporting, "
+            "so dependent tasks start from your work. "
+            "Your final message is your report: what you changed, the commands you ran and their results, "
+            "open problems and missing evidence. The Workbench records that report for independent review, "
+            "so never call the work verified or accepted. Record your task disposition if Paperclip lets you; "
+            "otherwise end with the report. A reviewer checks the author's work instead of redoing it. "
+            "Stop when the task is cancelled and never start a replacement process."
+        )
+        # The identity covers everything sent to the coordinator, so a changed
+        # worker definition (defaults, flags, instructions) is never served by
+        # an older agent that still runs the previous one.
         key = (
             "awb:"
-            + digest(canonical([runtime, node["role"], node.get("slot", 0)]))[:24]
+            + digest(
+                canonical(
+                    [runtime, node["role"], node.get("slot", 0), adapter, adapter_config, digest(text)]
+                )
+            )[:24]
         )
         existing = self._cache("agent:" + key)
         agents = self.api.agents()
@@ -84,6 +183,7 @@ class Engine:
                 "Duplicate managed agent identities require reconciliation"
             )
         if matched:
+            verify_worker_agent(matched[0], model["harness"])
             if matched[0].get("status") in {"paused", "terminated"}:
                 raise WorkbenchError(
                     "Selected managed agent is paused or terminated; reconcile its capacity explicitly"
@@ -103,42 +203,14 @@ class Engine:
                 "Agent creation has an uncertain outcome; inspect Paperclip before retrying",
                 True,
             )
-        managed = [a for a in agents if (a.get("metadata") or {}).get("workbenchKey")]
+        managed = [
+            a for a in agents
+            if (a.get("metadata") or {}).get("workbenchKey") and a.get("status") != "terminated"
+        ]
         if len(managed) >= self.settings["limits"]["max_agents"]:
             raise WorkbenchError(
                 "Managed agent pool is full; reuse or explicitly retire a role/profile"
             )
-        adapter = {
-            "claude": "claude_local",
-            "codex": "codex_local",
-            "process": "process",
-        }[model["harness"]]
-        adapter_config = dict(model.get("adapter_config", {}))
-        adapter_config.update(
-            model=model["model"], timeoutSec=timeout
-        )
-        if model["harness"] == "claude":
-            adapter_config.setdefault("dangerouslySkipPermissions", False)
-        if model["harness"] == "codex":
-            adapter_config.setdefault("dangerouslyBypassApprovalsAndSandbox", False)
-        field = {"claude": "effort", "codex": "modelReasoningEffort"}.get(
-            model["harness"]
-        )
-        if model.get("effort_field") and model["effort_field"] != field:
-            raise WorkbenchError("Effort mapping does not match the pinned adapter")
-        if field and model["effort"] != "default":
-            adapter_config[field] = model["effort"]
-        text = (
-            "You are the "
-            + node["role"]
-            + " in Assistant Workbench. Read your Paperclip issue and current revision. "
-            "Use awb for scoped source retrieval, messages, checkpoints and proposed outcomes. "
-            "Preserve evidence and qualifications. Never mark an unreviewed outcome verified. "
-            "Obey cancellation, role limits and repository permissions. The issue carries procedure revisions. "
-            "Reviewers must be distinct from authors. Keep reports concise and state missing evidence. "
-            "At each start call continuation.recover if a checkpoint exists. Restate current requirements and source hashes before writes. "
-            "Before context exhaustion commit a checkpoint and request lifecycle.request, then stop. Never self-launch a replacement process."
-        )
         body = {
             "name": "AWB " + node["role"] + " " + model["id"],
             "role": node["role"],
@@ -154,6 +226,8 @@ class Engine:
                 "heartbeat": {"enabled": True, "intervalSec": 0, "maxConcurrentRuns": 1}
             },
         }
+        if model["harness"] in WORKER_ADAPTERS:
+            body["runner"] = "legacy"
         self._check_current(plan["request_id"], plan["revision"])
         self._cache("agent:" + key, {"state": "creating"})
         try:
@@ -163,6 +237,7 @@ class Engine:
                 self._cache("agent:" + key, {"state": "blocked"})
             raise
         self._cache("agent:" + key, {"id": agent["id"]})
+        verify_worker_agent(agent, model["harness"])
         return agent["id"]
 
     def _check_current(self, request_id, revision):
@@ -280,6 +355,16 @@ class Engine:
             return "superseded"
         project = self.store.project(req["project_id"])
         plan, ordered, packets = self._preflight(req, project)
+        # Paperclip silently runs "isolated" tasks in the project's own
+        # checkout unless its isolated-workspace setting is enabled.
+        if project["repository"] and not (
+            self.api.experimental_settings() or {}
+        ).get("enableIsolatedWorkspaces"):
+            raise WorkbenchError(
+                "Paperclip isolated workspaces are disabled; enable them "
+                "(Instance settings > Experimental) so agents do not edit the "
+                "registered repository directly"
+            )
         self._check_current(req["id"], req["revision"])
         with self.store.transaction() as db:
             changed = db.execute(
@@ -328,15 +413,36 @@ class Engine:
                 "blockedByIssueIds": [created[d] for d in node["depends_on"]],
                 "reviewPolicy": "not_creator",
                 "idempotencyKey": "awb-" + req["id"] + "-" + node_key,
+                # Paperclip otherwise reuses any recent open issue with the
+                # same title; requests may share their first 100 characters.
+                "allowDuplicate": True,
             }
             if project["repository"]:
-                body["executionWorkspacePreference"] = "isolated_workspace"
+                # Paperclip resolves the run workspace from these settings; the
+                # older executionWorkspacePreference field does not isolate.
+                body["executionWorkspaceSettings"] = {"mode": "isolated_workspace"}
                 if len(node["depends_on"]) == 1:
                     body["inheritExecutionWorkspaceFromIssueId"] = created[
                         node["depends_on"][0]
                     ]
             self._check_current(req["id"], req["revision"])
             remote = self.api.create_issue(body)
+            # The packet names this request, revision and node, so only this
+            # work's own issue (including an idempotent replay) can match it.
+            if remote.get("description") != body["description"]:
+                raise WorkbenchError(
+                    "Paperclip returned an existing issue that belongs to different work ("
+                    + str(remote.get("deduplicationReason") or "content differs")
+                    + "); reconcile it before dispatch"
+                )
+            if project["repository"] and (
+                remote.get("executionWorkspaceSettings") or {}
+            ).get("mode") != "isolated_workspace":
+                self.api.update_issue(remote["id"], {"status": "cancelled"})
+                raise WorkbenchError(
+                    "Paperclip did not keep the isolated workspace for this task; "
+                    "it was cancelled before it could edit the repository"
+                )
             created[node["id"]] = remote["id"]
             issue_map[node_key] = remote["id"]
             self._cache("issues:" + req["id"], issue_map)
@@ -436,7 +542,13 @@ class Engine:
                         "updatedAt",
                     )
                 }
+                self._bind_dependents(req, mapping, node, issue)
+                items[node.split(":", 1)[1]]["report"] = self._capture_report(
+                    req, node, issue
+                )
             observations[req["id"]] = items
+            if items and all(i["report"] == "captured" for i in items.values()):
+                self._propose_worker_outcome(req, list(items))
             if items and all(i["status"] == "done" for i in items.values()):
                 # Execution completion never substitutes for an accepted Workbench outcome.
                 key = "observed-finished:" + req["id"] + ":" + str(req["revision"])
@@ -454,3 +566,127 @@ class Engine:
                     self._cache(key, True)
         atomic(self.store.home / "observations.json", canonical(observations))
         return observations
+
+    def _bind_dependents(self, req, mapping, node, issue):
+        """Start a single-dependency task from its predecessor's task branch.
+
+        The whole team is created before any task runs, so Paperclip cannot
+        inherit a workspace at creation; dependents are still blocked when
+        the predecessor's worktree and branch appear."""
+        current = issue.get("currentExecutionWorkspace") or {}
+        workspace, branch = current.get("id"), current.get("branchName")
+        if not workspace or not branch or not req.get("plan"):
+            return
+        revision, node_id = node.split(":", 1)
+        for child in json.loads(req["plan"])["nodes"]:
+            target = mapping.get(revision + ":" + child["id"])
+            key = "workspace:" + req["id"] + ":" + revision + ":" + child["id"]
+            if child["depends_on"] != [node_id] or not target or self._cache(key):
+                continue
+            # Each isolated task gets its own worktree; the dependent one is
+            # cut from the predecessor's branch, which carries its commits.
+            self.api.update_issue(
+                target,
+                {
+                    "executionWorkspaceSettings": {
+                        "mode": "isolated_workspace",
+                        "workspaceStrategy": {"type": "git_worktree", "baseRef": branch},
+                    },
+                },
+            )
+            self._cache(key, {"base": branch, "workspace": workspace, "from": issue["id"]})
+
+    def _capture_report(self, req, node, issue):
+        """Keep the worker's own final report from its first successful run.
+
+        Paperclip workers without permission bypass cannot record a task
+        disposition, so the Workbench records the report and closes the
+        execution issue; acceptance still requires independent review."""
+        key = "report:" + req["id"] + ":" + node
+        if self._cache(key):
+            return "captured"
+        if issue.get("status") not in {"done", "blocked", "in_review"}:
+            return "pending"
+        runs = self.api.issue_runs(issue["id"])
+        if not isinstance(runs, list):
+            raise WorkbenchError("Unexpected Paperclip run-list contract")
+        succeeded = sorted(
+            (r for r in runs if r.get("status") == "succeeded"),
+            key=lambda r: r.get("createdAt") or "",
+        )
+        if not succeeded:
+            return "failed" if issue["status"] == "blocked" else "pending"
+        detail = self.api.run(succeeded[0]["runId"])
+        text = str((detail.get("resultJson") or {}).get("result") or "").strip()
+        if not text:
+            return "failed" if issue["status"] == "blocked" else "pending"
+        usage = [
+            {
+                "run": r.get("runId"),
+                "source": r.get("invocationSource"),
+                "input_tokens": (r.get("usageJson") or {}).get("inputTokens"),
+                "output_tokens": (r.get("usageJson") or {}).get("outputTokens"),
+                "billing": (r.get("usageJson") or {}).get("billingType"),
+            }
+            for r in runs
+        ]
+        report = {
+            "run": succeeded[0]["runId"],
+            "agent": succeeded[0].get("agentId") or issue.get("assigneeAgentId"),
+            "text": text[:20000],
+            "truncated": len(text) > 20000,
+            "sha256": digest(text),
+            "usage": usage,
+        }
+        if issue["status"] != "done":
+            self.api.update_issue(
+                issue["id"],
+                {
+                    "status": "done",
+                    "comment": "Assistant Workbench captured the worker report from run "
+                    + succeeded[0]["runId"]
+                    + ". Independent review is still required.",
+                },
+            )
+        self._cache(key, report)
+        with self.store.transaction() as db:
+            self.store.event(
+                db,
+                "execution.node_reported",
+                req["id"],
+                {
+                    "node": node,
+                    "run": report["run"],
+                    "agent": report["agent"],
+                    "sha256": report["sha256"],
+                    "characters": len(text),
+                    "runs": len(runs),
+                },
+            )
+        return "captured"
+
+    def _propose_worker_outcome(self, req, nodes):
+        from .quality import Outcomes
+
+        key = "proposed:" + req["id"] + ":" + str(req["revision"])
+        if self._cache(key):
+            return
+        plan = json.loads(req["plan"]) if req.get("plan") else {"nodes": []}
+        roles = {n["id"]: n["role"] for n in plan["nodes"]}
+        sections, agents = [], []
+        for node in nodes:
+            report = self._cache("report:" + req["id"] + ":" + str(req["revision"]) + ":" + node)
+            agents.append(str(report["agent"]))
+            sections.append(
+                "## " + node + " (" + roles.get(node, "worker") + ", run " + report["run"] + ")\n\n"
+                + report["text"]
+                + ("\n\n[Report truncated at 20,000 characters.]" if report["truncated"] else "")
+            )
+        outcome = Outcomes(self.store).propose(
+            req["id"],
+            "\n\n".join(sections),
+            [],
+            "paperclip-agent:" + ",".join(dict.fromkeys(agents)),
+            req["revision"],
+        )
+        self._cache(key, {"outcome": outcome["id"]})

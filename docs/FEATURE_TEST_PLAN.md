@@ -229,6 +229,7 @@ Mapped pytest evidence:
 - `tests/test_execution.py::test_paused_project_does_not_block_other_projects`
 - `tests/test_requirement_scenarios.py::test_parallel_group_member_amendments_preserve_both_updates`
 - `tests/test_scenario_runner.py::test_thirty_instructions_persist_real_state_without_fake_products`
+- `tests/test_paperclip_contract.py::test_identical_prompts_keep_separate_remote_issues`
 
 ### PF02
 
@@ -546,6 +547,10 @@ Mapped pytest evidence:
 
 - `tests/test_execution.py::test_bridge_replay_is_idempotent`
 - `tests/test_execution.py::test_uncertain_agent_create_does_not_duplicate`
+- `tests/test_paperclip_contract.py::test_changed_worker_definition_is_not_served_by_an_old_agent`
+- `tests/test_paperclip_contract.py::test_terminated_agents_do_not_hold_pool_capacity`
+- `tests/test_paperclip_contract.py::test_converted_worker_agent_is_refused[claude]`
+- `tests/test_paperclip_contract.py::test_converted_worker_agent_is_refused[codex]`
 
 ### PF14
 
@@ -649,6 +654,9 @@ Mapped pytest evidence:
 - `tests/test_report_deliverables.py::test_export_all_separately_accepted_deliverables_with_provenance`
 - `tests/test_report_deliverables.py::test_partial_export_does_not_replace_accepted_work_with_latest_rejected_draft`
 - `tests/test_report_deliverables.py::test_one_outcome_can_cover_multiple_deliverables_without_duplicate_body`
+- `tests/test_paperclip_contract.py::test_worker_reports_become_one_unverified_outcome`
+- `tests/test_paperclip_contract.py::test_failed_or_empty_runs_are_never_captured`
+- `tests/test_paperclip_contract.py::test_dependents_start_from_the_predecessor_branch`
 
 ### PF18
 
@@ -1061,6 +1069,8 @@ Mapped pytest evidence:
 - `tests/test_runtime_backends.py::test_temporal_real_service_checkpoint_rollover`
 - `tests/test_workspace_backup.py::test_backup_restores_artifacts_and_rebinds_workspace_then_executes`
 - `tests/test_app_integrations.py::test_retry_works_for_temporal_without_constructing_paperclip`
+- `tests/test_paperclip_contract.py::test_reused_issue_belonging_to_other_work_is_refused`
+- `tests/test_paperclip_contract.py::test_replay_of_own_issue_after_lost_cache_is_accepted`
 
 ### PF33
 
@@ -1102,7 +1112,7 @@ Have two coding agents edit separate project workspaces under capacity limits.
 - **Successful path:** Artifacts and temporary ports stay project-scoped and reservations are released.
 - **Failure path:** Deny conflicting ownership, excess workers and writes outside the allowed workspace.
 - **Edge case:** Crash one worker and reconcile its leases without granting a stale worker ownership.
-- **Automated scope:** Fixture requests ask for isolated workspaces; OS enforcement is not verified by that flag. Private workspace copies, symlink/path-escape denial, secret/.git exclusion and stale plan hashes are exercised. A copied directory is not an OS security sandbox. Linux virtual-address exhaustion is exercised; unsupported platforms reject an explicit memory bound before starting project code.
+- **Automated scope:** Fixture requests ask for isolated workspaces; OS enforcement is not verified by that flag. Private workspace copies, symlink/path-escape denial, secret/.git exclusion and stale plan hashes are exercised. A copied directory is not an OS security sandbox. Linux virtual-address exhaustion is exercised; unsupported platforms reject an explicit memory bound before starting project code. Pinned-Paperclip contract fixtures refuse repository work while isolated workspaces are disabled and cancel a downgraded issue.
 - **Remaining limitation:** Real coordinator/harness conformance, native child ownership and broad selection evaluation remain.
 - **Required observations:** `isolation`, `capacity`.
 - **Prerequisites:** Configured OS/container isolation and scoped worker credentials; Running coordinator/worker pool and a bounded load generator.
@@ -1122,6 +1132,10 @@ Mapped pytest evidence:
 - `tests/test_workspace_backup.py::test_backup_rejects_actual_running_process_until_cancelled`
 - `tests/test_workspace_backup.py::test_backup_rejects_workspace_path_outside_owned_state`
 - `tests/test_app_integrations.py::test_execution_actions_run_real_tests_and_reopen_results`
+- `tests/test_paperclip_contract.py::test_repository_work_requires_isolated_workspaces`
+- `tests/test_paperclip_contract.py::test_downgraded_workspace_issue_is_cancelled`
+- `tests/test_paperclip_contract.py::test_unbound_project_work_does_not_need_isolation`
+- `tests/test_paperclip_contract.py::test_multi_dependency_nodes_keep_their_own_workspace`
 
 ### PF35
 
@@ -1814,7 +1828,7 @@ Attempt unauthorized operator, source and side-effect actions.
 - **Successful path:** Authorized actions have scoped identities and durable audit receipts.
 - **Failure path:** Reject missing tokens, foreign origins, credential misuse and shell interpolation.
 - **Edge case:** After an uncertain effect, a stale worker cannot repeat it under a new generation.
-- **Automated scope:** Local API/effect/environment guards; OS-level hostile-worker isolation needs live attempts.
+- **Automated scope:** Local API/effect/environment guards; OS-level hostile-worker isolation needs live attempts. Paperclip worker agents must use the official CLI runner with bypass disabled, and bypassing profiles are refused before creation. These are configuration checks, not hostile-worker attempts.
 - **Remaining limitation:** Local operator controls and effect audit exist; hostile agents require OS/container and scoped credential boundaries.
 - **Required observations:** `isolation`.
 - **Prerequisites:** Configured OS/container isolation and scoped worker credentials.
@@ -1920,6 +1934,13 @@ Mapped pytest evidence:
 - `tests/test_app_integrations.py::test_invalid_temporal_configuration_rejected_without_network[settings15]`
 - `tests/test_app_integrations.py::test_temporal_auth_configuration_does_not_read_credentials_or_require_sdk`
 - `tests/test_memory_integration_contracts.py::test_basic_memory_read_cannot_resolve_another_project_identifier`
+- `tests/test_paperclip_contract.py::test_claude_workers_use_the_official_cli_runner_with_isolation`
+- `tests/test_paperclip_contract.py::test_worker_reuse_requires_explicitly_disabled_bypass`
+- `tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[claude-key]`
+- `tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[claude-skip-flag]`
+- `tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[claude-permission-mode]`
+- `tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[codex-key]`
+- `tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[codex-full-access]`
 
 ### PF60
 
@@ -2224,6 +2245,7 @@ Mapped pytest evidence:
 - `tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S16-code]`
 - `tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S17-code]`
 - `tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S25-report]`
+- `tests/test_paperclip_contract.py::test_partial_reports_unblock_dependents_without_an_outcome`
 
 ### PF69
 

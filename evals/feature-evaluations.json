@@ -349,7 +349,8 @@
         "tests/test_intake.py::test_concurrent_unique_and_retry_receipts",
         "tests/test_execution.py::test_paused_project_does_not_block_other_projects",
         "tests/test_requirement_scenarios.py::test_parallel_group_member_amendments_preserve_both_updates",
-        "tests/test_scenario_runner.py::test_thirty_instructions_persist_real_state_without_fake_products"
+        "tests/test_scenario_runner.py::test_thirty_instructions_persist_real_state_without_fake_products",
+        "tests/test_paperclip_contract.py::test_identical_prompts_keep_separate_remote_issues"
       ],
       "required_gates": [
         "journey",
@@ -840,7 +841,11 @@
       ],
       "automated_tests": [
         "tests/test_execution.py::test_bridge_replay_is_idempotent",
-        "tests/test_execution.py::test_uncertain_agent_create_does_not_duplicate"
+        "tests/test_execution.py::test_uncertain_agent_create_does_not_duplicate",
+        "tests/test_paperclip_contract.py::test_changed_worker_definition_is_not_served_by_an_old_agent",
+        "tests/test_paperclip_contract.py::test_terminated_agents_do_not_hold_pool_capacity",
+        "tests/test_paperclip_contract.py::test_converted_worker_agent_is_refused[claude]",
+        "tests/test_paperclip_contract.py::test_converted_worker_agent_is_refused[codex]"
       ],
       "required_gates": [
         "coordinator",
@@ -979,7 +984,10 @@
         "tests/test_server_workers.py::test_http_completed_worker_receipts_need_observation_and_independent_review",
         "tests/test_report_deliverables.py::test_export_all_separately_accepted_deliverables_with_provenance",
         "tests/test_report_deliverables.py::test_partial_export_does_not_replace_accepted_work_with_latest_rejected_draft",
-        "tests/test_report_deliverables.py::test_one_outcome_can_cover_multiple_deliverables_without_duplicate_body"
+        "tests/test_report_deliverables.py::test_one_outcome_can_cover_multiple_deliverables_without_duplicate_body",
+        "tests/test_paperclip_contract.py::test_worker_reports_become_one_unverified_outcome",
+        "tests/test_paperclip_contract.py::test_failed_or_empty_runs_are_never_captured",
+        "tests/test_paperclip_contract.py::test_dependents_start_from_the_predecessor_branch"
       ],
       "required_gates": [
         "workers",
@@ -1527,7 +1535,9 @@
         "tests/test_runtime_backends.py::test_temporal_real_service_dag_idempotency_recovery",
         "tests/test_runtime_backends.py::test_temporal_real_service_checkpoint_rollover",
         "tests/test_workspace_backup.py::test_backup_restores_artifacts_and_rebinds_workspace_then_executes",
-        "tests/test_app_integrations.py::test_retry_works_for_temporal_without_constructing_paperclip"
+        "tests/test_app_integrations.py::test_retry_works_for_temporal_without_constructing_paperclip",
+        "tests/test_paperclip_contract.py::test_reused_issue_belonging_to_other_work_is_refused",
+        "tests/test_paperclip_contract.py::test_replay_of_own_issue_after_lost_cache_is_accepted"
       ],
       "required_gates": [
         "coordinator",
@@ -1610,13 +1620,17 @@
         "tests/test_execution_packs.py::test_unsupported_memory_bound_never_starts_project_code[win32]",
         "tests/test_workspace_backup.py::test_backup_rejects_actual_running_process_until_cancelled",
         "tests/test_workspace_backup.py::test_backup_rejects_workspace_path_outside_owned_state",
-        "tests/test_app_integrations.py::test_execution_actions_run_real_tests_and_reopen_results"
+        "tests/test_app_integrations.py::test_execution_actions_run_real_tests_and_reopen_results",
+        "tests/test_paperclip_contract.py::test_repository_work_requires_isolated_workspaces",
+        "tests/test_paperclip_contract.py::test_downgraded_workspace_issue_is_cancelled",
+        "tests/test_paperclip_contract.py::test_unbound_project_work_does_not_need_isolation",
+        "tests/test_paperclip_contract.py::test_multi_dependency_nodes_keep_their_own_workspace"
       ],
       "required_gates": [
         "isolation",
         "capacity"
       ],
-      "automated_scope": "Fixture requests ask for isolated workspaces; OS enforcement is not verified by that flag. Private workspace copies, symlink/path-escape denial, secret/.git exclusion and stale plan hashes are exercised. A copied directory is not an OS security sandbox. Linux virtual-address exhaustion is exercised; unsupported platforms reject an explicit memory bound before starting project code.",
+      "automated_scope": "Fixture requests ask for isolated workspaces; OS enforcement is not verified by that flag. Private workspace copies, symlink/path-escape denial, secret/.git exclusion and stale plan hashes are exercised. A copied directory is not an OS security sandbox. Linux virtual-address exhaustion is exercised; unsupported platforms reject an explicit memory bound before starting project code. Pinned-Paperclip contract fixtures refuse repository work while isolated workspaces are disabled and cancel a downgraded issue.",
       "limit": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain.",
       "journey_tags": [
         "website",
@@ -2642,12 +2656,19 @@
         "tests/test_app_integrations.py::test_invalid_temporal_configuration_rejected_without_network[settings14]",
         "tests/test_app_integrations.py::test_invalid_temporal_configuration_rejected_without_network[settings15]",
         "tests/test_app_integrations.py::test_temporal_auth_configuration_does_not_read_credentials_or_require_sdk",
-        "tests/test_memory_integration_contracts.py::test_basic_memory_read_cannot_resolve_another_project_identifier"
+        "tests/test_memory_integration_contracts.py::test_basic_memory_read_cannot_resolve_another_project_identifier",
+        "tests/test_paperclip_contract.py::test_claude_workers_use_the_official_cli_runner_with_isolation",
+        "tests/test_paperclip_contract.py::test_worker_reuse_requires_explicitly_disabled_bypass",
+        "tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[claude-key]",
+        "tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[claude-skip-flag]",
+        "tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[claude-permission-mode]",
+        "tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[codex-key]",
+        "tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[codex-full-access]"
       ],
       "required_gates": [
         "isolation"
       ],
-      "automated_scope": "Local API/effect/environment guards; OS-level hostile-worker isolation needs live attempts.",
+      "automated_scope": "Local API/effect/environment guards; OS-level hostile-worker isolation needs live attempts. Paperclip worker agents must use the official CLI runner with bypass disabled, and bypassing profiles are refused before creation. These are configuration checks, not hostile-worker attempts.",
       "limit": "Local operator controls and effect audit exist; hostile agents require OS/container and scoped credential boundaries.",
       "journey_tags": [
         "scope",
@@ -3029,7 +3050,8 @@
         "tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S11-code]",
         "tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S16-code]",
         "tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S17-code]",
-        "tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S25-report]"
+        "tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S25-report]",
+        "tests/test_paperclip_contract.py::test_partial_reports_unblock_dependents_without_an_outcome"
       ],
       "required_gates": [
         "workers",

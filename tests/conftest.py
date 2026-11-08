@@ -53,6 +53,9 @@ class FakePaperclip:
     def agents(self):
         return self.agents_[:]
 
+    def experimental_settings(self):
+        return {"enableIsolatedWorkspaces": True}
+
     def create_agent(self, body):
         item = {"id": "agent-" + str(len(self.agents_)), **body}
         self.agents_.append(item)
@@ -91,6 +94,22 @@ class FakePaperclip:
     def run(self, identity):
         return self.runs[identity]
 
+    def issue_runs(self, identity):
+        return [r for r in self.runs.values() if r.get("issueId") == identity]
+
+    def finish(self, issue_id, status, results, agent="agent-0"):
+        """Record runs for an issue as the coordinator would after execution."""
+        for i, (outcome, text) in enumerate(results):
+            run_id = issue_id + "-run-" + str(len(self.runs))
+            self.runs[run_id] = {
+                "runId": run_id, "issueId": issue_id, "agentId": agent,
+                "status": outcome, "createdAt": "2026-11-08T10:00:0" + str(i),
+                "invocationSource": "assignment" if i == 0 else "automation",
+                "usageJson": {"inputTokens": 100 + i, "outputTokens": 10, "billingType": "subscription_included"},
+                "resultJson": {"result": text} if text is not None else {},
+            }
+        self.issue(issue_id)["status"] = status
+
     def wakeup(self, agent, body):
         prior = next(
             (w for w in self.wakes if w["idempotencyKey"] == body["idempotencyKey"]),
@@ -100,4 +119,52 @@ class FakePaperclip:
             return prior
         item = {"id": "new-" + str(len(self.wakes)), **body}
         self.wakes.append(item)
+        return item
+
+
+class PinnedPaperclip(FakePaperclip):
+    """Contract fixture for behaviors observed in the pinned Paperclip release
+    (d69631b): official-CLI agents become its native runner unless runner is
+    legacy, and that runner rejects bypass keys even when false
+    (agent_runner_config_incompatible). Issue creation reuses a recent open issue
+    with the same normalized title unless allowDuplicate is true, binding the
+    new idempotency key to it (server/src/services/issues.ts). With isolated
+    workspaces disabled it keeps isolated issues in the shared workspace. Not
+    evidence of live Paperclip or model execution."""
+
+    RUNNER_INCOMPATIBLE = ("dangerouslySkipPermissions", "dangerouslyBypassApprovalsAndSandbox")
+    isolated_workspaces = True
+
+    def experimental_settings(self):
+        return {"enableIsolatedWorkspaces": self.isolated_workspaces}
+
+    def create_agent(self, body):
+        from assistant_workbench.paperclip import CoordinatorError
+
+        if body.get("runner") == "legacy" or body["adapterType"] not in {"claude_local", "codex_local"}:
+            return super().create_agent(body)
+        # Without an explicit legacy runner, official-CLI adapters become the
+        # native runner with its own permission default.
+        if set(self.RUNNER_INCOMPATIBLE) & set(body.get("adapterConfig", {})):
+            raise CoordinatorError("Paperclip returned HTTP 422 for POST /agents")
+        native = {**body, "adapterType": "paperclip_runner"}
+        native["adapterConfig"] = {**body["adapterConfig"], "provider": "acpx", "acpxPermissionMode": "approve-all"}
+        return super().create_agent(native)
+
+    def create_issue(self, body):
+        key = body.get("idempotencyKey")
+        if key in self.issues_:
+            return {**self.issues_[key], "deduplicated": True, "deduplicationReason": "idempotency_key"}
+        title = " ".join(body["title"].split()).lower()
+        if not body.get("allowDuplicate"):
+            for existing in self.issues_.values():
+                if (" ".join(existing["title"].split()).lower() == title
+                        and existing.get("status") not in {"done", "cancelled"}):
+                    self.issues_[key] = existing
+                    return {**existing, "deduplicated": True, "deduplicationReason": "recent_open_title"}
+        item = {"id": "issue-" + str(len({i["id"] for i in self.issues_.values()})), **body}
+        if not self.isolated_workspaces and "executionWorkspaceSettings" in item:
+            # Disabled isolation is silently downgraded to the shared workspace.
+            item["executionWorkspaceSettings"] = {"mode": "shared_workspace"}
+        self.issues_[key] = item
         return item
