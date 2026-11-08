@@ -161,8 +161,11 @@ def backup_state(store, destination):
         before = _snapshot_inventory(home, _STATE_ROOTS)
         dest.mkdir(parents=True, mode=0o700)
         try:
+            # VACUUM INTO writes one rollback-journal file. backup() would copy
+            # the live WAL mode, and some SQLite builds then leave -wal/-shm
+            # sidecars that the restore inventory rejects.
+            db.execute("VACUUM INTO ?", (str(dest / "workbench.sqlite"),))
             with closing(sqlite3.connect(dest / "workbench.sqlite")) as target:
-                db.backup(target)
                 _portable_workspaces(target, home, rewrite=True)
                 target.commit()
             _copy_snapshot_files(home, dest, before)
