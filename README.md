@@ -54,7 +54,7 @@ The workload interleaves a repair-cafe website, an offline mobile task app and a
 | Harness access | CLI, loopback operator API, host-scoped worker API and **21 typed MCP tools** | Official CLI authentication and actual profile qualification are required |
 | Evaluation | 71 explicit feature scenarios, 30-instruction workload, source-bound JUnit accounting and native capture tooling | Fixtures, skipped checks and missing live evidence cannot silently qualify a release |
 
-Named procedures and integrations include **Superpowers, Elements of Style, Humanizer, Vale, Promptfoo, Docling, Open Notebook and GPT Researcher**. Installation, activation and observed success are separate states. [Compatibility](docs/COMPATIBILITY.md) · [Memory contracts](docs/MEMORY_INTEGRATION_LIMITS.md) · [Context backends](docs/CONTEXT_BACKENDS.md) · [Execution packs](docs/EXECUTION_PACKS.md)
+Named procedures and integrations include **Superpowers, Elements of Style, Humanizer, Vale, Promptfoo, Docling, Open Notebook and GPT Researcher**. Installation, activation and observed success are separate states. [Compatibility](docs/COMPATIBILITY.md) · [Memory contracts](docs/MEMORY_INTEGRATION_LIMITS.md) · [Context backends](docs/CONTEXT_BACKENDS.md) · [Local service stack](docs/LOCAL_SERVICES.md) · [Execution packs](docs/EXECUTION_PACKS.md)
 
 ## Install
 

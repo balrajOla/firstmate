@@ -1,0 +1,51 @@
+{
+  "label_prefix": "com.assistant-workbench",
+  "logs": "/home/you/awb/logs",
+  "path": ["/home/you/awb/tools/bin", "/home/you/.local/bin"],
+  "services": {
+    "paperclip": {
+      "pnpm": "/home/you/awb/tools/bin/pnpm",
+      "source": "/home/you/awb/deps/dependencies/paperclip/REVISION/source",
+      "home": "/home/you/awb/state/paperclip-home",
+      "instance": "awb"
+    },
+    "llm": {
+      "server": "/home/you/awb/tools/llama.cpp/llama-server",
+      "model": "/home/you/awb/models/chat-model.gguf",
+      "alias": "local-chat",
+      "port": 8080,
+      "args": ["--chat-template-kwargs", "{\"enable_thinking\":false}"]
+    },
+    "embeddings": {
+      "server": "/home/you/awb/tools/llama.cpp/llama-server",
+      "model": "/home/you/awb/models/embedding-model.gguf",
+      "alias": "local-embed",
+      "port": 8081
+    },
+    "hindsight": {
+      "executable": "/home/you/awb/venvs/hindsight/bin/hindsight-api",
+      "home": "/home/you/awb/state/hindsight-home",
+      "llm_model": "local-chat"
+    },
+    "openviking": {
+      "executable": "/home/you/awb/venvs/openviking/bin/openviking-server",
+      "home": "/home/you/awb/state/openviking-home",
+      "vlm_model": "local-chat",
+      "embedding_model": "local-embed",
+      "embedding_dimension": 768
+    },
+    "surrealdb": {
+      "executable": "/home/you/awb/tools/surreal",
+      "data": "/home/you/awb/state/open-notebook/surreal.db",
+      "password_file": "/home/you/awb/state/open-notebook/surreal.password"
+    },
+    "open-notebook": {
+      "python": "/home/you/awb/venvs/open-notebook/bin/python",
+      "worker": "/home/you/awb/venvs/open-notebook/bin/surreal-commands-worker",
+      "source": "/home/you/awb/deps/dependencies/open-notebook/REVISION/source",
+      "run_dir": "/home/you/awb/state/open-notebook/run",
+      "surreal_password_file": "/home/you/awb/state/open-notebook/surreal.password",
+      "encryption_key_file": "/home/you/awb/state/open-notebook/encryption.key"
+    }
+  }
+}
