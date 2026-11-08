@@ -653,12 +653,22 @@ class Engine:
 
     def retry(self, request_id):
         with self.store.transaction() as db:
-            db.execute(
+            reset = db.execute(
                 "UPDATE outbox SET status='retry' WHERE request_id=? AND status='blocked'",
                 (request_id,),
-            )
+            ).rowcount
+        if not reset:
+            # A task a worker reported blocked is not a blocked delivery.
+            return {
+                "request_id": request_id,
+                "reset": 0,
+                "notice": "No blocked delivery to retry. Uncertain mutations need reconciliation; "
+                "a task a worker reported blocked needs an amendment with what would unblock it, "
+                "or cancellation.",
+            }
         return {
             "request_id": request_id,
+            "reset": reset,
             "notice": "Uncertain mutations require reconciliation; they were not blindly retried.",
         }
 
@@ -702,7 +712,7 @@ class Engine:
                         {
                             "nodes": blocked,
                             "notice": "A worker reported it could not complete its task; "
-                            "amend, retry or cancel the request",
+                            "amend the request with what would unblock it, or cancel it",
                         },
                     )
                 self._cache(key, True)
