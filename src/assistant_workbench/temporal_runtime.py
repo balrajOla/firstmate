@@ -457,11 +457,16 @@ class TemporalRuntime:
         req = self.store.one("SELECT * FROM requests WHERE id=?", (request_id,))
         if req["status"] in {"cancelled", "accepted", "grouped", "needs_project"}:
             raise WorkbenchError("Only an active assigned request can be dispatched")
-        plan = (
-            json.loads(req["plan"])
-            if req.get("plan")
-            else compile_plan(req, self.settings, kind, model_override)
-        )
+        if req.get("plan"):
+            plan = json.loads(req["plan"])
+        else:
+            from .routing import workflow_choice
+
+            choice = None if kind else workflow_choice(self.store, self.settings, req)
+            plan = compile_plan(
+                req, self.settings, choice[0] if choice else kind, model_override,
+                routing=choice[1] if choice else None,
+            )
         validate_plan(plan, self.settings)
         plan_layers(plan["nodes"], self.settings["limits"]["max_agents"])
         host_id = host_id or self.spec.get("host_id", "local")

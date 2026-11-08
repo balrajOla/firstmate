@@ -1,0 +1,62 @@
+{
+  "description": "Held-out routing cases for the opt-in semantic router. The router prompt was fixed before these cases were run; labels are the suite author's judgment of the requested action and owning project (null = no registered project clearly fits).",
+  "projects": [
+    {
+      "key": "website",
+      "name": "Harbor Bakery website",
+      "aliases": ["bakery-site"],
+      "history": [
+        "Add an online ordering page with pickup times",
+        "Fix the broken image carousel on the home page",
+        "Write the copy for the new seasonal menu page"
+      ]
+    },
+    {
+      "key": "mobile",
+      "name": "Trailmate",
+      "aliases": ["trailmate-app"],
+      "history": [
+        "Implement offline map caching for hiking routes",
+        "Fix the crash when GPS permission is denied on Android",
+        "Add a dark mode toggle to the settings screen"
+      ]
+    },
+    {
+      "key": "research",
+      "name": "Sodium battery study",
+      "aliases": ["cell-study"],
+      "history": [
+        "Compare published cycle-life results for sodium-ion cells",
+        "Summarize the safety findings from the 2025 abuse tests",
+        "Investigate supplier claims about energy density"
+      ]
+    }
+  ],
+  "cases": [
+    {"id": "c01", "prompt": "Report the architecture review", "workflow": "report", "project": null},
+    {"id": "c02", "prompt": "Report the architecture review for Trailmate's sync engine", "workflow": "report", "project": "mobile"},
+    {"id": "c03", "prompt": "The checkout button on the ordering page does nothing on Safari; please sort it out", "workflow": "code", "project": "website"},
+    {"id": "c04", "prompt": "Hikers say the app forgets downloaded routes after a restart", "workflow": "code", "project": "mobile"},
+    {"id": "c05", "prompt": "Pull together what the literature says about electrolyte decomposition at high temperature", "workflow": "research", "project": "research"},
+    {"id": "c06", "prompt": "Draft a one-page update for the investors on where the cell study stands", "workflow": "report", "project": "research"},
+    {"id": "c07", "prompt": "Change the VERSION constant in vendor/legacy_lib.py from 1.0 to 2.0, and report if the file is missing", "workflow": "code", "project": null},
+    {"id": "c08", "prompt": "Before we build anything, sketch two or three ways the bakery could take catering orders", "workflow": "design", "project": "website"},
+    {"id": "c09", "prompt": "Write unit tests for the route elevation calculator", "workflow": "code", "project": "mobile"},
+    {"id": "c10", "prompt": "Document how pickup time slots are calculated so the staff can follow it", "workflow": "report", "project": "website"},
+    {"id": "c11", "prompt": "What did we decide about the seasonal menu?", "workflow": "simple", "project": "website"},
+    {"id": "c12", "prompt": "Is the dark mode toggle finished?", "workflow": "simple", "project": "mobile"},
+    {"id": "c13", "prompt": "Check whether the energy density figures in the supplier deck hold up against independent tests", "workflow": "research", "project": "research"},
+    {"id": "c14", "prompt": "Plan the migration of the trail database to a new schema before anyone writes code", "workflow": "design", "project": "mobile"},
+    {"id": "c15", "prompt": "Rename the 'Specials' tab to 'Today' everywhere on the site", "workflow": "code", "project": "website"},
+    {"id": "c16", "prompt": "Write a short blog post announcing the new sourdough line", "workflow": "report", "project": "website"},
+    {"id": "c17", "prompt": "Compare three crash-reporting services for an Android and iOS hiking app", "workflow": "research", "project": "mobile"},
+    {"id": "c18", "prompt": "Summarize this week's progress on all projects", "workflow": "report", "project": null},
+    {"id": "c19", "prompt": "Upgrade the map SDK to the latest major version and fix whatever breaks", "workflow": "code", "project": "mobile"},
+    {"id": "c20", "prompt": "Design the test protocol for the next round of thermal runaway experiments", "workflow": "design", "project": "research"},
+    {"id": "c21", "prompt": "Book a table for two at an Italian restaurant", "workflow": "simple", "project": null},
+    {"id": "c22", "prompt": "The image carousel is broken again on mobile Safari", "workflow": "code", "project": "website"},
+    {"id": "c23", "prompt": "Turn the abuse-test findings into a table the safety board can read", "workflow": "report", "project": "research"},
+    {"id": "c24", "prompt": "Brainstorm names for a premium subscription tier in the hiking app", "workflow": "design", "project": "mobile"},
+    {"id": "c25", "prompt": "Investigate why the bakery site loads slowly on 3G and fix the worst cause", "workflow": "code", "project": "website"}
+  ]
+}

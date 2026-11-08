@@ -27,6 +27,78 @@ def routing_cases(cases):
     }
 
 
+def semantic_routing(settings, suite, runner=None):
+    """Run the configured semantic router over a held-out suite.
+
+    Projects and their history live in a throwaway store, so the evaluation
+    never touches saved work. Each case records the expected and actual
+    workflow and project, confidence, latency and miss category, beside the
+    lexical policy's answer on the same case."""
+    import tempfile
+    from pathlib import Path
+    from . import routing
+    from .store import Store
+
+    if not routing.semantic_settings(settings):
+        raise WorkbenchError("Configure routing.semantic before evaluating it")
+    if not isinstance(suite.get("projects"), list) or not isinstance(suite.get("cases"), list):
+        raise WorkbenchError("A routing suite needs projects and cases")
+    with tempfile.TemporaryDirectory() as tmp:
+        store = Store(Path(tmp))
+        ids = {}
+        for item in suite["projects"]:
+            ids[item["key"]] = store.add_project(item["name"], None, item.get("aliases", []))["id"]
+            for n, title in enumerate(item.get("history", [])):
+                store.submit(title, "history-" + item["key"] + "-" + str(n), ids[item["key"]])
+        keys = {v: k for k, v in ids.items()}
+        results = []
+        for case in suite["cases"]:
+            request = {"id": "eval-" + case["id"], "body": case["prompt"], "revision": 1}
+            lexical_project = keys.get(store.route(case["prompt"])[0])
+            row = {"id": case["id"], "expected_workflow": case["workflow"],
+                   "expected_project": case.get("project"),
+                   "lexical_workflow": classify(case["prompt"]), "lexical_project": lexical_project}
+            try:
+                decision = routing.decide(store, settings, request, runner)
+            except WorkbenchError as exc:
+                row.update(error=str(exc), miss=["error"])
+                results.append(row)
+                continue
+            row.update(
+                workflow=decision["workflow"], project=keys.get(decision["project_id"]),
+                confidence=decision["confidence"], confident=decision["confident"],
+                latency_seconds=decision["latency_seconds"], explanation=decision["explanation"],
+                effective_models=decision["effective_models"],
+            )
+            row["miss"] = [m for m, bad in (
+                ("workflow", row["workflow"] != case["workflow"]),
+                ("project", row["project"] != case.get("project")),
+                ("unconfident", not decision["confident"]),
+            ) if bad]
+            results.append(row)
+    answered = [r for r in results if "error" not in r]
+
+    def rate(hits):
+        return round(sum(hits) / max(1, len(results)), 3)
+
+    return {
+        "kind": "semantic routing on these held-out cases only",
+        "generated": now(),
+        "total": len(results),
+        "errors": len(results) - len(answered),
+        "semantic_workflow_accuracy": rate(r.get("workflow") == r["expected_workflow"] for r in results),
+        "semantic_project_accuracy": rate(r.get("project", "?") == r["expected_project"] for r in results),
+        "lexical_workflow_accuracy": rate(r["lexical_workflow"] == r["expected_workflow"] for r in results),
+        "lexical_project_accuracy": rate(r["lexical_project"] == r["expected_project"] for r in results),
+        "confident_wrong_project": sum(
+            1 for r in answered if r["confident"] and r["project"] != r["expected_project"]),
+        "mean_latency_seconds": round(
+            sum(r["latency_seconds"] for r in answered) / max(1, len(answered)), 3),
+        "cases": results,
+        "notice": "Labels are the suite author's; accuracy here does not establish routing quality elsewhere.",
+    }
+
+
 def judge_agreement(judgments):
     if not judgments:
         raise WorkbenchError("Judgment pairs are required")

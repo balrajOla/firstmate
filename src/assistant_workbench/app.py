@@ -101,6 +101,21 @@ class Application:
             return s.submit(**args)
         if action == "request.assign":
             return s.assign(**args)
+        if action == "request.route":
+            from . import routing
+
+            req = s.one("SELECT * FROM requests WHERE id=?", (args["request_id"],))
+            if args.get("force"):
+                routing.forget(s, req)
+            decision = routing.decision_for(s, config(self.home), req)
+            if req["status"] == "needs_project" and decision.get("confident") and decision.get("project_id"):
+                s.assign(req["id"], decision["project_id"])
+                decision = {**decision, "assigned": True}
+            return decision
+        if action == "routing.pending":
+            from .routing import route_pending
+
+            return route_pending(s, config(self.home), **args)
         if action == "request.cancel":
             return s.cancel(**args)
         if action == "request.reopen":
@@ -108,11 +123,16 @@ class Application:
         if action == "request.get":
             return s.one("SELECT * FROM requests WHERE id=?", (args["request_id"],))
         if action == "request.plan":
-            return compile_plan(
-                s.one("SELECT * FROM requests WHERE id=?", (args.pop("request_id"),)),
-                config(self.home),
-                **args,
-            )
+            from .routing import workflow_choice
+
+            req = s.one("SELECT * FROM requests WHERE id=?", (args.pop("request_id"),))
+            settings = config(self.home)
+            # The preview shows the team delivery would choose, including a
+            # recorded semantic decision, unless a workflow is named.
+            choice = None if args.get("kind") else workflow_choice(s, settings, req)
+            if choice:
+                args.update(kind=choice[0], routing=choice[1])
+            return compile_plan(req, settings, **args)
         if action == "request.retry":
             from .runtime_backends import select_runtime
 
@@ -255,6 +275,7 @@ class Application:
             return probe(self.home, **args)
         if action in {
             "evaluation.routing",
+            "evaluation.semantic_routing",
             "evaluation.judges",
             "evaluation.propose_policy",
             "evaluation.apply_policy",
@@ -263,6 +284,8 @@ class Application:
 
             if action == "evaluation.routing":
                 return evaluation.routing_cases(**args)
+            if action == "evaluation.semantic_routing":
+                return evaluation.semantic_routing(config(self.home), **args)
             if action == "evaluation.judges":
                 return evaluation.judge_agreement(**args)
             return getattr(evaluation, action.split(".")[1])(s, **args)
