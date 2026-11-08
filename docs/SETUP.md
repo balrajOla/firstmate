@@ -14,7 +14,7 @@ Use `awb --home /absolute/private/state ...` when keeping separate installations
 
 ## Default Paperclip backend
 
-Use an isolated Paperclip installation and its pinned upstream setup. `awb deps install paperclip` fetches the recorded commit and runs its build; Node and pnpm must already be available. The upstream stack can require substantial disk space and PostgreSQL.
+Use an isolated Paperclip installation and its pinned upstream setup. `awb deps install paperclip` fetches the recorded commit and runs its build. Node 24.11 or later, pnpm and a Rust toolchain (`cargo`, for Paperclip's runner binary) must already be on `PATH`. The upstream stack can require substantial disk space and PostgreSQL. Each dependency step writes its output to a private `install.log`; a failed attempt is moved aside as `REVISION.failed-*` with that log, so you can read the cause and retry without manual cleanup.
 
 Complete Paperclip onboarding and create a company through its supported interface. Set `coordinator.kind` to `paperclip`, with the actual `url`, `company_id` and, where required, `token_env` in the Workbench state `config.json`. Keep the token in the named environment variable through your credential manager, never in a prompt, repository or URL.
 

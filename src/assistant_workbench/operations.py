@@ -6,6 +6,7 @@ import hashlib
 import os
 import plistlib
 import re
+import shlex
 import shutil
 import sqlite3
 import stat
@@ -13,7 +14,7 @@ import sys
 from pathlib import Path
 from .config import config
 from .integrations import run_process
-from .util import WorkbenchError, atomic, canonical, digest, now, read_json
+from .util import WorkbenchError, atomic, canonical, digest, now, read_json, uid
 
 
 _STATE_ROOTS = {"archive", "knowledge", "config.json", "snapshots", "workspaces"}
@@ -454,8 +455,26 @@ def service_definition(home, executable, kind="launchd"):
     raise WorkbenchError("Unsupported service manager")
 
 
-def install_dependencies(home, names):
-    registry = json.loads(
+def _logged_step(log, argv, **kwargs):
+    """Run an installer step and keep its full output in a private log."""
+    result = run_process(argv, allowed_codes=range(-255, 256), **kwargs)
+    descriptor = os.open(log, os.O_WRONLY | os.O_CREAT | os.O_APPEND, 0o600)
+    with os.fdopen(descriptor, "a") as stream:
+        stream.write(
+            "$ " + shlex.join(argv) + "\n" + result["stdout"] + result["stderr"]
+            + "[exit " + str(result["exit_code"]) + "]\n"
+        )
+    if result["exit_code"]:
+        tail = (result["stderr"].strip() or result["stdout"].strip())[-600:]
+        raise WorkbenchError(
+            "Installer step failed with exit " + str(result["exit_code"]) + ": "
+            + shlex.join(argv) + ("\n" + tail if tail else "")
+        )
+    return result
+
+
+def install_dependencies(home, names, registry=None):
+    registry = registry or json.loads(
         (Path(__file__).parent / "assets/dependencies.json").read_text()
     )
     result = []
@@ -469,69 +488,87 @@ def install_dependencies(home, names):
             continue
         if dest.exists():
             raise WorkbenchError("Dependency installation is incomplete: " + str(dest))
-        dest.mkdir(parents=True)
-        if spec["kind"] == "git":
-            repo = dest / "source"
-            run_process(
-                ["git", "clone", "--no-checkout", spec["url"], str(repo)], timeout=300
-            )
-            run_process(
-                ["git", "-C", str(repo), "checkout", "--detach", spec["revision"]],
-                timeout=90,
-            )
-            actual = run_process(["git", "-C", str(repo), "rev-parse", "HEAD"])[
-                "stdout"
-            ].strip()
-            if actual != spec["revision"]:
-                raise WorkbenchError("Dependency revision mismatch")
-            for argv in spec.get("build", []):
-                run_process(argv, cwd=repo, timeout=1800)
-            if name == "lcm":
-                for origin, target in [
-                    (repo / "src/prompts", repo / "dist/src/prompts"),
-                    (
-                        repo / "src/eval/compaction-shadow",
-                        repo / "dist/src/eval/compaction-shadow",
-                    ),
-                ]:
-                    target.mkdir(parents=True, exist_ok=True)
-                    for asset in origin.glob("*.yaml"):
-                        shutil.copy2(asset, target / asset.name)
-                (repo / "dist/installer").mkdir(parents=True, exist_ok=True)
-                shutil.copy2(
-                    repo / "installer/setup.sh", repo / "dist/installer/setup.sh"
-                )
-                run_process(["node", "scripts/write-build-id.mjs"], cwd=repo)
-        elif spec["kind"] == "python":
-            run_process([sys.executable, "-m", "venv", str(dest / "venv")], timeout=90)
-            run_process(
-                [
-                    str(dest / "venv/bin/python"),
-                    "-m",
-                    "pip",
-                    "install",
-                    spec["package"] + "==" + spec["revision"],
-                ],
-                timeout=1200,
-            )
-        else:
+        if spec["kind"] not in {"git", "python"}:
             raise WorkbenchError(
                 "Dependency requires its documented platform installer: " + name
             )
-        record = {
-            "name": name,
-            "revision": spec["revision"],
-            "path": str(dest),
-            "state": (
-                "installed"
-                if spec["kind"] == "python"
-                or spec.get("build")
-                or name in {"superpowers", "humanizer", "elements-of-style"}
-                else "source_fetched"
-            ),
-            "created": now(),
-            "notice": "Installed is distinct from configured, activated and verified.",
-        }
-        atomic(dest / "installed.json", canonical(record))
-        result.append(record)
+        dest.mkdir(parents=True)
+        try:
+            result.append(_install_dependency(name, spec, dest))
+        except Exception as exc:
+            # Keep the failed attempt for inspection, out of the way of a retry.
+            failed = dest.with_name(dest.name + uid(".failed-"))
+            dest.rename(failed)
+            log = failed / "install.log"
+            raise WorkbenchError(
+                str(exc) + ("\nBuild log: " + str(log) if log.is_file() else "")
+            ) from exc
     return result
+
+
+def _install_dependency(name, spec, dest):
+    log = dest / "install.log"
+    if spec["kind"] == "git":
+        repo = dest / "source"
+        _logged_step(
+            log, ["git", "clone", "--no-checkout", spec["url"], str(repo)],
+            timeout=300,
+        )
+        _logged_step(
+            log, ["git", "-C", str(repo), "checkout", "--detach", spec["revision"]],
+            timeout=90,
+        )
+        actual = run_process(["git", "-C", str(repo), "rev-parse", "HEAD"])[
+            "stdout"
+        ].strip()
+        if actual != spec["revision"]:
+            raise WorkbenchError("Dependency revision mismatch")
+        for argv in spec.get("build", []):
+            _logged_step(log, argv, cwd=repo, timeout=1800)
+        if name == "lcm":
+            for origin, target in [
+                (repo / "src/prompts", repo / "dist/src/prompts"),
+                (
+                    repo / "src/eval/compaction-shadow",
+                    repo / "dist/src/eval/compaction-shadow",
+                ),
+            ]:
+                target.mkdir(parents=True, exist_ok=True)
+                for asset in origin.glob("*.yaml"):
+                    shutil.copy2(asset, target / asset.name)
+            (repo / "dist/installer").mkdir(parents=True, exist_ok=True)
+            shutil.copy2(
+                repo / "installer/setup.sh", repo / "dist/installer/setup.sh"
+            )
+            run_process(["node", "scripts/write-build-id.mjs"], cwd=repo)
+    else:
+        _logged_step(
+            log, [sys.executable, "-m", "venv", str(dest / "venv")], timeout=90
+        )
+        _logged_step(
+            log,
+            [
+                str(dest / "venv/bin/python"),
+                "-m",
+                "pip",
+                "install",
+                spec["package"] + "==" + spec["revision"],
+            ],
+            timeout=1200,
+        )
+    record = {
+        "name": name,
+        "revision": spec["revision"],
+        "path": str(dest),
+        "state": (
+            "installed"
+            if spec["kind"] == "python"
+            or spec.get("build")
+            or name in {"superpowers", "humanizer", "elements-of-style"}
+            else "source_fetched"
+        ),
+        "created": now(),
+        "notice": "Installed is distinct from configured, activated and verified.",
+    }
+    atomic(dest / "installed.json", canonical(record))
+    return record
