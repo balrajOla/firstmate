@@ -18,6 +18,18 @@ from .paperclip import Paperclip
 from .util import WorkbenchError, atomic, canonical, digest, now, uid
 
 
+def _signal_group(p, sig):
+    try:
+        os.killpg(p.pid, sig)
+    except ProcessLookupError:
+        pass
+    except PermissionError:
+        # macOS refuses to signal a group whose leader exited but is not yet
+        # reaped; that process needs no signal.
+        if p.poll() is None:
+            raise
+
+
 def run_process(
     argv,
     cwd=None,
@@ -57,14 +69,11 @@ def run_process(
             if out.tell() + err.tell() > max_output:
                 reason = "Process output exceeded limit"
             if reason:
-                try:
-                    os.killpg(p.pid, signal.SIGTERM)
-                except ProcessLookupError:
-                    pass
+                _signal_group(p, signal.SIGTERM)
                 try:
                     p.wait(timeout=3)
                 except subprocess.TimeoutExpired:
-                    os.killpg(p.pid, signal.SIGKILL)
+                    _signal_group(p, signal.SIGKILL)
                     p.wait()
                 break
             time.sleep(0.025)

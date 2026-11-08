@@ -248,3 +248,23 @@ def test_mcp_malformed_request_recovers_for_next_request(app):
 def test_fast_process_output_overflow_is_not_silently_truncated():
     with pytest.raises(WorkbenchError, match="output exceeded"):
         run_process([sys.executable, "-c", 'print("x"*200000)'], max_output=1000)
+
+
+def test_overflow_from_a_process_that_already_exited_is_still_reported(monkeypatch):
+    import subprocess
+    import time
+    from assistant_workbench import integrations
+
+    class LatePoll(subprocess.Popen):
+        """The child exits between the poll and the stop signal, unreaped."""
+
+        def poll(self):
+            if not getattr(self, "late", False):
+                self.late = True
+                time.sleep(0.5)
+                return None
+            return super().poll()
+
+    monkeypatch.setattr(integrations.subprocess, "Popen", LatePoll)
+    with pytest.raises(WorkbenchError, match="output exceeded"):
+        run_process([sys.executable, "-c", 'print("x"*200000)'], max_output=1000)
