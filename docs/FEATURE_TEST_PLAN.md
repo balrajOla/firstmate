@@ -264,7 +264,7 @@ Route initial requests and paraphrased follow-ups to the right existing or new p
 - **Successful path:** Website/mobile/research follow-ups retain the intended project and explain the choice.
 - **Failure path:** An ambiguous reference produces a visible assignment need instead of a guessed merge.
 - **Edge case:** A reply mentioning another project cannot silently move ownership.
-- **Automated scope:** Explicit IDs, replies and exact-name routing only; semantic accuracy requires the benchmark.
+- **Automated scope:** Explicit IDs, replies and exact-name routing only; semantic accuracy requires the benchmark. Opt-in semantic routing is exercised with a scripted CLI: confident assignment, low-confidence hand-off, invalid-answer refusal and recorded explanations. Model quality is not established by these tests.
 - **Remaining limitation:** Routing uses explicit links and exact names; semantic/historical disambiguation needs evaluated planning.
 - **Required observations:** `journey`, `benchmark`.
 - **Prerequisites:** Installed Workbench and isolated website/mobile/research project state; Qualified profiles and a versioned held-out benchmark with expected outcomes.
@@ -292,6 +292,13 @@ Mapped pytest evidence:
 - `tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S16-code]`
 - `tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S17-code]`
 - `tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S25-report]`
+- `tests/test_semantic_routing.py::test_confident_decision_routes_an_unresolved_request`
+- `tests/test_semantic_routing.py::test_low_confidence_leaves_the_choice_to_the_operator_once`
+- `tests/test_semantic_routing.py::test_invalid_answers_never_route[prose]`
+- `tests/test_semantic_routing.py::test_invalid_answers_never_route[unknown-project]`
+- `tests/test_semantic_routing.py::test_invalid_answers_never_route[unknown-workflow]`
+- `tests/test_semantic_routing.py::test_invalid_answers_never_route[confidence]`
+- `tests/test_semantic_routing.py::test_invalid_answers_never_route[no-explanation]`
 
 ### PF04
 
@@ -396,6 +403,9 @@ Mapped pytest evidence:
 - `tests/test_requirement_scenarios.py::test_unassigned_amendment_still_requires_project_assignment`
 - `tests/test_tui_scenarios.py::test_view_filter_does_not_change_prompt_destination`
 - `tests/test_scenario_runner.py::test_conflicting_requirements_group_identity_and_stale_rejection_are_observed`
+- `tests/test_semantic_routing.py::test_operator_can_ask_again_after_an_amendment_or_explicitly`
+- `tests/test_semantic_routing.py::test_plan_preview_shows_the_team_delivery_would_choose`
+- `tests/test_semantic_routing.py::test_failed_or_unconfident_routing_falls_back_to_the_lexical_workflow`
 
 ### PF08
 
@@ -1655,6 +1665,11 @@ Mapped pytest evidence:
 - `tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S16-code]`
 - `tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S17-code]`
 - `tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S25-report]`
+- `tests/test_semantic_routing.py::test_held_out_evaluation_records_misses_beside_the_lexical_policy`
+- `tests/test_semantic_routing.py::test_semantic_workflow_chooses_the_team_once_per_revision`
+- `tests/test_semantic_routing.py::test_off_by_default_keeps_the_lexical_policy`
+- `tests/test_semantic_routing.py::test_unqualified_profile_is_never_called`
+- `tests/test_semantic_routing.py::test_settings_are_validated`
 
 ### PF54
 

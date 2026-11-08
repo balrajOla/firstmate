@@ -27,9 +27,11 @@
     "status": "partial",
     "files": [
       "src/assistant_workbench/store.py",
-      "tests/test_intake.py"
+      "tests/test_intake.py",
+      "src/assistant_workbench/routing.py",
+      "tests/test_semantic_routing.py"
     ],
-    "remaining": "Explicit links and exact project names route requests; evaluated semantic/history-based disambiguation is not implemented."
+    "remaining": "Explicit links and exact project names route requests; an opt-in semantic router resolves unrouted projects and workflows through a qualified CLI profile and was evaluated only on 25 author-labeled held-out cases. Human-calibrated evaluation, history beyond recent titles and live follow-up journeys remain."
   },
   {
     "id": "PF04",
@@ -649,7 +651,8 @@
       "tests/test_evaluation.py",
       "evals/routing.json",
       "tests/test_policy_scenarios.py",
-      "tests/test_tui_scenarios.py"
+      "tests/test_tui_scenarios.py",
+      "evals/routing-heldout.json"
     ],
     "remaining": "Lexical routing, plan selection and result-finding cases are tested; held-out semantic routing and model quality/cost comparisons remain."
   },
