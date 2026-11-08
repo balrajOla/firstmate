@@ -708,12 +708,16 @@ class Engine:
             (r for r in runs if r.get("status") == "succeeded"),
             key=lambda r: r.get("createdAt") or "",
         )
+        # A worker records its disposition before its final message, so its
+        # run can still be active when the task already reads done or blocked.
+        active = any(r.get("status") in {"queued", "running", "scheduled_retry"} for r in runs)
+        unfinished = "pending" if active or issue["status"] != "blocked" else "failed"
         if not succeeded:
-            return "failed" if issue["status"] == "blocked" else "pending"
+            return unfinished
         detail = self.api.run(succeeded[0]["runId"])
         text = str((detail.get("resultJson") or {}).get("result") or "").strip()
         if not text:
-            return "failed" if issue["status"] == "blocked" else "pending"
+            return unfinished
         usage = [
             {
                 "run": r.get("runId"),

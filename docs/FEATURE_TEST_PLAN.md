@@ -2264,6 +2264,7 @@ Mapped pytest evidence:
 - `tests/test_paperclip_contract.py::test_partial_reports_unblock_dependents_without_an_outcome`
 - `tests/test_paperclip_contract.py::test_worker_reported_block_keeps_dependents_blocked`
 - `tests/test_paperclip_contract.py::test_paperclip_escalation_is_not_a_worker_block`
+- `tests/test_paperclip_contract.py::test_disposition_recorded_before_the_final_message_waits_for_the_run`
 
 ### PF69
 
