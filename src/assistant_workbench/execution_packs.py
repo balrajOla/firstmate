@@ -549,6 +549,11 @@ class ExecutionPacks:
             raise WorkbenchError(
                 "Output bytes and optional memory MiB must be bounded integers"
             )
+        if memory_mb is not None and sys.platform != "linux":
+            raise WorkbenchError(
+                "An explicit memory bound is currently supported only on Linux; "
+                "choose a Linux worker or omit memory_mb"
+            )
         record = self.store.one("SELECT * FROM execution_plans WHERE id=?", (plan_id,))
         if (
             expected_sha256 != record["sha256"]

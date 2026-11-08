@@ -164,7 +164,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF31](#pf31) | Bounded iteration and no-progress detection | 3 | `recovery` |
 | [PF32](#pf32) | Crash and uncertain-effect reconciliation | 8 | `coordinator`, `recovery` |
 | [PF33](#pf33) | Scoped pause/cancel including shared work | 12 | `workers`, `coordinator` |
-| [PF34](#pf34) | Isolated workspaces and shared resource limits | 10 | `isolation`, `capacity` |
+| [PF34](#pf34) | Isolated workspaces and shared resource limits | 12 | `isolation`, `capacity` |
 | [PF35](#pf35) | Native WezTerm navigation | 5 | `gui` |
 | [PF36](#pf36) | Persistent requests and obligation progress | 10 | `journey`, `gui` |
 | [PF37](#pf37) | Dedicated Outcomes view | 5 | `gui`, `workers` |
@@ -1096,7 +1096,7 @@ Have two coding agents edit separate project workspaces under capacity limits.
 - **Successful path:** Artifacts and temporary ports stay project-scoped and reservations are released.
 - **Failure path:** Deny conflicting ownership, excess workers and writes outside the allowed workspace.
 - **Edge case:** Crash one worker and reconcile its leases without granting a stale worker ownership.
-- **Automated scope:** Fixture requests ask for isolated workspaces; OS enforcement is not verified by that flag. Private workspace copies, symlink/path-escape denial, secret/.git exclusion and stale plan hashes are exercised. A copied directory is not an OS security sandbox.
+- **Automated scope:** Fixture requests ask for isolated workspaces; OS enforcement is not verified by that flag. Private workspace copies, symlink/path-escape denial, secret/.git exclusion and stale plan hashes are exercised. A copied directory is not an OS security sandbox. Linux virtual-address exhaustion is exercised; unsupported platforms reject an explicit memory bound before starting project code.
 - **Remaining limitation:** Real coordinator/harness conformance, native child ownership and broad selection evaluation remain.
 - **Required observations:** `isolation`, `capacity`.
 - **Prerequisites:** Configured OS/container isolation and scoped worker credentials; Running coordinator/worker pool and a bounded load generator.
@@ -1111,6 +1111,8 @@ Mapped pytest evidence:
 - `tests/test_execution_packs.py::test_registered_workspace_cannot_be_replaced_by_external_symlink`
 - `tests/test_execution_packs.py::test_plan_hash_and_resource_parameters_are_enforced`
 - `tests/test_execution_packs.py::test_python_virtual_memory_limit_is_observed`
+- `tests/test_execution_packs.py::test_unsupported_memory_bound_never_starts_project_code[darwin]`
+- `tests/test_execution_packs.py::test_unsupported_memory_bound_never_starts_project_code[win32]`
 - `tests/test_workspace_backup.py::test_backup_rejects_actual_running_process_until_cancelled`
 - `tests/test_workspace_backup.py::test_backup_rejects_workspace_path_outside_owned_state`
 - `tests/test_app_integrations.py::test_execution_actions_run_real_tests_and_reopen_results`

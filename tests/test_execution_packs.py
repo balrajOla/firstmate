@@ -4,6 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 import json
 from pathlib import Path
 import shutil
+import sys
 import time
 import zipfile
 
@@ -231,9 +232,31 @@ def test_python_virtual_memory_limit_is_observed(app, tmp_path):
         },
     )
     plan = packs.plan(ws["id"])
+    if sys.platform != "linux":
+        with pytest.raises(WorkbenchError, match="supported only on Linux"):
+            packs.run(plan["id"], plan["sha256"], timeout=10, memory_mb=128)
+        assert packs.list_runs(ws["id"]) == []
+        return
     result = packs.run(plan["id"], plan["sha256"], timeout=10, memory_mb=128)
     assert result["status"] == "failed" and result["exit_code"] != 0
     assert "MemoryError" in result["stdout"] + result["stderr"]
+
+
+@pytest.mark.parametrize("platform", ["darwin", "win32"])
+def test_unsupported_memory_bound_never_starts_project_code(
+    app, tmp_path, monkeypatch, platform
+):
+    packs, ws, path, _, _ = workspace(
+        app,
+        tmp_path,
+        {"test_marker.py": "from pathlib import Path\nPath('started').touch()\ndef test_ok(): assert True\n"},
+    )
+    plan = packs.plan(ws["id"])
+    monkeypatch.setattr(sys, "platform", platform)
+    with pytest.raises(WorkbenchError, match="supported only on Linux"):
+        packs.run(plan["id"], plan["sha256"], memory_mb=128)
+    assert packs.list_runs(ws["id"]) == []
+    assert not (path / "started").exists()
 
 
 def test_run_progress_and_result_survive_new_application_instance(app, tmp_path):

@@ -10,11 +10,11 @@ A terminal workspace for parallel requests, project context, code execution and 
 
 ## What actually ran
 
-Recorded on **8 November 2026**. [Exact results and source fingerprint](docs/evidence/cloud-run/verification.json) · [All 465 cases](docs/evidence/cloud-run/TEST_CASES.md) · [JUnit](docs/evidence/cloud-run/all-tests.xml) · [Raw test log](docs/evidence/cloud-run/all-tests.log)
+Recorded on **8 November 2026**. [Exact results and source fingerprint](docs/evidence/cloud-run/verification.json) · [All 467 cases](docs/evidence/cloud-run/TEST_CASES.md) · [JUnit](docs/evidence/cloud-run/all-tests.xml) · [Raw test log](docs/evidence/cloud-run/all-tests.log)
 
 | Check | Observed result |
 |---|---|
-| Combined tests, including an independently installed wheel | **465 passed; 0 failed; 0 skipped** in 155.85 seconds |
+| Combined tests, including an independently installed wheel | **467 passed; 0 failed; 0 skipped** in 174.85 seconds |
 | Three-project workload | **30/30 control scenarios passed**, saving 22 prompts plus control actions, amendments and receipts |
 | Native WezTerm | **37 actual screenshots**, including all 30 checkpoints; the plugin shortcut opened another real Workbench tab |
 | Temporal | Actual development server, SDK, task queues and HTTP worker control; DAG, cancellation, restart and checkpoint tests used explicitly labelled activities/process fixtures |

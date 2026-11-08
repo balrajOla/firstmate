@@ -67,7 +67,7 @@ A zero exit code is insufficient for a **test** pass: an inspected test runner m
 | Captured output | 256 bytes–8 MiB combined stdout/stderr; excess stops the process group |
 | CPU time | Per-process CPU limit based on the selected wall budget |
 | File size/open files | Per-process 512-MiB file-size limit and 256 open descriptors |
-| Memory | Optional 64–16,384 MiB virtual-address limit; Node also receives a 512-MiB old-space limit |
+| Memory | Optional 64–16,384 MiB virtual-address limit on Linux; other platforms reject `memory_mb` before execution. Node also receives a 512-MiB old-space limit |
 | Cancellation | Durable stop request; terminates the started process group and records its terminal result |
 
 The process receives a small environment rather than the operator's provider keys, access tokens or arbitrary Python path. Package managers receive offline/ignore-lifecycle-script settings. Commands may still contain project code that accesses the network or filesystem directly: **these settings are not an OS security sandbox or a complete egress policy**. CPU limits are per process, not a global fleet CPU quota. A process that deliberately escapes its process group needs a real host/container boundary. Virtual-address limits can be incompatible with runtimes that reserve large address spaces, so they must be chosen for the actual runtime.
