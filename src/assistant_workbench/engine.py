@@ -270,16 +270,28 @@ class Engine:
                 "Agent creation has an uncertain outcome; inspect Paperclip before retrying",
                 True,
             )
+        name = "AWB " + node["role"] + " " + model["id"]
         managed = [
             a for a in agents
             if (a.get("metadata") or {}).get("workbenchKey") and a.get("status") != "terminated"
         ]
         if len(managed) >= self.settings["limits"]["max_agents"]:
+            # Earlier definitions of this role and profile are superseded by
+            # this one. Reclaim those that are idle and hold no open task, so
+            # an upgrade does not stall unattended work; busy ones are kept.
+            superseded = [a["id"] for a in managed if a.get("name") == name]
+            if superseded:
+                self.retire_agents(agent_ids=superseded, reason="superseded by a changed definition")
+                managed = [
+                    a for a in self.api.agents()
+                    if (a.get("metadata") or {}).get("workbenchKey") and a.get("status") != "terminated"
+                ]
+        if len(managed) >= self.settings["limits"]["max_agents"]:
             raise WorkbenchError(
                 "Managed agent pool is full; reuse or explicitly retire a role/profile"
             )
         body = {
-            "name": "AWB " + node["role"] + " " + model["id"],
+            "name": name,
             "role": node["role"],
             "adapterType": adapter,
             "adapterConfig": adapter_config,
@@ -307,7 +319,7 @@ class Engine:
         verify_worker_agent(agent, model["harness"])
         return agent["id"]
 
-    def retire_agents(self, agent_ids=None, idle=False):
+    def retire_agents(self, agent_ids=None, idle=False, reason=None):
         """Terminate managed agents the operator no longer needs.
 
         Only Workbench-managed agents that are not running and hold no open
@@ -352,7 +364,8 @@ class Engine:
             with self.store.transaction() as db:
                 self.store.event(
                     db, "coordinator.agent_retired", identity,
-                    {"workbench_key": key, "name": agent.get("name")},
+                    {"workbench_key": key, "name": agent.get("name"),
+                     **({"reason": reason} if reason else {})},
                 )
             managed.pop(identity)
             retired.append({"id": identity, "name": agent.get("name")})
