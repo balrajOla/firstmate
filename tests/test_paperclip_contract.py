@@ -100,9 +100,12 @@ def test_claude_workers_use_the_official_cli_runner_with_isolation(
         "--allowedTools", "Bash(" + disposition_command() + ":*)",
         "--allowedTools", "Bash(pytest:*)",
     ]
-    # The instructions name exactly the command the worker is allowed to run.
+    # The instructions name exactly the commands the worker is allowed to run,
+    # including the profile's grant, so it does not guess at refused ones.
     instructions = agent["instructionsBundle"]["files"]["AGENTS.md"]
     assert "`" + disposition_command() + " done`" in instructions
+    assert ("you can run only `git status`, `git diff`, `git add`, `git commit`, `"
+            + disposition_command() + "`, `pytest`. Other commands are refused") in instructions
     assert config["extraArgs"][:3] == ["--bare", "--permission-mode", "acceptEdits"]
     assert not any("push" in a for a in config["extraArgs"])
     assert config["model"] == "model-from-cli" and config["effort"] == "medium"
@@ -235,6 +238,16 @@ def test_outcome_headline_skips_headers_and_markup(app, project, configured):
     engine.observe()
     outcome = app.store.one("SELECT body FROM outcomes WHERE request_id=?", (request,))
     assert outcome["body"].splitlines()[0] == "All 3 login tests pass on the branch."
+
+
+def test_granted_commands_follow_the_cli_argument_forms():
+    from assistant_workbench.engine import granted_commands
+
+    assert granted_commands([
+        "--bare", "--allowedTools", "Bash(git status:*)", "Edit", "Bash(npm test)",
+        "--model", "Bash(not-a-grant:*)", "--allowed-tools=Bash(/v/bin/python -m pytest:*) Read",
+        "--allowedTools", "Bash(git status:*),Bash(cargo test:*)",
+    ]) == ["git status", "npm test", "/v/bin/python -m pytest", "cargo test"]
 
 
 def test_worker_instructions_ask_for_a_leading_result_sentence(app, project, configured):

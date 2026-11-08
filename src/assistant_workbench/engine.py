@@ -51,6 +51,27 @@ def disposition_command():
     return shlex.quote(sys.executable) + " -m assistant_workbench.worker_disposition"
 
 
+def granted_commands(args):
+    """Shell commands that Claude CLI arguments allow through --allowedTools."""
+    commands, granting = [], False
+    for arg in args:
+        if arg in ("--allowedTools", "--allowed-tools"):
+            granting = True
+            continue
+        if arg.startswith(("--allowedTools=", "--allowed-tools=")):
+            arg, granting = arg.split("=", 1)[1], False
+        elif arg.startswith("-"):
+            granting = False
+            continue
+        elif not granting:
+            continue
+        for match in re.finditer(r"Bash\(([^)]*)\)", arg):
+            command = match.group(1).removesuffix(":*").strip()
+            if command and command not in commands:
+                commands.append(command)
+    return commands
+
+
 def task_branch(request_id, revision, node_id):
     """Name a task's branch before it runs, already in Paperclip's branch form,
     so a dependent can be created on its predecessor's branch."""
@@ -195,6 +216,13 @@ class Engine:
                 + ' blocked "what would unblock it"` if you could not complete the task. '
                 if model["harness"] == "claude"
                 else "Record your task disposition if Paperclip lets you; otherwise end with the report. "
+            )
+            + (
+                "Apart from editing files you can run only "
+                + ", ".join("`" + c + "`" for c in granted_commands(adapter_config["extraArgs"]))
+                + ". Other commands are refused, so name any check you could not run in your report. "
+                if model["harness"] == "claude"
+                else ""
             )
             + "A reviewer checks the author's work instead of redoing it. "
             "Stop when the task is cancelled and never start a replacement process."
