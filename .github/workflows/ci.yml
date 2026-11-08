@@ -60,7 +60,7 @@ jobs:
         run: python scripts/prepare_temporal.py "$RUNNER_TEMP/awb-temporal" > temporal-server.json
       - name: Exercise real queues, cancellation, recovery and HTTP workers
         run: |
-          AWB_TEMPORAL_SERVER_BINARY="$(python -c 'import json; print(json.load(open("temporal-server.json"))["binary"])')" python -m pytest -q tests/test_runtime_backends.py tests/test_server_workers.py tests/test_runtime_observations.py --junitxml=temporal-results.xml
+          AWB_TEMPORAL_SERVER_BINARY="$(python -c 'import json; print(json.load(open("temporal-server.json"))["binary"])')" python -m pytest -q tests/test_runtime_backends.py tests/test_server_workers.py tests/test_runtime_observations.py tests/test_temporal_control_deadlines.py --junitxml=temporal-results.xml
       - uses: actions/upload-artifact@v4
         if: always()
         with:
