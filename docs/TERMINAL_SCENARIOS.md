@@ -59,7 +59,8 @@ The main scenario runner records screenshots of actual state during its 30-promp
 
 1. Starts a separate WezTerm GUI process. Its config is a copy of `~/.wezterm.lua` plus the managed include, installed by the given release `awb`; the operator's own config file is not changed.
 2. Reaches the tab strip with real key input through `wezterm cli` (Ctrl+N, then Tab) and walks every view with the arrow keys, then opens F1.
-3. Records the pane geometry WezTerm reports, the text WezTerm rendered for each view and, when the login session is unlocked, a PNG of that window only.
+3. Records the pane geometry WezTerm reports, the text WezTerm rendered for each view and, when the login session is unlocked, a PNG of that window only. WezTerm also owns hidden helper windows, so the script captures the largest normal-layer window it owns.
+4. Reports whether `wezterm show-keys` lists Ctrl+Shift+A opening the TUI. WezTerm prints that binding as key `A` with `CTRL`. The script does not press the shortcut itself; a real keystroke needs macOS Accessibility permission for the sending app.
 
 If the display cannot fit the requested rows at the configured font, the size is retried with a slightly smaller font, and the font used is recorded. A locked screen composites no windows, so screenshots are then recorded as not captured. The script shows whatever the given state holds and never manufactures outcomes. It needs macOS, WezTerm and `swiftc` (Xcode command line tools).
 

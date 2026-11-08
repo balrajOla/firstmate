@@ -44,10 +44,14 @@ if args[1] == "locked" {
 }
 let pid = Int32(args[2])!
 let list = CGWindowListCopyWindowInfo([.optionAll], kCGNullWindowID) as! [[String: Any]]
-for w in list where (w[kCGWindowOwnerPID as String] as? Int32) == pid {
+// WezTerm also owns hidden helper windows; the terminal is the largest one.
+var found: [(Double, Int)] = []
+for w in list where (w[kCGWindowOwnerPID as String] as? Int32) == pid
+    && (w[kCGWindowLayer as String] as? Int) == 0 {
     let b = w[kCGWindowBounds as String] as! [String: Any]
-    if ((b["Width"] as? Double) ?? 0) > 100 { print(w[kCGWindowNumber as String] as! Int) }
+    found.append((((b["Width"] as? Double) ?? 0) * ((b["Height"] as? Double) ?? 0), w[kCGWindowNumber as String] as! Int))
 }
+for (area, id) in found.sorted(by: { $0.0 > $1.0 }) where area > 0 { print(id) }
 """
 
 
@@ -57,6 +61,20 @@ def run(argv, **kwargs):
 
 def sha256(path):
     return hashlib.sha256(Path(path).read_bytes()).hexdigest()
+
+
+def shortcut_bound(keys):
+    """Whether `wezterm show-keys --lua` lists Ctrl+Shift+A opening the TUI.
+
+    WezTerm normalizes Ctrl+Shift+A to key 'A' with mods 'CTRL'.
+    """
+    for line in keys.splitlines():
+        match = re.search(r"key = '([Aa])', mods = '([A-Z|]+)'", line)
+        if match and "'tui'" in line:
+            mods = set(match.group(2).split("|"))
+            if "CTRL" in mods and (match.group(1) == "A" or "SHIFT" in mods):
+                return True
+    return False
 
 
 def window_tool(work):
@@ -100,7 +118,7 @@ def main():
         "executable": str(args.executable),
         "awb_version": run([str(args.executable), "--version"]).stdout.strip(),
         "config_sha256_after_install": sha256(config),
-        "shortcut_bound": "CTRL|SHIFT" in shown.stdout and "'tui'" in shown.stdout,
+        "shortcut_bound": shortcut_bound(shown.stdout),
         "sizes": [],
     }
     for size in args.sizes.split(","):
