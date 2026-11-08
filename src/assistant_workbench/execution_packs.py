@@ -625,6 +625,11 @@ class ExecutionPacks:
             for k in ["PATH", "LANG", "LC_ALL", "SYSTEMROOT", "TMPDIR"]
             if k in os.environ
         }
+        # rustup's cargo/rustc shims need the selected installation directory.
+        # Keep this toolchain locator only for Rust; do not inherit Cargo or
+        # provider credential variables with the rest of the parent environment.
+        if plan["language"] == "rust" and os.environ.get("RUSTUP_HOME"):
+            env["RUSTUP_HOME"] = os.environ["RUSTUP_HOME"]
         env.update(
             CI="1",
             PYTHONDONTWRITEBYTECODE="1",

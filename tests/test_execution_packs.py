@@ -365,6 +365,36 @@ def test_rust_real_test_and_seeded_assertion_failure(app, tmp_path):
     assert bad["status"] == "failed" and bad["exit_code"] != 0
 
 
+def test_rust_custom_installation_keeps_locator_without_credentials(app, tmp_path, monkeypatch):
+    """Process contract for rustup shims; the adjacent test runs actual Rust."""
+    toolchain = tmp_path / "custom-rustup"
+    toolchain.mkdir()
+    bin_dir = tmp_path / "bin"
+    bin_dir.mkdir()
+    cargo = bin_dir / "cargo"
+    cargo.write_text(
+        "#!" + sys.executable + "\nimport os\n"
+        + "assert os.environ.get('RUSTUP_HOME') == " + repr(str(toolchain)) + "\n"
+        + "assert 'OPENAI_API_KEY' not in os.environ\n"
+        + "assert 'CARGO_REGISTRIES_CRATES_IO_TOKEN' not in os.environ\n"
+        + "print('test result: ok. 1 passed; 0 failed')\n"
+    )
+    cargo.chmod(0o700)
+    monkeypatch.setenv("PATH", str(bin_dir))
+    monkeypatch.setenv("RUSTUP_HOME", str(toolchain))
+    monkeypatch.setenv("OPENAI_API_KEY", "synthetic-provider-secret")
+    monkeypatch.setenv("CARGO_REGISTRIES_CRATES_IO_TOKEN", "synthetic-registry-secret")
+    packs, ws, _, _, _ = workspace(
+        app, tmp_path,
+        {"Cargo.toml": '[package]\nname="fixture"\nversion="0.1.0"\n',
+         "Cargo.lock": "version = 3\n"},
+    )
+    plan = packs.plan(ws["id"], language="rust")
+    result = packs.run(plan["id"], plan["sha256"])
+    assert result["status"] == "passed" and result["tests_observed"] == 1
+    assert "synthetic-" not in json.dumps(result)
+
+
 def test_web_artifact_checks_follow_real_assets_and_detect_drift(app, tmp_path):
     packs, ws, path, _, _ = workspace(
         app,

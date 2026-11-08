@@ -20,6 +20,10 @@ import urllib.parse
 from .runtime_backends import Fleet, WorkerControl, USAGE_FIELDS, select_runtime
 from .util import WorkbenchError, atomic, canonical, digest, now
 
+# Bound controller requests independently of workflow execution budgets. A lost
+# reply must not leave the HTTP/TUI control loop waiting indefinitely.
+CONTROL_RPC_SECONDS = 10
+
 try:
     from temporalio import activity, workflow
     from temporalio.client import Client
@@ -392,6 +396,30 @@ class TemporalRuntime:
             "worker_readiness": "Requires a registered host heartbeat and an actual task result",
         }
 
+    async def _control_rpc(self, operation, method, **kwargs):
+        try:
+            return await asyncio.wait_for(
+                method(rpc_timeout=timedelta(seconds=CONTROL_RPC_SECONDS), **kwargs),
+                timeout=CONTROL_RPC_SECONDS,
+            )
+        except Exception as exc:
+            # Provider exceptions can contain connection details. Keep the
+            # operator message actionable without publishing their raw text.
+            raise WorkbenchError(
+                "Temporal " + operation + " did not complete; reconcile the existing workflow before retrying"
+            ) from exc
+
+    async def _cancel_execution(self, client, request_id, revision, workflow_id, run_id):
+        handle = client.get_workflow_handle(workflow_id, run_id=run_id)
+        try:
+            await self._control_rpc("cancellation", handle.cancel)
+        except (Exception, asyncio.CancelledError):
+            # The server may have accepted the request before its reply was
+            # lost. Neither a failed RPC nor caller cancellation proves stop.
+            self._state(request_id, revision, "uncertain", run_id=run_id)
+            raise
+        self._state(request_id, revision, "cancel_requested", run_id=run_id)
+
     async def _require_poller(self, client, queue):
         from temporalio.api.workflowservice.v1 import DescribeTaskQueueRequest
         from temporalio.api.taskqueue.v1 import TaskQueue
@@ -489,10 +517,10 @@ class TemporalRuntime:
         )
         if predecessors:
             for previous in predecessors:
-                await client.get_workflow_handle(
-                    previous["workflow_id"], run_id=previous["run_id"]
-                ).cancel()
-                self._state(request_id, previous["revision"], "cancel_requested")
+                await self._cancel_execution(
+                    client, request_id, previous["revision"],
+                    previous["workflow_id"], previous["run_id"],
+                )
             raise WorkbenchError(
                 "Previous revision cancellation requested; observe its stop before dispatching the replacement"
             )
@@ -557,13 +585,25 @@ class TemporalRuntime:
             )
         except WorkflowAlreadyStartedError:
             handle = client.get_workflow_handle(workflow_id)
+        except asyncio.CancelledError:
+            self._state(request_id, req["revision"], "uncertain")
+            raise
         except Exception as exc:
             self._state(request_id, req["revision"], "uncertain")
             raise WorkbenchError(
                 "Temporal start has no confirmed response; reconcile by the same workflow ID before retrying"
             ) from exc
-        description = await handle.describe()
-        memo = await description.memo()
+        try:
+            description = await self._control_rpc("dispatch verification", handle.describe)
+            memo = await asyncio.wait_for(description.memo(), timeout=CONTROL_RPC_SECONDS)
+        except asyncio.CancelledError:
+            self._state(request_id, req["revision"], "uncertain")
+            raise
+        except Exception as exc:
+            self._state(request_id, req["revision"], "uncertain")
+            raise WorkbenchError(
+                "Temporal dispatch verification did not complete; reconcile the existing workflow before retrying"
+            ) from exc
         if memo.get("awb_payload_hash") != payload_hash:
             self._state(request_id, req["revision"], "uncertain")
             raise WorkbenchError(
@@ -578,8 +618,9 @@ class TemporalRuntime:
             "accepted",
             "grouped",
         }:
-            await client.get_workflow_handle(workflow_id, run_id=run_id).cancel()
-            self._state(request_id, req["revision"], "cancel_requested", run_id=run_id)
+            await self._cancel_execution(
+                client, request_id, req["revision"], workflow_id, run_id,
+            )
             raise WorkbenchError(
                 "Request changed during dispatch; cancellation sent, stop confirmation pending"
             )
@@ -626,11 +667,9 @@ class TemporalRuntime:
         )
         cancelled = []
         for row in rows:
-            handle = client.get_workflow_handle(
-                row["workflow_id"], run_id=row["run_id"]
+            await self._cancel_execution(
+                client, request_id, row["revision"], row["workflow_id"], row["run_id"],
             )
-            await handle.cancel()
-            self._state(request_id, row["revision"], "cancel_requested")
             cancelled.append(row["workflow_id"])
         return {
             "request_id": request_id,
@@ -651,7 +690,7 @@ class TemporalRuntime:
             handle = client.get_workflow_handle(
                 row["workflow_id"], run_id=row["run_id"]
             )
-            description = await handle.describe()
+            description = await self._control_rpc("status observation", handle.describe)
             state = description.status.name.lower().replace("canceled", "cancelled")
             detail = {
                 "workflow_id": row["workflow_id"],
@@ -660,7 +699,7 @@ class TemporalRuntime:
                 "revision": row["revision"],
             }
             if state == "completed":
-                detail["result"] = await handle.result()
+                detail["result"] = await self._control_rpc("result retrieval", handle.result)
                 self._state(
                     row["request_id"],
                     row["revision"],
