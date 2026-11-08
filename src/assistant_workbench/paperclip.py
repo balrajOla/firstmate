@@ -16,6 +16,15 @@ class CoordinatorError(WorkbenchError):
         self.uncertain = uncertain
 
 
+def _error_detail(exc):
+    """Paperclip's own short error text, so a refusal explains itself."""
+    try:
+        error = json.loads(exc.read(4096)).get("error")
+    except (OSError, ValueError, AttributeError):
+        return ""
+    return ": " + error[:300] if isinstance(error, str) and error.strip() else ""
+
+
 class Paperclip:
     def __init__(self, settings, timeout=20):
         self.settings = settings
@@ -70,7 +79,8 @@ class Paperclip:
                 return json.loads(raw) if raw else {}
         except urllib.error.HTTPError as exc:
             raise CoordinatorError(
-                f"Paperclip returned HTTP {exc.code} for {method} {path}",
+                f"Paperclip returned HTTP {exc.code} for {method} {path}"
+                + _error_detail(exc),
                 exc.code >= 500 and method != "GET",
             ) from exc
         except (OSError, ValueError, urllib.error.URLError) as exc:

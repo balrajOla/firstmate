@@ -6,7 +6,8 @@ variables, so without a permission bypass the worker cannot do that. This
 command reads the settings itself, never prints the token and changes only
 the status of the task that woke the run.
 
-Usage: python -m assistant_workbench.worker_disposition done|blocked
+Usage: python -m assistant_workbench.worker_disposition done
+       python -m assistant_workbench.worker_disposition blocked "what would unblock it"
 """
 
 import os
@@ -22,9 +23,18 @@ SETTINGS = ("PAPERCLIP_API_URL", "PAPERCLIP_API_KEY", "PAPERCLIP_RUN_ID", "PAPER
 def main(argv=None, environ=None):
     argv = sys.argv[1:] if argv is None else argv
     environ = os.environ if environ is None else environ
-    if len(argv) != 1 or argv[0] not in DISPOSITIONS:
-        print("usage: worker_disposition done|blocked", file=sys.stderr)
+    if not argv or argv[0] not in DISPOSITIONS or len(argv) > (2 if argv[0] == "blocked" else 1):
+        print('usage: worker_disposition done | blocked "what would unblock it"', file=sys.stderr)
         return 2
+    body = {"status": argv[0]}
+    if argv[0] == "blocked":
+        # Paperclip accepts blocked only with an unblock path; the board
+        # (the operator) decides, since the worker cannot proceed alone.
+        reason = (argv[1] if len(argv) > 1 else "").strip()
+        body["unblockDescriptor"] = {
+            "owner": "board",
+            "action": reason[:2000] or "The worker could not complete this task; see its final report.",
+        }
     missing = [k for k in SETTINGS if not environ.get(k)]
     if missing:
         print("Paperclip run settings are missing: " + ", ".join(missing), file=sys.stderr)
@@ -37,7 +47,7 @@ def main(argv=None, environ=None):
         api.token = environ["PAPERCLIP_API_KEY"]
         # Paperclip links agent mutations to the run that made them.
         api.headers["X-Paperclip-Run-Id"] = environ["PAPERCLIP_RUN_ID"]
-        api.update_issue(environ["PAPERCLIP_TASK_ID"], {"status": argv[0]})
+        api.update_issue(environ["PAPERCLIP_TASK_ID"], body)
     except (CoordinatorError, WorkbenchError) as exc:
         print(str(exc), file=sys.stderr)
         return 1

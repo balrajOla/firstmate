@@ -1948,8 +1948,8 @@ Mapped pytest evidence:
 - `tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[claude-permission-mode]`
 - `tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[codex-key]`
 - `tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[codex-full-access]`
-- `tests/test_worker_disposition.py::test_records_only_its_own_task_with_the_run_identity[done]`
-- `tests/test_worker_disposition.py::test_records_only_its_own_task_with_the_run_identity[blocked]`
+- `tests/test_worker_disposition.py::test_done_records_only_its_own_task_with_the_run_identity`
+- `tests/test_worker_disposition.py::test_blocked_names_what_would_unblock_it_for_the_board`
 - `tests/test_worker_disposition.py::test_refused_update_fails_without_printing_the_token`
 - `tests/test_worker_disposition.py::test_rejects_other_statuses_and_missing_settings`
 - `tests/test_worker_disposition.py::test_remote_plain_http_is_refused`

@@ -19,12 +19,18 @@ def paperclip():
         status = 200
 
         def do_PATCH(self):
-            body = self.rfile.read(int(self.headers["Content-Length"]))
-            seen.append({"path": self.path, "headers": dict(self.headers), "body": json.loads(body)})
-            self.send_response(server.status)
+            body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+            seen.append({"path": self.path, "headers": dict(self.headers), "body": body})
+            # Pinned Paperclip refuses blocked without an unblock path (HTTP 422).
+            refused = body.get("status") == "blocked" and not body.get("unblockDescriptor")
+            status = 422 if refused else server.status
+            self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
-            self.wfile.write(b"{}")
+            self.wfile.write(json.dumps(
+                {"error": "Entering blocked requires an unblockDescriptor"} if status == 422
+                else {"error": "Agent cannot update this issue"} if status >= 400 else {}
+            ).encode())
 
         def log_message(self, *args):
             pass
@@ -50,27 +56,39 @@ def run_env(server, **overrides):
     return env
 
 
-@pytest.mark.parametrize("disposition", ["done", "blocked"])
-def test_records_only_its_own_task_with_the_run_identity(paperclip, disposition, capsys):
-    assert main([disposition], run_env(paperclip)) == 0
+def test_done_records_only_its_own_task_with_the_run_identity(paperclip, capsys):
+    assert main(["done"], run_env(paperclip)) == 0
     [call] = paperclip.seen
     assert call["path"] == "/api/issues/task-1"
-    assert call["body"] == {"status": disposition}
+    assert call["body"] == {"status": "done"}
     assert call["headers"]["Authorization"] == "Bearer tok-secret"
     assert call["headers"]["X-Paperclip-Run-Id"] == "run-1"
     assert "tok-secret" not in capsys.readouterr().out
+
+
+def test_blocked_names_what_would_unblock_it_for_the_board(paperclip):
+    assert main(["blocked", "  Supply vendor/legacy_lib.py  "], run_env(paperclip)) == 0
+    assert main(["blocked"], run_env(paperclip)) == 0
+    first, second = (call["body"] for call in paperclip.seen)
+    assert first == {"status": "blocked", "unblockDescriptor": {
+        "owner": "board", "action": "Supply vendor/legacy_lib.py"}}
+    # Without a reason the board is pointed at the worker's report.
+    assert second["unblockDescriptor"]["action"].endswith("see its final report.")
 
 
 def test_refused_update_fails_without_printing_the_token(paperclip, capsys):
     paperclip.status = 403
     assert main(["done"], run_env(paperclip)) == 1
     out = capsys.readouterr()
-    assert "HTTP 403" in out.err and "tok-secret" not in out.err + out.out
+    # Paperclip's own reason is shown; the token never is.
+    assert "HTTP 403" in out.err and "Agent cannot update this issue" in out.err
+    assert "tok-secret" not in out.err + out.out
 
 
 def test_rejects_other_statuses_and_missing_settings(paperclip, capsys):
     assert main(["in_review"], run_env(paperclip)) == 2
     assert main(["done", "extra"], run_env(paperclip)) == 2
+    assert main(["blocked", "reason", "extra"], run_env(paperclip)) == 2
     assert main(["done"], run_env(paperclip, PAPERCLIP_TASK_ID="")) == 1
     assert "PAPERCLIP_TASK_ID" in capsys.readouterr().err
     assert not paperclip.seen

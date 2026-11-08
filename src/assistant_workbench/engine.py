@@ -178,7 +178,7 @@ class Engine:
                 + disposition_command()
                 + " done`, or `"
                 + disposition_command()
-                + " blocked` if you could not complete the task. "
+                + ' blocked "what would unblock it"` if you could not complete the task. '
                 if model["harness"] == "claude"
                 else "Record your task disposition if Paperclip lets you; otherwise end with the report. "
             )
