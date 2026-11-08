@@ -101,3 +101,26 @@ class FakePaperclip:
         item = {"id": "new-" + str(len(self.wakes)), **body}
         self.wakes.append(item)
         return item
+
+
+class PinnedPaperclip(FakePaperclip):
+    """Contract fixture for behaviors observed in the pinned Paperclip release
+    (d69631b): official-CLI agents become its native runner unless runner is
+    legacy, and that runner rejects bypass keys even when false
+    (agent_runner_config_incompatible). Not
+    evidence of live Paperclip or model execution."""
+
+    RUNNER_INCOMPATIBLE = ("dangerouslySkipPermissions", "dangerouslyBypassApprovalsAndSandbox")
+
+    def create_agent(self, body):
+        from assistant_workbench.paperclip import CoordinatorError
+
+        if body.get("runner") == "legacy" or body["adapterType"] not in {"claude_local", "codex_local"}:
+            return super().create_agent(body)
+        # Without an explicit legacy runner, official-CLI adapters become the
+        # native runner with its own permission default.
+        if set(self.RUNNER_INCOMPATIBLE) & set(body.get("adapterConfig", {})):
+            raise CoordinatorError("Paperclip returned HTTP 422 for POST /agents")
+        native = {**body, "adapterType": "paperclip_runner"}
+        native["adapterConfig"] = {**body["adapterConfig"], "provider": "acpx", "acpxPermissionMode": "approve-all"}
+        return super().create_agent(native)

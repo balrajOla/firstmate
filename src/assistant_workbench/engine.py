@@ -14,6 +14,40 @@ class SupersededDelivery(WorkbenchError):
     """The saved scope changed; this outbox job must not be retried."""
 
 
+# Pinned Paperclip's native runner replaces official CLIs with its bundled
+# provider binary (without this machine's sign-in) and defaults to approving
+# every tool. Official-CLI workers therefore use its legacy CLI runner.
+# --bare keeps the user's personal plugins, hooks and CLAUDE.md out of
+# product workers; acceptEdits allows workspace edits but no unlisted tools.
+WORKER_ADAPTERS = {"claude": "claude_local", "codex": "codex_local"}
+CLAUDE_WORKER_ARGS = ["--bare", "--permission-mode", "acceptEdits"]
+BYPASS_KEYS = {
+    "claude": "dangerouslySkipPermissions",
+    "codex": "dangerouslyBypassApprovalsAndSandbox",
+}
+
+
+def verify_worker_agent(agent, harness):
+    """Refuse a coordinator agent that is not the requested official CLI."""
+    if harness not in WORKER_ADAPTERS:
+        return
+    config = agent.get("adapterConfig") or {}
+    if agent.get("adapterType") != WORKER_ADAPTERS[harness]:
+        raise WorkbenchError(
+            "Paperclip agent uses " + str(agent.get("adapterType"))
+            + " instead of the official " + harness
+            + " CLI runner; reconcile or retire it before dispatch"
+        )
+    if harness == "claude" and config.get("engine") != "cli":
+        raise WorkbenchError(
+            "Paperclip Claude agent is not on the CLI engine; reconcile it before dispatch"
+        )
+    if config.get(BYPASS_KEYS[harness]) is not False:
+        raise WorkbenchError(
+            "Paperclip agent permission bypass is not explicitly disabled; reconcile it before dispatch"
+        )
+
+
 class Engine:
     def __init__(self, store, coordinator=None):
         from .workflow import Workflow
@@ -68,9 +102,49 @@ class Engine:
         # existing default-budget identity, with its timeout checked on reuse.
         if timeout != self.settings["limits"]["max_seconds"]:
             runtime["timeout_seconds"] = timeout
+        adapter = {**WORKER_ADAPTERS, "process": "process"}[model["harness"]]
+        adapter_config = dict(model.get("adapter_config", {}))
+        adapter_config.update(
+            model=model["model"], timeoutSec=timeout
+        )
+        if model["harness"] in BYPASS_KEYS:
+            adapter_config.setdefault(BYPASS_KEYS[model["harness"]], False)
+        if model["harness"] == "claude":
+            adapter_config["engine"] = "cli"
+            adapter_config["extraArgs"] = CLAUDE_WORKER_ARGS + list(
+                adapter_config.get("extraArgs", [])
+            )
+        field = {"claude": "effort", "codex": "modelReasoningEffort"}.get(
+            model["harness"]
+        )
+        if model.get("effort_field") and model["effort_field"] != field:
+            raise WorkbenchError("Effort mapping does not match the pinned adapter")
+        if field and model["effort"] != "default":
+            adapter_config[field] = model["effort"]
+        # Only instruct what this worker can actually do: it has its task
+        # packet and workspace, not the Workbench CLI or other projects.
+        text = (
+            "You are the "
+            + node["role"]
+            + " in an Assistant Workbench team. Your Paperclip task carries the saved request, "
+            "its revision, the execution contract and pinned procedures; follow them. "
+            "Work only in the task's workspace; do not touch other projects or unrelated files. "
+            "Your final message is your report: what you changed, the commands you ran and their results, "
+            "open problems and missing evidence. The Workbench records that report for independent review, "
+            "so never call the work verified or accepted. Record your task disposition if Paperclip lets you; "
+            "otherwise end with the report. A reviewer checks the author's work instead of redoing it. "
+            "Stop when the task is cancelled and never start a replacement process."
+        )
+        # The identity covers everything sent to the coordinator, so a changed
+        # worker definition (defaults, flags, instructions) is never served by
+        # an older agent that still runs the previous one.
         key = (
             "awb:"
-            + digest(canonical([runtime, node["role"], node.get("slot", 0)]))[:24]
+            + digest(
+                canonical(
+                    [runtime, node["role"], node.get("slot", 0), adapter, adapter_config, digest(text)]
+                )
+            )[:24]
         )
         existing = self._cache("agent:" + key)
         agents = self.api.agents()
@@ -84,6 +158,7 @@ class Engine:
                 "Duplicate managed agent identities require reconciliation"
             )
         if matched:
+            verify_worker_agent(matched[0], model["harness"])
             if matched[0].get("status") in {"paused", "terminated"}:
                 raise WorkbenchError(
                     "Selected managed agent is paused or terminated; reconcile its capacity explicitly"
@@ -103,42 +178,14 @@ class Engine:
                 "Agent creation has an uncertain outcome; inspect Paperclip before retrying",
                 True,
             )
-        managed = [a for a in agents if (a.get("metadata") or {}).get("workbenchKey")]
+        managed = [
+            a for a in agents
+            if (a.get("metadata") or {}).get("workbenchKey") and a.get("status") != "terminated"
+        ]
         if len(managed) >= self.settings["limits"]["max_agents"]:
             raise WorkbenchError(
                 "Managed agent pool is full; reuse or explicitly retire a role/profile"
             )
-        adapter = {
-            "claude": "claude_local",
-            "codex": "codex_local",
-            "process": "process",
-        }[model["harness"]]
-        adapter_config = dict(model.get("adapter_config", {}))
-        adapter_config.update(
-            model=model["model"], timeoutSec=timeout
-        )
-        if model["harness"] == "claude":
-            adapter_config.setdefault("dangerouslySkipPermissions", False)
-        if model["harness"] == "codex":
-            adapter_config.setdefault("dangerouslyBypassApprovalsAndSandbox", False)
-        field = {"claude": "effort", "codex": "modelReasoningEffort"}.get(
-            model["harness"]
-        )
-        if model.get("effort_field") and model["effort_field"] != field:
-            raise WorkbenchError("Effort mapping does not match the pinned adapter")
-        if field and model["effort"] != "default":
-            adapter_config[field] = model["effort"]
-        text = (
-            "You are the "
-            + node["role"]
-            + " in Assistant Workbench. Read your Paperclip issue and current revision. "
-            "Use awb for scoped source retrieval, messages, checkpoints and proposed outcomes. "
-            "Preserve evidence and qualifications. Never mark an unreviewed outcome verified. "
-            "Obey cancellation, role limits and repository permissions. The issue carries procedure revisions. "
-            "Reviewers must be distinct from authors. Keep reports concise and state missing evidence. "
-            "At each start call continuation.recover if a checkpoint exists. Restate current requirements and source hashes before writes. "
-            "Before context exhaustion commit a checkpoint and request lifecycle.request, then stop. Never self-launch a replacement process."
-        )
         body = {
             "name": "AWB " + node["role"] + " " + model["id"],
             "role": node["role"],
@@ -154,6 +201,8 @@ class Engine:
                 "heartbeat": {"enabled": True, "intervalSec": 0, "maxConcurrentRuns": 1}
             },
         }
+        if model["harness"] in WORKER_ADAPTERS:
+            body["runner"] = "legacy"
         self._check_current(plan["request_id"], plan["revision"])
         self._cache("agent:" + key, {"state": "creating"})
         try:
@@ -163,6 +212,7 @@ class Engine:
                 self._cache("agent:" + key, {"state": "blocked"})
             raise
         self._cache("agent:" + key, {"id": agent["id"]})
+        verify_worker_agent(agent, model["harness"])
         return agent["id"]
 
     def _check_current(self, request_id, revision):
