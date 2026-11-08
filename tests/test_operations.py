@@ -236,6 +236,24 @@ def test_service_paths_are_argument_safe(app, tmp_path):
     assert "ExecStart=" in service_definition(app.home, sys.executable, "systemd")
 
 
+def test_service_finds_the_users_tools_without_inheriting_secrets(app, tmp_path, monkeypatch):
+    import plistlib
+
+    tools = tmp_path / "user tools"
+    tools.mkdir()
+    for name in ("claude", "git"):
+        (tools / name).write_text("#!/bin/sh\n")
+        (tools / name).chmod(0o755)
+    monkeypatch.setenv("PATH", str(tools) + ":relative/bin")
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-not-for-services")
+    value = plistlib.loads(service_definition(app.home, sys.executable).encode())
+    assert value["EnvironmentVariables"] == {
+        "PATH": str(tools) + ":/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin"}
+    unit = service_definition(app.home, sys.executable, "systemd")
+    assert 'Environment="PATH=' + str(tools) + ":/usr/local/bin:" in unit
+    assert "sk-not-for-services" not in unit
+
+
 def test_missing_or_expired_qualification_is_not_a_pass(app, tmp_path):
     result = qualification(app, "subscription")
     assert not result["qualified"] and all(

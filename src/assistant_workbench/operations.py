@@ -444,6 +444,23 @@ def uninstall(prefix):
     }
 
 
+# Executables the bridge and its local execution call by name.
+SERVICE_TOOLS = ["git", "node", "npm", "pnpm", "yarn", "cargo", "claude", "codex"]
+SYSTEM_PATH = ["/usr/local/bin", "/usr/bin", "/bin", "/usr/sbin", "/sbin"]
+
+
+def service_path():
+    """PATH for a service: where this user's tools live, then the system directories.
+
+    launchd and systemd start services with a minimal PATH that misses per-user
+    installs such as ~/.local/bin, so official CLIs would not be found. Only
+    directories are recorded; credentials stay in the CLIs' own stores.
+    """
+    found = (shutil.which(name) for name in SERVICE_TOOLS)
+    dirs = [str(Path(path).parent) for path in found if path and os.path.isabs(path)]
+    return ":".join(d for d in dict.fromkeys(dirs + SYSTEM_PATH) if ":" not in d)
+
+
 def service_definition(home, executable, kind="launchd"):
     executable = str(Path(executable).expanduser().resolve(strict=True))
     home = Path(home).resolve()
@@ -452,6 +469,7 @@ def service_definition(home, executable, kind="launchd"):
             {
                 "Label": "com.assistant-workbench.bridge",
                 "ProgramArguments": [executable, "--home", str(home), "serve"],
+                "EnvironmentVariables": {"PATH": service_path()},
                 "RunAtLoad": True,
                 "KeepAlive": True,
                 "ThrottleInterval": 10,
@@ -473,7 +491,9 @@ def service_definition(home, executable, kind="launchd"):
             )
 
         return (
-            "[Unit]\nDescription=Assistant Workbench bridge\n[Service]\nExecStart="
+            "[Unit]\nDescription=Assistant Workbench bridge\n[Service]\nEnvironment="
+            + quote("PATH=" + service_path())
+            + "\nExecStart="
             + quote(executable)
             + " --home "
             + quote(str(home))
