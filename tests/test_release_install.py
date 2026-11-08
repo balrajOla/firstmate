@@ -19,7 +19,7 @@ def builds(monkeypatch):
             python = Path(argv[3]) / "bin/python"
             python.parent.mkdir(parents=True)
             python.write_text("#!/bin/sh\n")
-        return {"stdout": "0.1.0", "stderr": "", "code": 0}
+        return {"stdout": "0.1.0", "stderr": "", "exit_code": 0}
 
     monkeypatch.setattr(operations, "run_process", run)
     return calls
@@ -93,3 +93,26 @@ def test_a_receipt_naming_itself_as_previous_is_not_a_rollback_target(tmp_path, 
     receipt.write_text(json.dumps(data))
     with pytest.raises(WorkbenchError, match="No previous release"):
         operations.rollback(prefix)
+
+
+def test_failed_build_reports_its_log_and_does_not_block_a_retry(tmp_path, builds, monkeypatch):
+    prefix = tmp_path / "prefix"
+    first = operations.install(source(tmp_path, "one"), prefix)
+    fake = operations.run_process
+
+    def offline_pip(argv, **kwargs):
+        if argv[1:3] == ["-m", "pip"]:
+            return {"stdout": "", "stderr": "Could not fetch URL: certificate verify failed",
+                    "exit_code": 1}
+        return fake(argv, **kwargs)
+
+    monkeypatch.setattr(operations, "run_process", offline_pip)
+    two = source(tmp_path, "two")
+    with pytest.raises(WorkbenchError, match="certificate verify failed") as failure:
+        operations.install(two, prefix)
+    log = Path(str(failure.value).split("Build log: ")[1])
+    assert "certificate verify failed" in log.read_text() and ".failed-" in log.parent.name
+    # The active release is untouched and the same source installs once fixed.
+    assert launcher_target(prefix) == first["release"] + "/venv/bin/python"
+    monkeypatch.setattr(operations, "run_process", fake)
+    assert operations.install(two, prefix)["previous"] == first["release"]
