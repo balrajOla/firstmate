@@ -1630,7 +1630,8 @@
         "tests/test_paperclip_contract.py::test_repository_work_requires_isolated_workspaces",
         "tests/test_paperclip_contract.py::test_downgraded_workspace_issue_is_cancelled",
         "tests/test_paperclip_contract.py::test_unbound_project_work_does_not_need_isolation",
-        "tests/test_paperclip_contract.py::test_multi_dependency_nodes_keep_their_own_workspace"
+        "tests/test_paperclip_contract.py::test_multi_dependency_nodes_keep_their_own_workspace",
+        "tests/test_paperclip_contract.py::test_task_branches_are_valid_and_distinct_per_revision"
       ],
       "required_gates": [
         "isolation",
@@ -2669,7 +2670,13 @@
         "tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[claude-skip-flag]",
         "tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[claude-permission-mode]",
         "tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[codex-key]",
-        "tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[codex-full-access]"
+        "tests/test_paperclip_contract.py::test_profile_bypass_is_refused_before_any_agent_exists[codex-full-access]",
+        "tests/test_worker_disposition.py::test_records_only_its_own_task_with_the_run_identity[done]",
+        "tests/test_worker_disposition.py::test_records_only_its_own_task_with_the_run_identity[blocked]",
+        "tests/test_worker_disposition.py::test_refused_update_fails_without_printing_the_token",
+        "tests/test_worker_disposition.py::test_rejects_other_statuses_and_missing_settings",
+        "tests/test_worker_disposition.py::test_remote_plain_http_is_refused",
+        "tests/test_worker_disposition.py::test_runs_as_the_module_command_workers_are_allowed"
       ],
       "required_gates": [
         "isolation"
@@ -3057,7 +3064,9 @@
         "tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S16-code]",
         "tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S17-code]",
         "tests/test_policy_scenarios.py::test_manifest_context_prefix_keeps_requested_work[S25-report]",
-        "tests/test_paperclip_contract.py::test_partial_reports_unblock_dependents_without_an_outcome"
+        "tests/test_paperclip_contract.py::test_partial_reports_unblock_dependents_without_an_outcome",
+        "tests/test_paperclip_contract.py::test_worker_reported_block_keeps_dependents_blocked",
+        "tests/test_paperclip_contract.py::test_paperclip_escalation_is_not_a_worker_block"
       ],
       "required_gates": [
         "workers",
