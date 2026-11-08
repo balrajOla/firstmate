@@ -20,6 +20,8 @@ Complete Paperclip onboarding and create a company through its supported interfa
 
 The bridge needs permission to manage that company's projects, agent pool and issues. An authorization or board-approval failure remains a blocker. Existing agent adapter timeouts must match their plan budget before reuse. Changing a profile or runtime limit may require explicitly reconciling an old managed agent.
 
+Before dispatching work for a project bound to a repository, enable isolated workspaces in Paperclip (Instance settings > Experimental). Without that setting, the pinned release runs "isolated" tasks in the registered checkout itself. The bridge then refuses to dispatch, and it cancels any repository issue that Paperclip returns without isolation. Paperclip creates each task worktree under the repository's `.paperclip/` directory. Add `.paperclip/` to `.git/info/exclude` to keep those worktrees out of `git status`.
+
 ## Models with or without provider API keys
 
 Install and sign into the unmodified official Claude Code or Codex CLI on the worker machine. Choose a model and effort supported by that installed CLI/account. Replace the model value in this example with your actual supported model ID:
@@ -38,7 +40,13 @@ A probe consumes a small amount of the account's allowance. It requires the exac
 
 For provider API or local inference, use the matching `auth` mode and configure a supported provider through the official CLI. There is no silent paid-provider fallback. The profile probe and Temporal CLI activity remove provider API-key environment variables in subscription mode and rely on the CLI's existing sign-in. For Paperclip, configure and qualify the actual adapter's service environment; the declared auth mode alone does not establish how a provider authenticated a run. A Claude probe records the model identity reported in the CLI's result (`modelUsage`) and fails when the requested model is not among them; Codex does not report it, so its receipt keeps the identity unknown. CLI qualification does not prove effort level, coordinated team behavior or output quality.
 
-Paperclip receives `claude_local` or `codex_local`; Codex effort maps to `modelReasoningEffort`, Claude to `effort`. Permission/sandbox bypass flags default to false. Temporal workers invoke the same official CLIs using their own locally qualified profiles.
+Paperclip receives `claude_local` or `codex_local` on its legacy CLI runner, so tasks run through the official CLI and its existing sign-in. The pinned native runner would substitute its bundled provider binary and approve every tool. Codex effort maps to `modelReasoningEffort`, Claude to `effort`. Permission and sandbox bypass keys are always sent as false. A profile that enables a bypass key or flag in `adapter_config` is refused before any agent is created, and the bridge refuses to reuse an agent that a coordinator converted to another runner. A changed profile, flag or instruction gets a new agent instead of reusing an older one.
+
+Claude workers run with `--bare`, which keeps your personal plugins, hooks and CLAUDE.md out of product work, and with `--permission-mode acceptEdits`. Apart from editing files, they may run only `git status`, `git diff`, `git add` and `git commit`. They never push. A profile can grant narrower extra tools through `adapter_config.extraArgs`, for example `["--allowedTools", "Bash(/absolute/venv/bin/python -m pytest:*)"]`. Other commands are refused rather than prompted. Claude Code also refuses commands that contain environment variables.
+
+A worker's final message is its report. Because bypass stays off, workers cannot close their own Paperclip issues. Instead, the bridge reads the earliest successful run on each finished issue. It records that run's final message, agent, hash and reported token usage, then marks the issue done. When every node has reported, it proposes one unverified outcome made of those reports, for independent review. Paperclip may still start a disposition-repair run after each task, which uses some of the account's allowance. That is the cost of keeping bypass off. A task with a single predecessor starts in a worktree based on that predecessor's task branch, so a reviewer sees the committed implementation. Nodes with several predecessors keep their own workspace.
+
+Temporal workers invoke the same official CLIs using their own locally qualified profiles.
 
 ## Optional Temporal backend and fleet
 
