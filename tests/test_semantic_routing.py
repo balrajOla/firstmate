@@ -112,6 +112,11 @@ def test_semantic_workflow_chooses_the_team_once_per_revision(app, project, sema
     plan = json.loads(app.store.one("SELECT plan FROM requests WHERE id=?", (request,))["plan"])
     assert plan["workflow"] == "code" and [n["id"] for n in plan["nodes"]] == ["implement", "verify"]
     assert plan["routing"]["method"] == "semantic policy (official CLI)"
+    # The operator's project stands, so the model is asked only for the workflow.
+    argv = cli.calls[0]["argv"]
+    prompt = argv[argv.index("-p") + 1]
+    assert "already assigned to project " + project["id"] in prompt
+    assert "Use null when no project clearly fits" not in prompt
     # The lexical policy would have chosen a report from the trailing word.
     assert plan["routing"]["lexical"]["workflow"] == "report"
     with app.store.transaction() as db:
@@ -119,6 +124,14 @@ def test_semantic_workflow_chooses_the_team_once_per_revision(app, project, sema
         db.execute("UPDATE requests SET plan=NULL WHERE id=?", (request,))
     engine.tick()
     assert len(cli.calls) == 1
+
+
+def test_an_assigned_project_is_kept_whatever_the_model_answers(app, project, semantic):
+    other = app.store.add_project("Harbor", None, ["harbor-site"])
+    request = app.store.submit("Add a contact form", "a", project["id"])["request_id"]
+    req = app.store.one("SELECT * FROM requests WHERE id=?", (request,))
+    decision = routing.decide(app.store, semantic, req, runner=ScriptedCLI(answer(project=other["id"])))
+    assert decision["project_id"] == project["id"] and decision["workflow"] == "code"
 
 
 def test_failed_or_unconfident_routing_falls_back_to_the_lexical_workflow(app, project, semantic, monkeypatch):
