@@ -1,5 +1,7 @@
 """Bridge behavior against the pinned Paperclip contract fixture (not live)."""
 
+import json
+
 import pytest
 from assistant_workbench.engine import Engine
 from conftest import FakePaperclip, PinnedPaperclip
@@ -92,9 +94,15 @@ def test_claude_workers_use_the_official_cli_runner_with_isolation(
     assert agent["adapterType"] == "claude_local" and agent["runner"] == "legacy"
     assert config["engine"] == "cli" and config["dangerouslySkipPermissions"] is False
     # Isolation defaults come first; the profile may add narrower grants.
-    from assistant_workbench.engine import CLAUDE_WORKER_ARGS
+    from assistant_workbench.engine import CLAUDE_WORKER_ARGS, disposition_command
 
-    assert config["extraArgs"] == CLAUDE_WORKER_ARGS + ["--allowedTools", "Bash(pytest:*)"]
+    assert config["extraArgs"] == CLAUDE_WORKER_ARGS + [
+        "--allowedTools", "Bash(" + disposition_command() + ":*)",
+        "--allowedTools", "Bash(pytest:*)",
+    ]
+    # The instructions name exactly the command the worker is allowed to run.
+    instructions = agent["instructionsBundle"]["files"]["AGENTS.md"]
+    assert "`" + disposition_command() + " done`" in instructions
     assert config["extraArgs"][:3] == ["--bare", "--permission-mode", "acceptEdits"]
     assert not any("push" in a for a in config["extraArgs"])
     assert config["model"] == "model-from-cli" and config["effort"] == "medium"
@@ -250,21 +258,35 @@ def test_unbound_project_work_does_not_need_isolation(app, configured):
 
 
 def test_dependents_start_from_the_predecessor_branch(app, project, configured):
+    from assistant_workbench.engine import task_branch
+
     request, api, engine, implement, verify = delivered_code_request(app, project, configured)
-    engine.observe()
-    assert api.issue(verify)["executionWorkspaceSettings"] == {"mode": "isolated_workspace"}
-    # The implementer's worktree appears once its run starts.
-    api.issue(implement)["status"] = "in_progress"
-    api.issue(implement)["currentExecutionWorkspace"] = {
-        "id": "ws-implement", "mode": "isolated_workspace", "branchName": "ASS-1-implement"}
-    engine.observe()
+    # Branches are fixed at creation, so the reviewer starts from the
+    # implementer's commits even if Paperclip wakes it the moment the
+    # implementer records done, before the Workbench observes anything.
+    branch = task_branch(request, 1, "implement")
+    assert api.issue(implement)["executionWorkspaceSettings"] == {
+        "mode": "isolated_workspace",
+        "workspaceStrategy": {"type": "git_worktree", "branchTemplate": branch},
+    }
     assert api.issue(verify)["executionWorkspaceSettings"] == {
         "mode": "isolated_workspace",
-        "workspaceStrategy": {"type": "git_worktree", "baseRef": "ASS-1-implement"},
+        "workspaceStrategy": {
+            "type": "git_worktree",
+            "branchTemplate": task_branch(request, 1, "verify"),
+            "baseRef": branch,
+        },
     }
-    api.issue(verify)["executionWorkspaceSettings"] = {"mode": "changed-by-operator"}
-    engine.observe()
-    assert api.issue(verify)["executionWorkspaceSettings"] == {"mode": "changed-by-operator"}
+    assert "inheritExecutionWorkspaceFromIssueId" not in api.issue(verify)
+
+
+def test_task_branches_are_valid_and_distinct_per_revision():
+    from assistant_workbench.engine import task_branch
+
+    first = task_branch("r_0a1b", 1, "research a")
+    assert first == "awb/r_0a1b-r1-research-a"
+    assert task_branch("r_0a1b", 2, "research a") != first
+    assert len(task_branch("r_" + "x" * 200, 1, "implement")) <= 120
 
 
 def test_multi_dependency_nodes_keep_their_own_workspace(app, project, configured):
@@ -273,10 +295,35 @@ def test_multi_dependency_nodes_keep_their_own_workspace(app, project, configure
     engine = Engine(app.store, api)
     assert engine.tick()["status"] == "delivered"
     issues = remote_issues(app, request)
-    for node in ("research-a", "research-b"):
-        api.issue(issues["1:" + node])["currentExecutionWorkspace"] = {"id": "ws-" + node, "branchName": node}
+    strategy = api.issue(issues["1:synthesize"])["executionWorkspaceSettings"]["workspaceStrategy"]
+    assert "baseRef" not in strategy and strategy["branchTemplate"].endswith("-synthesize")
+
+
+def test_worker_reported_block_keeps_dependents_blocked(app, project, configured):
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    api.finish(implement, "blocked", [("succeeded", "Blocked: the login service is missing.")],
+               by_worker=True)
+    observed = engine.observe()[request]
+    assert observed["implement"]["report"] == "blocked"
+    # The worker's own decision stands: its task is not closed for it.
+    assert api.issue(implement)["status"] == "blocked"
+    assert not app.store.rows("SELECT id FROM outcomes WHERE request_id=?", (request,))
+    events = app.store.rows("SELECT payload FROM events WHERE kind='execution.node_blocked'")
+    assert len(events) == 1 and json.loads(events[0]["payload"])["nodes"] == ["implement"]
     engine.observe()
-    assert api.issue(issues["1:synthesize"])["executionWorkspaceSettings"] == {"mode": "isolated_workspace"}
+    assert len(app.store.rows("SELECT payload FROM events WHERE kind='execution.node_blocked'")) == 1
+    report = app.store.rows("SELECT payload FROM events WHERE kind='execution.node_reported'")
+    assert json.loads(report[0]["payload"])["disposition"] == "blocked"
+
+
+def test_paperclip_escalation_is_not_a_worker_block(app, project, configured):
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    # A worker blocked earlier, then Paperclip escalated a later repair: the
+    # newest status change is Paperclip's, so the report is captured.
+    api.finish(implement, "blocked", [("succeeded", "Changed login.py.")], by_worker=True)
+    api.finish(implement, "blocked", [])
+    assert engine.observe()[request]["implement"]["report"] == "captured"
+    assert api.issue(implement)["status"] == "done"
 
 
 def test_changed_worker_definition_is_not_served_by_an_old_agent(

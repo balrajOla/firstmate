@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import re
+import shlex
+import sys
 import time
 import fcntl
 from .config import config
@@ -19,7 +22,8 @@ class SupersededDelivery(WorkbenchError):
 # every tool. Official-CLI workers therefore use its legacy CLI runner.
 # --bare keeps the user's personal plugins, hooks and CLAUDE.md out of
 # product workers; acceptEdits allows workspace edits; local commits on the
-# task branch hand work to dependent tasks. Other tools stay unapproved.
+# task branch hand work to dependent tasks; the disposition command closes the
+# worker's own task. Other tools stay unapproved.
 WORKER_ADAPTERS = {"claude": "claude_local", "codex": "codex_local"}
 CLAUDE_WORKER_ARGS = [
     "--bare", "--permission-mode", "acceptEdits", "--allowedTools",
@@ -37,6 +41,18 @@ BYPASS_FLAGS = {
     "--dangerously-bypass-approvals-and-sandbox",
     "--yolo",
 }
+
+
+def disposition_command():
+    """The exact command a Claude worker may run to record its disposition."""
+    return shlex.quote(sys.executable) + " -m assistant_workbench.worker_disposition"
+
+
+def task_branch(request_id, revision, node_id):
+    """Name a task's branch before it runs, already in Paperclip's branch form,
+    so a dependent can be created on its predecessor's branch."""
+    name = "awb/" + request_id + "-r" + str(revision) + "-" + node_id
+    return re.sub(r"-+", "-", re.sub(r"[^A-Za-z0-9._/-]+", "-", name)).strip("-/.")[:120]
 
 
 def verify_worker_agent(agent, harness):
@@ -134,9 +150,9 @@ class Engine:
                 )
         if model["harness"] == "claude":
             adapter_config["engine"] = "cli"
-            adapter_config["extraArgs"] = CLAUDE_WORKER_ARGS + list(
-                adapter_config.get("extraArgs", [])
-            )
+            adapter_config["extraArgs"] = CLAUDE_WORKER_ARGS + [
+                "--allowedTools", "Bash(" + disposition_command() + ":*)"
+            ] + list(adapter_config.get("extraArgs", []))
         field = {"claude": "effort", "codex": "modelReasoningEffort"}.get(
             model["harness"]
         )
@@ -156,8 +172,17 @@ class Engine:
             "so dependent tasks start from your work. "
             "Your final message is your report: what you changed, the commands you ran and their results, "
             "open problems and missing evidence. The Workbench records that report for independent review, "
-            "so never call the work verified or accepted. Record your task disposition if Paperclip lets you; "
-            "otherwise end with the report. A reviewer checks the author's work instead of redoing it. "
+            "so never call the work verified or accepted. "
+            + (
+                "Before your final message, record your task disposition by running exactly `"
+                + disposition_command()
+                + " done`, or `"
+                + disposition_command()
+                + ' blocked "what would unblock it"` if you could not complete the task. '
+                if model["harness"] == "claude"
+                else "Record your task disposition if Paperclip lets you; otherwise end with the report. "
+            )
+            + "A reviewer checks the author's work instead of redoing it. "
             "Stop when the task is cancelled and never start a replacement process."
         )
         # The identity covers everything sent to the coordinator, so a changed
@@ -478,11 +503,21 @@ class Engine:
             if project["repository"]:
                 # Paperclip resolves the run workspace from these settings; the
                 # older executionWorkspacePreference field does not isolate.
-                body["executionWorkspaceSettings"] = {"mode": "isolated_workspace"}
+                # Each task gets its own worktree on a branch named here, so a
+                # single-dependency task starts from its predecessor's commits
+                # even when Paperclip wakes it the moment that task is done.
+                strategy = {
+                    "type": "git_worktree",
+                    "branchTemplate": task_branch(req["id"], req["revision"], node["id"]),
+                }
                 if len(node["depends_on"]) == 1:
-                    body["inheritExecutionWorkspaceFromIssueId"] = created[
-                        node["depends_on"][0]
-                    ]
+                    strategy["baseRef"] = task_branch(
+                        req["id"], req["revision"], node["depends_on"][0]
+                    )
+                body["executionWorkspaceSettings"] = {
+                    "mode": "isolated_workspace",
+                    "workspaceStrategy": strategy,
+                }
             self._check_current(req["id"], req["revision"])
             remote = self.api.create_issue(body)
             # The packet names this request, revision and node, so only this
@@ -600,13 +635,27 @@ class Engine:
                         "updatedAt",
                     )
                 }
-                self._bind_dependents(req, mapping, node, issue)
                 items[node.split(":", 1)[1]]["report"] = self._capture_report(
                     req, node, issue
                 )
             observations[req["id"]] = items
             if items and all(i["report"] == "captured" for i in items.values()):
                 self._propose_worker_outcome(req, list(items))
+            blocked = sorted(n for n, i in items.items() if i["report"] == "blocked")
+            key = "observed-blocked:" + req["id"] + ":" + str(req["revision"]) + ":" + ",".join(blocked)
+            if blocked and not self._cache(key):
+                with self.store.transaction() as db:
+                    self.store.event(
+                        db,
+                        "execution.node_blocked",
+                        req["id"],
+                        {
+                            "nodes": blocked,
+                            "notice": "A worker reported it could not complete its task; "
+                            "amend, retry or cancel the request",
+                        },
+                    )
+                self._cache(key, True)
             if items and all(i["status"] == "done" for i in items.values()):
                 # Execution completion never substitutes for an accepted Workbench outcome.
                 key = "observed-finished:" + req["id"] + ":" + str(req["revision"])
@@ -625,44 +674,18 @@ class Engine:
         atomic(self.store.home / "observations.json", canonical(observations))
         return observations
 
-    def _bind_dependents(self, req, mapping, node, issue):
-        """Start a single-dependency task from its predecessor's task branch.
-
-        The whole team is created before any task runs, so Paperclip cannot
-        inherit a workspace at creation; dependents are still blocked when
-        the predecessor's worktree and branch appear."""
-        current = issue.get("currentExecutionWorkspace") or {}
-        workspace, branch = current.get("id"), current.get("branchName")
-        if not workspace or not branch or not req.get("plan"):
-            return
-        revision, node_id = node.split(":", 1)
-        for child in json.loads(req["plan"])["nodes"]:
-            target = mapping.get(revision + ":" + child["id"])
-            key = "workspace:" + req["id"] + ":" + revision + ":" + child["id"]
-            if child["depends_on"] != [node_id] or not target or self._cache(key):
-                continue
-            # Each isolated task gets its own worktree; the dependent one is
-            # cut from the predecessor's branch, which carries its commits.
-            self.api.update_issue(
-                target,
-                {
-                    "executionWorkspaceSettings": {
-                        "mode": "isolated_workspace",
-                        "workspaceStrategy": {"type": "git_worktree", "baseRef": branch},
-                    },
-                },
-            )
-            self._cache(key, {"base": branch, "workspace": workspace, "from": issue["id"]})
-
     def _capture_report(self, req, node, issue):
         """Keep the worker's own final report from its first successful run.
 
-        Paperclip workers without permission bypass cannot record a task
-        disposition, so the Workbench records the report and closes the
-        execution issue; acceptance still requires independent review."""
+        A worker that reported itself blocked keeps its task and dependents
+        blocked. When a worker could not record any disposition, Paperclip
+        blocks the task after its repair runs; the Workbench then records the
+        report and closes the task. Acceptance still requires independent
+        review."""
         key = "report:" + req["id"] + ":" + node
-        if self._cache(key):
-            return "captured"
+        cached = self._cache(key)
+        if cached:
+            return "blocked" if cached.get("disposition") == "blocked" else "captured"
         if issue.get("status") not in {"done", "blocked", "in_review"}:
             return "pending"
         runs = self.api.issue_runs(issue["id"])
@@ -688,6 +711,7 @@ class Engine:
             }
             for r in runs
         ]
+        worker_blocked = issue["status"] == "blocked" and self._worker_blocked(issue)
         report = {
             "run": succeeded[0]["runId"],
             "agent": succeeded[0].get("agentId") or issue.get("assigneeAgentId"),
@@ -695,8 +719,9 @@ class Engine:
             "truncated": len(text) > 20000,
             "sha256": digest(text),
             "usage": usage,
+            "disposition": "blocked" if worker_blocked else "done",
         }
-        if issue["status"] != "done":
+        if issue["status"] != "done" and not worker_blocked:
             self.api.update_issue(
                 issue["id"],
                 {
@@ -719,9 +744,27 @@ class Engine:
                     "sha256": report["sha256"],
                     "characters": len(text),
                     "runs": len(runs),
+                    "disposition": report["disposition"],
                 },
             )
-        return "captured"
+        return "blocked" if worker_blocked else "captured"
+
+    def _worker_blocked(self, issue):
+        """Whether the assigned worker itself set the task to blocked, rather
+        than Paperclip after failed disposition repairs. The newest
+        status-changing activity decides."""
+        activity = self.api.issue_activity(issue["id"])
+        if not isinstance(activity, list):
+            raise WorkbenchError("Unexpected Paperclip activity contract")
+        for row in sorted(activity, key=lambda r: r.get("createdAt") or "", reverse=True):
+            change = ((row.get("details") or {}).get("changes") or {}).get("status") or {}
+            if change or row.get("action") == "issue.disposition_repair_escalated":
+                return (
+                    row.get("actorType") == "agent"
+                    and row.get("agentId") == issue.get("assigneeAgentId")
+                    and change.get("to") == "blocked"
+                )
+        return False
 
     def _propose_worker_outcome(self, req, nodes):
         from .quality import Outcomes

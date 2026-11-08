@@ -24,9 +24,9 @@ def test_parallel_team_has_distinct_peers_and_review_dependencies(
     ] == [issues[2]["id"]]
     # Pinned Paperclip resolves the run workspace from executionWorkspaceSettings;
     # executionWorkspacePreference alone left live runs in the shared checkout.
-    assert all(
-        i["executionWorkspaceSettings"] == {"mode": "isolated_workspace"} for i in issues
-    )
+    settings = [i["executionWorkspaceSettings"] for i in issues]
+    assert all(s["mode"] == "isolated_workspace" for s in settings)
+    assert len({s["workspaceStrategy"]["branchTemplate"] for s in settings}) == 4
 
 
 def test_bridge_replay_is_idempotent(app, project, configured):

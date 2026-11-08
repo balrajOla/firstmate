@@ -16,6 +16,15 @@ class CoordinatorError(WorkbenchError):
         self.uncertain = uncertain
 
 
+def _error_detail(exc):
+    """Paperclip's own short error text, so a refusal explains itself."""
+    try:
+        error = json.loads(exc.read(4096)).get("error")
+    except (OSError, ValueError, AttributeError):
+        return ""
+    return ": " + error[:300] if isinstance(error, str) and error.strip() else ""
+
+
 class Paperclip:
     def __init__(self, settings, timeout=20):
         self.settings = settings
@@ -40,9 +49,10 @@ class Paperclip:
             raise WorkbenchError("Remote coordinators require HTTPS")
         self.company = settings.get("company_id")
         self.token = os.environ.get(settings.get("token_env", "AWB_PAPERCLIP_TOKEN"))
+        self.headers = {}
 
     def request(self, method, path, payload=None):
-        headers = {"Accept": "application/json"}
+        headers = {"Accept": "application/json", **self.headers}
         if self.token:
             headers["Authorization"] = "Bearer " + self.token
         data = None if payload is None else json.dumps(payload).encode()
@@ -69,7 +79,8 @@ class Paperclip:
                 return json.loads(raw) if raw else {}
         except urllib.error.HTTPError as exc:
             raise CoordinatorError(
-                f"Paperclip returned HTTP {exc.code} for {method} {path}",
+                f"Paperclip returned HTTP {exc.code} for {method} {path}"
+                + _error_detail(exc),
                 exc.code >= 500 and method != "GET",
             ) from exc
         except (OSError, ValueError, urllib.error.URLError) as exc:
@@ -131,6 +142,11 @@ class Paperclip:
 
     def experimental_settings(self):
         return self.request("GET", "/instance/settings/experimental")
+
+    def issue_activity(self, identity):
+        return self.request(
+            "GET", "/issues/" + urllib.parse.quote(identity, safe="") + "/activity"
+        )
 
     def issue_runs(self, identity):
         return self.request(
