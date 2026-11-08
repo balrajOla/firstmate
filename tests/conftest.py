@@ -94,6 +94,22 @@ class FakePaperclip:
     def run(self, identity):
         return self.runs[identity]
 
+    def issue_runs(self, identity):
+        return [r for r in self.runs.values() if r.get("issueId") == identity]
+
+    def finish(self, issue_id, status, results, agent="agent-0"):
+        """Record runs for an issue as the coordinator would after execution."""
+        for i, (outcome, text) in enumerate(results):
+            run_id = issue_id + "-run-" + str(len(self.runs))
+            self.runs[run_id] = {
+                "runId": run_id, "issueId": issue_id, "agentId": agent,
+                "status": outcome, "createdAt": "2026-11-08T10:00:0" + str(i),
+                "invocationSource": "assignment" if i == 0 else "automation",
+                "usageJson": {"inputTokens": 100 + i, "outputTokens": 10, "billingType": "subscription_included"},
+                "resultJson": {"result": text} if text is not None else {},
+            }
+        self.issue(issue_id)["status"] = status
+
     def wakeup(self, agent, body):
         prior = next(
             (w for w in self.wakes if w["idempotencyKey"] == body["idempotencyKey"]),

@@ -18,9 +18,13 @@ class SupersededDelivery(WorkbenchError):
 # provider binary (without this machine's sign-in) and defaults to approving
 # every tool. Official-CLI workers therefore use its legacy CLI runner.
 # --bare keeps the user's personal plugins, hooks and CLAUDE.md out of
-# product workers; acceptEdits allows workspace edits but no unlisted tools.
+# product workers; acceptEdits allows workspace edits; local commits on the
+# task branch hand work to dependent tasks. Other tools stay unapproved.
 WORKER_ADAPTERS = {"claude": "claude_local", "codex": "codex_local"}
-CLAUDE_WORKER_ARGS = ["--bare", "--permission-mode", "acceptEdits"]
+CLAUDE_WORKER_ARGS = [
+    "--bare", "--permission-mode", "acceptEdits", "--allowedTools",
+    "Bash(git status:*)", "Bash(git diff:*)", "Bash(git add:*)", "Bash(git commit:*)",
+]
 BYPASS_KEYS = {
     "claude": "dangerouslySkipPermissions",
     "codex": "dangerouslyBypassApprovalsAndSandbox",
@@ -129,6 +133,8 @@ class Engine:
             + " in an Assistant Workbench team. Your Paperclip task carries the saved request, "
             "its revision, the execution contract and pinned procedures; follow them. "
             "Work only in the task's workspace; do not touch other projects or unrelated files. "
+            "Commit your changes to the task branch (git add, git commit; never push) before reporting, "
+            "so dependent tasks start from your work. "
             "Your final message is your report: what you changed, the commands you ran and their results, "
             "open problems and missing evidence. The Workbench records that report for independent review, "
             "so never call the work verified or accepted. Record your task disposition if Paperclip lets you; "
@@ -517,7 +523,13 @@ class Engine:
                         "updatedAt",
                     )
                 }
+                self._bind_dependents(req, mapping, node, issue)
+                items[node.split(":", 1)[1]]["report"] = self._capture_report(
+                    req, node, issue
+                )
             observations[req["id"]] = items
+            if items and all(i["report"] == "captured" for i in items.values()):
+                self._propose_worker_outcome(req, list(items))
             if items and all(i["status"] == "done" for i in items.values()):
                 # Execution completion never substitutes for an accepted Workbench outcome.
                 key = "observed-finished:" + req["id"] + ":" + str(req["revision"])
@@ -535,3 +547,127 @@ class Engine:
                     self._cache(key, True)
         atomic(self.store.home / "observations.json", canonical(observations))
         return observations
+
+    def _bind_dependents(self, req, mapping, node, issue):
+        """Start a single-dependency task from its predecessor's task branch.
+
+        The whole team is created before any task runs, so Paperclip cannot
+        inherit a workspace at creation; dependents are still blocked when
+        the predecessor's worktree and branch appear."""
+        current = issue.get("currentExecutionWorkspace") or {}
+        workspace, branch = current.get("id"), current.get("branchName")
+        if not workspace or not branch or not req.get("plan"):
+            return
+        revision, node_id = node.split(":", 1)
+        for child in json.loads(req["plan"])["nodes"]:
+            target = mapping.get(revision + ":" + child["id"])
+            key = "workspace:" + req["id"] + ":" + revision + ":" + child["id"]
+            if child["depends_on"] != [node_id] or not target or self._cache(key):
+                continue
+            # Each isolated task gets its own worktree; the dependent one is
+            # cut from the predecessor's branch, which carries its commits.
+            self.api.update_issue(
+                target,
+                {
+                    "executionWorkspaceSettings": {
+                        "mode": "isolated_workspace",
+                        "workspaceStrategy": {"type": "git_worktree", "baseRef": branch},
+                    },
+                },
+            )
+            self._cache(key, {"base": branch, "workspace": workspace, "from": issue["id"]})
+
+    def _capture_report(self, req, node, issue):
+        """Keep the worker's own final report from its first successful run.
+
+        Paperclip workers without permission bypass cannot record a task
+        disposition, so the Workbench records the report and closes the
+        execution issue; acceptance still requires independent review."""
+        key = "report:" + req["id"] + ":" + node
+        if self._cache(key):
+            return "captured"
+        if issue.get("status") not in {"done", "blocked", "in_review"}:
+            return "pending"
+        runs = self.api.issue_runs(issue["id"])
+        if not isinstance(runs, list):
+            raise WorkbenchError("Unexpected Paperclip run-list contract")
+        succeeded = sorted(
+            (r for r in runs if r.get("status") == "succeeded"),
+            key=lambda r: r.get("createdAt") or "",
+        )
+        if not succeeded:
+            return "failed" if issue["status"] == "blocked" else "pending"
+        detail = self.api.run(succeeded[0]["runId"])
+        text = str((detail.get("resultJson") or {}).get("result") or "").strip()
+        if not text:
+            return "failed" if issue["status"] == "blocked" else "pending"
+        usage = [
+            {
+                "run": r.get("runId"),
+                "source": r.get("invocationSource"),
+                "input_tokens": (r.get("usageJson") or {}).get("inputTokens"),
+                "output_tokens": (r.get("usageJson") or {}).get("outputTokens"),
+                "billing": (r.get("usageJson") or {}).get("billingType"),
+            }
+            for r in runs
+        ]
+        report = {
+            "run": succeeded[0]["runId"],
+            "agent": succeeded[0].get("agentId") or issue.get("assigneeAgentId"),
+            "text": text[:20000],
+            "truncated": len(text) > 20000,
+            "sha256": digest(text),
+            "usage": usage,
+        }
+        if issue["status"] != "done":
+            self.api.update_issue(
+                issue["id"],
+                {
+                    "status": "done",
+                    "comment": "Assistant Workbench captured the worker report from run "
+                    + succeeded[0]["runId"]
+                    + ". Independent review is still required.",
+                },
+            )
+        self._cache(key, report)
+        with self.store.transaction() as db:
+            self.store.event(
+                db,
+                "execution.node_reported",
+                req["id"],
+                {
+                    "node": node,
+                    "run": report["run"],
+                    "agent": report["agent"],
+                    "sha256": report["sha256"],
+                    "characters": len(text),
+                    "runs": len(runs),
+                },
+            )
+        return "captured"
+
+    def _propose_worker_outcome(self, req, nodes):
+        from .quality import Outcomes
+
+        key = "proposed:" + req["id"] + ":" + str(req["revision"])
+        if self._cache(key):
+            return
+        plan = json.loads(req["plan"]) if req.get("plan") else {"nodes": []}
+        roles = {n["id"]: n["role"] for n in plan["nodes"]}
+        sections, agents = [], []
+        for node in nodes:
+            report = self._cache("report:" + req["id"] + ":" + str(req["revision"]) + ":" + node)
+            agents.append(str(report["agent"]))
+            sections.append(
+                "## " + node + " (" + roles.get(node, "worker") + ", run " + report["run"] + ")\n\n"
+                + report["text"]
+                + ("\n\n[Report truncated at 20,000 characters.]" if report["truncated"] else "")
+            )
+        outcome = Outcomes(self.store).propose(
+            req["id"],
+            "\n\n".join(sections),
+            [],
+            "paperclip-agent:" + ",".join(dict.fromkeys(agents)),
+            req["revision"],
+        )
+        self._cache(key, {"outcome": outcome["id"]})

@@ -92,9 +92,11 @@ def test_claude_workers_use_the_official_cli_runner_with_isolation(
     assert agent["adapterType"] == "claude_local" and agent["runner"] == "legacy"
     assert config["engine"] == "cli" and config["dangerouslySkipPermissions"] is False
     # Isolation defaults come first; the profile may add narrower grants.
-    assert config["extraArgs"] == [
-        "--bare", "--permission-mode", "acceptEdits", "--allowedTools", "Bash(pytest:*)"
-    ]
+    from assistant_workbench.engine import CLAUDE_WORKER_ARGS
+
+    assert config["extraArgs"] == CLAUDE_WORKER_ARGS + ["--allowedTools", "Bash(pytest:*)"]
+    assert config["extraArgs"][:3] == ["--bare", "--permission-mode", "acceptEdits"]
+    assert not any("push" in a for a in config["extraArgs"])
     assert config["model"] == "model-from-cli" and config["effort"] == "medium"
 
 
@@ -138,6 +140,58 @@ def test_worker_reuse_requires_explicitly_disabled_bypass(app, project, configur
     assert first
 
 
+def delivered_code_request(app, project, configured):
+    request = app.store.submit("Fix the login bug", "a", project["id"])["request_id"]
+    api = PinnedPaperclip()
+    engine = Engine(app.store, api)
+    assert engine.tick()["status"] == "delivered"
+    issues = remote_issues(app, request)
+    return request, api, engine, issues["1:implement"], issues["1:verify"]
+
+
+def test_worker_reports_become_one_unverified_outcome(app, project, configured):
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    # Without permission bypass the worker cannot close its own task: Paperclip
+    # repairs twice and then blocks it, although the first run succeeded.
+    api.finish(implement, "blocked", [("succeeded", "Changed login.py; tests pass."),
+                                      ("succeeded", "Could not record disposition."),
+                                      ("succeeded", "Still cannot record disposition.")])
+    api.finish(verify, "done", [("succeeded", "Verified: 3 tests pass.")], agent="agent-1")
+    observed = engine.observe()[request]
+    assert {n["report"] for n in observed.values()} == {"captured"}
+    assert api.issue(implement)["status"] == "done"
+    outcome = app.store.one("SELECT * FROM outcomes WHERE request_id=?", (request,))
+    assert outcome["status"] == "needs_review"
+    assert outcome["author"] == "paperclip-agent:agent-0,agent-1"
+    assert "Changed login.py; tests pass." in outcome["body"]
+    assert "Verified: 3 tests pass." in outcome["body"]
+    assert "Could not record disposition" not in outcome["body"]
+    assert app.store.one("SELECT status FROM requests WHERE id=?", (request,))["status"] == "needs_review"
+    engine.observe()
+    assert len(app.store.rows("SELECT id FROM outcomes WHERE request_id=?", (request,))) == 1
+    reported = app.store.rows("SELECT payload FROM events WHERE kind='execution.node_reported'")
+    assert len(reported) == 2
+
+
+def test_partial_reports_unblock_dependents_without_an_outcome(app, project, configured):
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    api.finish(implement, "blocked", [("succeeded", "Changed login.py.")])
+    observed = engine.observe()[request]
+    assert observed["implement"]["report"] == "captured"
+    assert observed["verify"]["report"] == "pending"
+    assert api.issue(implement)["status"] == "done"
+    assert not app.store.rows("SELECT id FROM outcomes WHERE request_id=?", (request,))
+
+
+def test_failed_or_empty_runs_are_never_captured(app, project, configured):
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    api.finish(implement, "blocked", [("failed", "partial output"), ("succeeded", "")])
+    observed = engine.observe()[request]
+    assert observed["implement"]["report"] == "failed"
+    assert api.issue(implement)["status"] == "blocked"
+    assert not app.store.rows("SELECT id FROM outcomes WHERE request_id=?", (request,))
+
+
 def test_repository_work_requires_isolated_workspaces(app, project, configured):
     # Paperclip downgrades isolated_workspace to the project's own checkout
     # when its experimental setting is off; workers would edit the repository.
@@ -175,6 +229,36 @@ def test_unbound_project_work_does_not_need_isolation(app, configured):
     api = PinnedPaperclip()
     api.isolated_workspaces = False
     assert Engine(app.store, api).tick()["status"] == "delivered"
+
+
+def test_dependents_start_from_the_predecessor_branch(app, project, configured):
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    engine.observe()
+    assert api.issue(verify)["executionWorkspaceSettings"] == {"mode": "isolated_workspace"}
+    # The implementer's worktree appears once its run starts.
+    api.issue(implement)["status"] = "in_progress"
+    api.issue(implement)["currentExecutionWorkspace"] = {
+        "id": "ws-implement", "mode": "isolated_workspace", "branchName": "ASS-1-implement"}
+    engine.observe()
+    assert api.issue(verify)["executionWorkspaceSettings"] == {
+        "mode": "isolated_workspace",
+        "workspaceStrategy": {"type": "git_worktree", "baseRef": "ASS-1-implement"},
+    }
+    api.issue(verify)["executionWorkspaceSettings"] = {"mode": "changed-by-operator"}
+    engine.observe()
+    assert api.issue(verify)["executionWorkspaceSettings"] == {"mode": "changed-by-operator"}
+
+
+def test_multi_dependency_nodes_keep_their_own_workspace(app, project, configured):
+    request = app.store.submit("Research the project", "a", project["id"])["request_id"]
+    api = PinnedPaperclip()
+    engine = Engine(app.store, api)
+    assert engine.tick()["status"] == "delivered"
+    issues = remote_issues(app, request)
+    for node in ("research-a", "research-b"):
+        api.issue(issues["1:" + node])["currentExecutionWorkspace"] = {"id": "ws-" + node, "branchName": node}
+    engine.observe()
+    assert api.issue(issues["1:synthesize"])["executionWorkspaceSettings"] == {"mode": "isolated_workspace"}
 
 
 def test_changed_worker_definition_is_not_served_by_an_old_agent(
