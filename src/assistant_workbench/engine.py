@@ -240,6 +240,64 @@ class Engine:
         verify_worker_agent(agent, model["harness"])
         return agent["id"]
 
+    def retire_agents(self, agent_ids=None, idle=False):
+        """Terminate managed agents the operator no longer needs.
+
+        Only Workbench-managed agents that are not running and hold no open
+        task are retired, so no work is cancelled. Cached identities whose
+        agent is no longer active are forgotten, so the next dispatch creates
+        a fresh agent instead of stopping on a missing one. Uncertain
+        creations stay cached for explicit inspection."""
+        if not agent_ids and not idle:
+            raise WorkbenchError("Name agent_ids, or set idle to retire every idle managed agent")
+        agents = self.api.agents()
+        if not isinstance(agents, list):
+            raise WorkbenchError("Unexpected Paperclip agent-list contract")
+        managed = {
+            a["id"]: a for a in agents
+            if (a.get("metadata") or {}).get("workbenchKey") and a.get("status") != "terminated"
+        }
+        retired, skipped = [], []
+        for identity in list(agent_ids or managed):
+            agent = managed.get(identity)
+            if not agent:
+                skipped.append({"id": identity, "reason": "not an active Workbench-managed agent"})
+                continue
+            if agent.get("status") == "running":
+                skipped.append({"id": identity, "reason": "agent is running"})
+                continue
+            tasks = self.api.agent_issues(identity)
+            if not isinstance(tasks, list):
+                raise WorkbenchError("Unexpected Paperclip issue-list contract")
+            open_tasks = [
+                str(t.get("identifier") or t.get("id")) for t in tasks
+                if t.get("status") not in {"done", "cancelled"}
+            ]
+            if open_tasks:
+                skipped.append({"id": identity, "reason": "open tasks: " + ", ".join(open_tasks)})
+                continue
+            result = self.api.terminate_agent(identity)
+            if result.get("status") != "terminated":
+                raise CoordinatorError(
+                    "Paperclip did not confirm terminating agent " + identity, True
+                )
+            key = agent["metadata"]["workbenchKey"]
+            with self.store.transaction() as db:
+                self.store.event(
+                    db, "coordinator.agent_retired", identity,
+                    {"workbench_key": key, "name": agent.get("name")},
+                )
+            managed.pop(identity)
+            retired.append({"id": identity, "name": agent.get("name")})
+        forgotten = []
+        with self.store.transaction() as db:
+            for row in db.execute("SELECT key, value FROM meta WHERE key LIKE 'agent:%'").fetchall():
+                cached = json.loads(row[1]) or {}
+                if cached.get("id") and cached["id"] not in managed:
+                    db.execute("DELETE FROM meta WHERE key=?", (row[0],))
+                    forgotten.append(cached["id"])
+        return {"retired": retired, "skipped": skipped, "forgotten": forgotten}
+
     def _check_current(self, request_id, revision):
         self._runtime_guard()
         current = self.store.one("SELECT * FROM requests WHERE id=?", (request_id,))

@@ -130,6 +130,11 @@ class Application:
 
                 return reconcile_observations(s, observed)
             return observed
+        if action == "coordinator.retire_agents":
+            runtime = self._coordinator()
+            if not isinstance(runtime, Engine):
+                raise WorkbenchError("Retiring managed agents applies to the Paperclip coordinator")
+            return runtime.retire_agents(**args)
         if action == "coordinator.health":
             runtime = self._coordinator()
             return (
