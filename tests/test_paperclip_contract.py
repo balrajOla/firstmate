@@ -126,6 +126,24 @@ def test_converted_worker_agent_is_refused(app, project, configured, harness):
     assert not api.issues_
 
 
+@pytest.mark.parametrize("harness,adapter_config", [
+    ("claude", {"dangerouslySkipPermissions": True}),
+    ("claude", {"extraArgs": ["--dangerously-skip-permissions"]}),
+    ("claude", {"extraArgs": ["--permission-mode", "bypassPermissions"]}),
+    ("codex", {"dangerouslyBypassApprovalsAndSandbox": True}),
+    ("codex", {"extraArgs": ["--sandbox=danger-full-access"]}),
+], ids=["claude-key", "claude-skip-flag", "claude-permission-mode", "codex-key", "codex-full-access"])
+def test_profile_bypass_is_refused_before_any_agent_exists(
+    app, project, configured, harness, adapter_config
+):
+    official_cli_profile(app, configured, harness, adapter_config)
+    app.store.submit("Fix bug", "a", project["id"])
+    api = PinnedPaperclip()
+    result = Engine(app.store, api).tick()
+    assert result["status"] == "blocked" and "bypass" in result["error"]
+    assert not api.agents_ and not api.issues_
+
+
 def test_worker_reuse_requires_explicitly_disabled_bypass(app, project, configured):
     official_cli_profile(app, configured)
     first = app.store.submit("Fix bug", "a", project["id"])["request_id"]

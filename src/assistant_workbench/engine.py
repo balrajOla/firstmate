@@ -29,6 +29,14 @@ BYPASS_KEYS = {
     "claude": "dangerouslySkipPermissions",
     "codex": "dangerouslyBypassApprovalsAndSandbox",
 }
+# Profile CLI flags that would undo that boundary.
+BYPASS_FLAGS = {
+    "--dangerously-skip-permissions",
+    "--allow-dangerously-skip-permissions",
+    "--permission-mode",
+    "--dangerously-bypass-approvals-and-sandbox",
+    "--yolo",
+}
 
 
 def verify_worker_agent(agent, harness):
@@ -113,6 +121,17 @@ class Engine:
         )
         if model["harness"] in BYPASS_KEYS:
             adapter_config.setdefault(BYPASS_KEYS[model["harness"]], False)
+            extra = [str(a) for a in adapter_config.get("extraArgs", [])]
+            # Refuse before any remote call, so no bypassing agent is created.
+            if (
+                adapter_config[BYPASS_KEYS[model["harness"]]] is not False
+                or {a.split("=", 1)[0] for a in extra} & BYPASS_FLAGS
+                or any("danger-full-access" in a for a in extra)
+            ):
+                raise WorkbenchError(
+                    "Profile adapter_config would bypass worker permissions; "
+                    "Paperclip workers run with them enforced"
+                )
         if model["harness"] == "claude":
             adapter_config["engine"] = "cli"
             adapter_config["extraArgs"] = CLAUDE_WORKER_ARGS + list(
