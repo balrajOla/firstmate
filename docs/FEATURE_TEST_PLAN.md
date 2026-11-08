@@ -1979,6 +1979,7 @@ Mapped pytest evidence:
 - `tests/test_paperclip_contract.py::test_subscription_workers_never_inherit_a_provider_api_key`
 - `tests/test_paperclip_contract.py::test_api_profiles_keep_their_own_provider_environment`
 - `tests/test_paperclip_contract.py::test_subscription_profile_passing_a_provider_key_is_refused`
+- `tests/test_runtime_backends.py::test_claude_worker_runs_isolated_with_edit_permission_and_profile_grants`
 
 ### PF60
 

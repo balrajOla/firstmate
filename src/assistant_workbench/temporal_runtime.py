@@ -913,6 +913,12 @@ class TemporalRuntime:
         return self._sync(self.a_tick())
 
 
+TEMPORAL_CLAUDE_ARGS = [
+    "--bare", "--permission-mode", "acceptEdits",
+    "--allowedTools", "Bash(git status:*)", "Bash(git diff:*)",
+]
+
+
 class OfficialCLIExecutor:
     """Bounded official CLI activity with durable process receipts.
 
@@ -1093,6 +1099,19 @@ class OfficialCLIExecutor:
                     ]
                 argv.append("-")
             else:
+                from .engine import BYPASS_FLAGS
+
+                extra = [str(a) for a in (model.get("adapter_config") or {}).get("extraArgs", [])]
+                if {a.split("=", 1)[0] for a in extra} & BYPASS_FLAGS or any(
+                    "danger-full-access" in a for a in extra
+                ):
+                    raise WorkbenchError(
+                        "Profile adapter_config would bypass worker permissions"
+                    )
+                # Same isolation as Paperclip workers: no personal plugins,
+                # hooks or CLAUDE.md, workspace edits without prompts that a
+                # non-interactive run cannot answer, and only the profile's
+                # narrower tool grants beyond read-only git.
                 argv = [
                     executable,
                     "-p",
@@ -1102,6 +1121,8 @@ class OfficialCLIExecutor:
                     model["model"],
                     "--max-turns",
                     "30",
+                    *TEMPORAL_CLAUDE_ARGS,
+                    *extra,
                 ]
                 if model["effort"] != "default":
                     argv += ["--effort", model["effort"]]

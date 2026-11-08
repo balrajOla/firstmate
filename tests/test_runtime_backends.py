@@ -996,3 +996,63 @@ def test_usage_report_without_observations_never_invents_zero_usage(app):
     assert all(value is None for value in report["totals"].values())
     assert report["coverage"]["recorded_nodes"] == 0
     assert report["cost_usd"] is None
+
+
+@pytest.mark.asyncio
+async def test_claude_worker_runs_isolated_with_edit_permission_and_profile_grants(
+    app, project, configured, tmp_path, monkeypatch
+):
+    """Fixture CLI records its arguments; proves the invocation, never an LLM result."""
+    pytest.importorskip("temporalio")
+    from assistant_workbench import profiles, temporal_runtime
+    from assistant_workbench.temporal_runtime import OfficialCLIExecutor
+    from assistant_workbench.util import canonical, digest, now
+
+    argv_log = tmp_path / "argv.json"
+    executable = tmp_path / "claude"
+    executable.write_text(
+        "#!/usr/bin/env python3\nimport json,os,sys\nsys.stdin.read()\n"
+        "open(os.environ['ARGV_LOG'],'w').write(json.dumps(sys.argv[1:]))\n"
+        "print(json.dumps({'type':'result','subtype':'success','is_error':False,'result':'CLAUDE ARGV FIXTURE',"
+        "'usage':{'input_tokens':5,'output_tokens':2}}))\n"
+    )
+    executable.chmod(0o700)
+    monkeypatch.setenv("ARGV_LOG", str(argv_log))
+    monkeypatch.setattr(temporal_runtime.shutil, "which", lambda name: str(executable))
+    monkeypatch.setattr(profiles, "readiness", lambda model: (True, "TEST MOCK ONLY"))
+    monkeypatch.setattr(temporal_runtime.activity, "heartbeat", lambda *args: None)
+    model = {"id": "claude-fixture", "harness": "claude", "model": "fixture", "effort": "low",
+             "auth": "subscription",
+             "adapter_config": {"extraArgs": ["--allowedTools", "Bash(python -m pytest:*)"]}}
+    settings = copy.deepcopy(configured)
+    settings["models"] = [model]
+    fleet = Fleet(app.store)
+    token = fleet.register("host-a", "Fixture worker", "queue-a", 2, ["claude"],
+                           {project["id"]: project["repository"]})["token"]
+    fleet.heartbeat("host-a", token)
+    executor = OfficialCLIExecutor(app.store, settings, "host-a", token)
+
+    def packet_for(key):
+        request_id = app.store.submit("Fix the bug", key, project["id"])["request_id"]
+        packet = {"request_id": request_id, "revision": 1, "project_id": project["id"],
+                  "body": "Fix the bug", "generation": 1, "node": {"id": "worker", "role": "engineer"},
+                  "plan": {"model": model, "limits": settings["limits"], "skills": []},
+                  "deadline": now() + 60}
+        packet["payload_hash"] = digest(canonical(packet))
+        with app.store.transaction() as db:
+            db.execute("INSERT INTO temporal_executions VALUES(?,?,?,NULL,?,'running',NULL,?,?)",
+                       (request_id, 1, "fixture-" + request_id, packet["payload_hash"], now(), now()))
+        return packet
+
+    result = await executor.execute(packet_for("argv"))
+    assert result["body"] == "CLAUDE ARGV FIXTURE"
+    argv = json.loads(argv_log.read_text())
+    assert argv[argv.index("--permission-mode") + 1] == "acceptEdits" and "--bare" in argv
+    assert "Bash(python -m pytest:*)" in argv and "Bash(git status:*)" in argv
+    assert not any("commit" in a or "push" in a for a in argv)
+    # A profile that would bypass permissions never starts a process.
+    argv_log.unlink()
+    model["adapter_config"] = {"extraArgs": ["--permission-mode", "bypassPermissions"]}
+    with pytest.raises(WorkbenchError, match="bypass"):
+        await executor.execute(packet_for("bypass"))
+    assert not argv_log.exists()
