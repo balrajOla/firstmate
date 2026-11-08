@@ -2480,6 +2480,8 @@
       ],
       "automated_tests": [
         "tests/test_operations.py::test_snapshot_restore_and_tamper_detection",
+        "tests/test_operations.py::test_snapshot_database_is_self_contained_without_wal_sidecars",
+        "tests/test_operations.py::test_snapshot_paths_accept_os_symlinks_but_reject_user_symlinks",
         "tests/test_operations.py::test_migration_preserves_local_edits_ignored_files_and_git_history",
         "tests/test_operations.py::test_migration_rejects_overlap_and_account_root",
         "tests/test_operations.py::test_migration_never_retires_without_target_evidence",

@@ -19,11 +19,19 @@ from .util import WorkbenchError, atomic, canonical, digest, now, read_json
 _STATE_ROOTS = {"archive", "knowledge", "config.json", "snapshots", "workspaces"}
 
 
+def _os_owned_link(part):
+    """Root-owned links in root-owned, non-shared directories (macOS /tmp, /var)."""
+    if part.lstat().st_uid != 0:
+        return False
+    parent = part.parent.lstat()
+    return parent.st_uid == 0 and not parent.st_mode & (stat.S_IWGRP | stat.S_IWOTH)
+
+
 def _plain_path(value):
     """Do not hide a supplied symlink by resolving it before validation."""
     path = Path(os.path.abspath(Path(value).expanduser()))
     for part in (path, *path.parents):
-        if part.is_symlink():
+        if part.is_symlink() and (part == path or not _os_owned_link(part)):
             raise WorkbenchError("Snapshot paths must not contain symlinks")
     return path
 
@@ -161,8 +169,11 @@ def backup_state(store, destination):
         before = _snapshot_inventory(home, _STATE_ROOTS)
         dest.mkdir(parents=True, mode=0o700)
         try:
+            # VACUUM INTO writes one rollback-journal file. backup() would copy
+            # the live WAL mode, and some SQLite builds then leave -wal/-shm
+            # sidecars that the restore inventory rejects.
+            db.execute("VACUUM INTO ?", (str(dest / "workbench.sqlite"),))
             with closing(sqlite3.connect(dest / "workbench.sqlite")) as target:
-                db.backup(target)
                 _portable_workspaces(target, home, rewrite=True)
                 target.commit()
             _copy_snapshot_files(home, dest, before)

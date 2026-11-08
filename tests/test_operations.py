@@ -1,6 +1,7 @@
 import json
 import os
 import platform
+import sqlite3
 import subprocess
 import sys
 from pathlib import Path
@@ -28,6 +29,54 @@ def test_snapshot_restore_and_tamper_detection(app, project, tmp_path):
     (backup / "workbench.sqlite").write_bytes(b"corrupt")
     with pytest.raises(WorkbenchError):
         restore_state(backup, tmp_path / "other")
+
+
+def test_snapshot_database_is_self_contained_without_wal_sidecars(
+    app, project, tmp_path
+):
+    # The live store uses WAL. Some SQLite builds (Apple's system library)
+    # keep -wal/-shm files after close, which restore rightly rejects as
+    # unsupported entries. A snapshot must be one rollback-journal file.
+    app.store.submit("Persistent prompt", "a", project["id"])
+    backup = tmp_path / "backup"
+    backup_state(app.store, backup)
+    manifest = json.loads((backup / "backup.json").read_text())
+    assert not [
+        name for name in manifest["files"]
+        if name.startswith("workbench.sqlite") and name != "workbench.sqlite"
+    ]
+    header = (backup / "workbench.sqlite").read_bytes()[:20]
+    assert header[18:20] == b"\x01\x01"
+    restored = restore_state(backup, tmp_path / "restored")
+    with sqlite3.connect(Path(restored["path"], "workbench.sqlite")) as db:
+        assert db.execute(
+            "SELECT count(*) FROM prompts WHERE body=?", ("Persistent prompt",)
+        ).fetchone()[0] == 1
+
+
+def _root_owned_system_symlink():
+    for name in ("/tmp", "/var", "/etc", "/bin", "/lib", "/sbin"):
+        path = Path(name)
+        if path.is_symlink() and path.lstat().st_uid == 0:
+            return path
+    pytest.skip("No root-owned top-level symlink on this platform")
+
+
+def test_snapshot_paths_accept_os_symlinks_but_reject_user_symlinks(
+    app, project, tmp_path
+):
+    # macOS /tmp and /var are root-owned links; refusing them made every
+    # temporary-directory backup fail while adding no protection.
+    from assistant_workbench.operations import _plain_path
+
+    system = _root_owned_system_symlink()
+    assert _plain_path(system / "awb-not-created") == system / "awb-not-created"
+    link = tmp_path / "link"
+    link.symlink_to(tmp_path / "elsewhere", target_is_directory=True)
+    with pytest.raises(WorkbenchError, match="symlinks"):
+        backup_state(app.store, link / "backup")
+    with pytest.raises(WorkbenchError, match="symlinks"):
+        _plain_path(link)
 
 
 def test_migration_preserves_local_edits_ignored_files_and_git_history(tmp_path):
