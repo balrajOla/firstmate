@@ -5,6 +5,61 @@ from assistant_workbench.engine import Engine
 from conftest import PinnedPaperclip
 
 
+def remote_issues(app, request_id):
+    import json
+
+    rows = app.store.rows("SELECT value FROM meta WHERE key=?", ("issues:" + request_id,))
+    return json.loads(rows[0]["value"]) if rows else {}
+
+
+def test_identical_prompts_keep_separate_remote_issues(app, project, configured):
+    # Two separate requests may share their first 100 characters; Paperclip's
+    # recent-title reuse must not merge their execution.
+    text = "Add hello.py that prints a greeting and a pytest test for it."
+    first = app.store.submit(text, "a", project["id"])["request_id"]
+    second = app.store.submit(text, "b", project["id"])["request_id"]
+    api = PinnedPaperclip()
+    engine = Engine(app.store, api)
+    assert engine.tick()["status"] == "delivered"
+    assert engine.tick()["status"] == "delivered"
+    one, two = remote_issues(app, first), remote_issues(app, second)
+    assert one and two and not set(one.values()) & set(two.values())
+    assert all(i.get("allowDuplicate") is True for i in api.issues_.values())
+
+
+def test_reused_issue_belonging_to_other_work_is_refused(app, project, configured):
+    first = app.store.submit("Fix the login bug", "a", project["id"])["request_id"]
+    second = app.store.submit("Fix the signup bug", "b", project["id"])["request_id"]
+    api = PinnedPaperclip()
+    engine = Engine(app.store, api)
+    assert engine.tick()["status"] == "delivered"
+    # A coordinator may already bind a key to another request's issue (older
+    # bridge titles, a different client, or ignored allowDuplicate).
+    foreign = next(iter(api.issues_.values()))
+    for node in ("implement", "verify"):
+        api.issues_["awb-" + second + "-1:" + node] = foreign
+    result = engine.tick()
+    assert result["status"] == "blocked" and "different work" in result["error"]
+    assert app.store.one("SELECT status FROM requests WHERE id=?", (second,))["status"] == "queued"
+    assert remote_issues(app, second) == {}
+    assert remote_issues(app, first)
+
+
+def test_replay_of_own_issue_after_lost_cache_is_accepted(app, project, configured):
+    request = app.store.submit("Fix bug", "a", project["id"])["request_id"]
+    api = PinnedPaperclip()
+    engine = Engine(app.store, api)
+    assert engine.tick()["status"] == "delivered"
+    original = remote_issues(app, request)
+    # Simulate a crash after remote creation but before the local cache write.
+    with app.store.transaction() as db:
+        db.execute("DELETE FROM meta WHERE key=?", ("issues:" + request,))
+        db.execute("UPDATE outbox SET status='retry' WHERE request_id=?", (request,))
+    assert engine.tick()["status"] == "delivered"
+    assert remote_issues(app, request) == original
+    assert len({i["id"] for i in api.issues_.values()}) == 2
+
+
 def official_cli_profile(app, configured, harness="claude", adapter_config=None):
     import json
     from assistant_workbench.util import now

@@ -107,7 +107,9 @@ class PinnedPaperclip(FakePaperclip):
     """Contract fixture for behaviors observed in the pinned Paperclip release
     (d69631b): official-CLI agents become its native runner unless runner is
     legacy, and that runner rejects bypass keys even when false
-    (agent_runner_config_incompatible). Not
+    (agent_runner_config_incompatible). Issue creation reuses a recent open issue
+    with the same normalized title unless allowDuplicate is true, binding the
+    new idempotency key to it (server/src/services/issues.ts). Not
     evidence of live Paperclip or model execution."""
 
     RUNNER_INCOMPATIBLE = ("dangerouslySkipPermissions", "dangerouslyBypassApprovalsAndSandbox")
@@ -124,3 +126,18 @@ class PinnedPaperclip(FakePaperclip):
         native = {**body, "adapterType": "paperclip_runner"}
         native["adapterConfig"] = {**body["adapterConfig"], "provider": "acpx", "acpxPermissionMode": "approve-all"}
         return super().create_agent(native)
+
+    def create_issue(self, body):
+        key = body.get("idempotencyKey")
+        if key in self.issues_:
+            return {**self.issues_[key], "deduplicated": True, "deduplicationReason": "idempotency_key"}
+        title = " ".join(body["title"].split()).lower()
+        if not body.get("allowDuplicate"):
+            for existing in self.issues_.values():
+                if (" ".join(existing["title"].split()).lower() == title
+                        and existing.get("status") not in {"done", "cancelled"}):
+                    self.issues_[key] = existing
+                    return {**existing, "deduplicated": True, "deduplicationReason": "recent_open_title"}
+        item = {"id": "issue-" + str(len({i["id"] for i in self.issues_.values()})), **body}
+        self.issues_[key] = item
+        return item

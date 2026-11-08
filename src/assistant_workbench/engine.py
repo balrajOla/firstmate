@@ -378,6 +378,9 @@ class Engine:
                 "blockedByIssueIds": [created[d] for d in node["depends_on"]],
                 "reviewPolicy": "not_creator",
                 "idempotencyKey": "awb-" + req["id"] + "-" + node_key,
+                # Paperclip otherwise reuses any recent open issue with the
+                # same title; requests may share their first 100 characters.
+                "allowDuplicate": True,
             }
             if project["repository"]:
                 body["executionWorkspacePreference"] = "isolated_workspace"
@@ -387,6 +390,14 @@ class Engine:
                     ]
             self._check_current(req["id"], req["revision"])
             remote = self.api.create_issue(body)
+            # The packet names this request, revision and node, so only this
+            # work's own issue (including an idempotent replay) can match it.
+            if remote.get("description") != body["description"]:
+                raise WorkbenchError(
+                    "Paperclip returned an existing issue that belongs to different work ("
+                    + str(remote.get("deduplicationReason") or "content differs")
+                    + "); reconcile it before dispatch"
+                )
             created[node["id"]] = remote["id"]
             issue_map[node_key] = remote["id"]
             self._cache("issues:" + req["id"], issue_map)
