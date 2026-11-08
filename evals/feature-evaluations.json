@@ -1020,7 +1020,13 @@
         "tests/test_harness_surfaces.py::test_probe_requires_exact_successful_assistant_completion[failed_turn]",
         "tests/test_harness_surfaces.py::test_probe_requires_exact_successful_assistant_completion[success]",
         "tests/test_engine_preflight.py::test_missing_qualification_is_rejected_before_creating_remote_project",
-        "tests/test_engine_preflight.py::test_saved_profile_qualification_is_rechecked_when_receipt_expires"
+        "tests/test_engine_preflight.py::test_saved_profile_qualification_is_rechecked_when_receipt_expires",
+        "tests/test_harness_surfaces.py::test_probe_records_effective_model_reported_by_cli[claude-sonnet-5-5-usage0-effective0]",
+        "tests/test_harness_surfaces.py::test_probe_records_effective_model_reported_by_cli[claude-opus-5-5-usage1-effective1]",
+        "tests/test_harness_surfaces.py::test_probe_records_effective_model_reported_by_cli[sonnet-usage2-effective2]",
+        "tests/test_harness_surfaces.py::test_probe_rejects_a_substituted_model[claude-opus-5-5-usage0]",
+        "tests/test_harness_surfaces.py::test_probe_rejects_a_substituted_model[opus-usage1]",
+        "tests/test_harness_surfaces.py::test_probe_keeps_unreported_model_identity_unknown"
       ],
       "required_gates": [
         "models"

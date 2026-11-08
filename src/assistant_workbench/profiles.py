@@ -135,13 +135,31 @@ def _probe(home, identity):
             events.append(json.loads(line))
         except ValueError:
             pass
+    effective = []
     if model["harness"] == "claude":
-        valid = any(
-            e.get("type") == "result"
+        results = [
+            e
+            for e in events
+            if e.get("type") == "result"
             and not e.get("is_error")
             and str(e.get("result", "")).strip() == marker
-            for e in events
+        ]
+        valid = bool(results)
+        # The CLI reports which models served the turn; the request alone
+        # does not prove a gateway did not substitute another model.
+        effective = sorted(
+            {name for e in results for name in (e.get("modelUsage") or {})}
         )
+        requested = model["model"]
+        alias = not any(c.isdigit() for c in requested)
+        if effective and requested not in effective and not (
+            alias and any(requested in name for name in effective)
+        ):
+            raise WorkbenchError(
+                "CLI answered with a different model ("
+                + ", ".join(effective)
+                + ") than the profile requested"
+            )
     else:
         valid = any(
             e.get("type") == "item.completed"
@@ -165,9 +183,13 @@ def _probe(home, identity):
         "created": now(),
         "profile": {k: model[k] for k in ("id", "harness", "model", "effort", "auth")},
         "cli_version": version,
+        "effective_models": effective,
+        "effective_model_source": (
+            "CLI result modelUsage" if effective else "not reported by CLI"
+        ),
         "argv": argv,
         "output_sha256": digest(result["stdout"]),
-        "scope": "One official CLI canary; not model ranking, Paperclip execution, semantic quality, or effective provider/model verification.",
+        "scope": "One official CLI canary with the CLI-reported model identity where available; not model ranking, coordinator execution, effort verification or semantic quality.",
     }
     path = home / "profiles" / (identity + ".json")
     if Path(identity).name != identity or identity in {".", ".."}:

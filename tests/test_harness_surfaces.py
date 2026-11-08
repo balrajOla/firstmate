@@ -121,3 +121,71 @@ def test_probe_requires_exact_successful_assistant_completion(app, monkeypatch, 
         assert not json.loads((app.home / "config.json").read_text())["models"][0][
             "verified"
         ]
+
+
+def claude_profile(app, model):
+    return profiles.add(
+        app.home, "claude-contract", "claude", model, "medium", "subscription", ["all"]
+    )
+
+
+def claude_fixture(monkeypatch, usage):
+    monkeypatch.setattr(profiles.shutil, "which", lambda _: "/test/claude")
+
+    def fixture(argv, **kwargs):
+        if "--version" in argv:
+            return {"stdout": "2.1.310 (Claude Code)\n", "exit_code": 0}
+        marker = argv[argv.index("-p") + 1].split()[-1]
+        event = {"type": "result", "subtype": "success", "is_error": False, "result": marker}
+        if usage is not None:
+            event["modelUsage"] = {name: {"outputTokens": 3} for name in usage}
+        return {"stdout": json.dumps(event), "exit_code": 0}
+
+    monkeypatch.setattr(profiles, "run_process", fixture)
+
+
+@pytest.mark.parametrize(
+    "requested,usage,effective",
+    [
+        ("claude-sonnet-5-5", ["claude-sonnet-5-5"], ["claude-sonnet-5-5"]),
+        # Auxiliary models may also appear; the requested one must be among them.
+        ("claude-opus-5-5", ["claude-haiku-5-5", "claude-opus-5-5"],
+         ["claude-haiku-5-5", "claude-opus-5-5"]),
+        # An alias is resolved by the CLI and the resolved identity is retained.
+        ("sonnet", ["claude-sonnet-5-5"], ["claude-sonnet-5-5"]),
+    ],
+)
+def test_probe_records_effective_model_reported_by_cli(
+    app, monkeypatch, requested, usage, effective
+):
+    model = claude_profile(app, requested)
+    claude_fixture(monkeypatch, usage)
+    receipt = profiles.probe(app.home, model["id"])
+    assert receipt["effective_models"] == effective
+    assert receipt["effective_model_source"] == "CLI result modelUsage"
+    assert receipt["cli_version"] == "2.1.310 (Claude Code)"
+
+
+@pytest.mark.parametrize(
+    "requested,usage",
+    [
+        ("claude-opus-5-5", ["claude-sonnet-5-5"]),
+        ("opus", ["claude-sonnet-5-5"]),
+    ],
+)
+def test_probe_rejects_a_substituted_model(app, monkeypatch, requested, usage):
+    model = claude_profile(app, requested)
+    claude_fixture(monkeypatch, usage)
+    with pytest.raises(WorkbenchError, match="different model"):
+        profiles.probe(app.home, model["id"])
+    saved = json.loads((app.home / "config.json").read_text())["models"][0]
+    receipt = json.loads((app.home / "profiles/claude-contract.json").read_text())
+    assert not saved["verified"] and receipt["result"] == "failed"
+
+
+def test_probe_keeps_unreported_model_identity_unknown(app, monkeypatch):
+    model = claude_profile(app, "claude-sonnet-5-5")
+    claude_fixture(monkeypatch, None)
+    receipt = profiles.probe(app.home, model["id"])
+    assert receipt["effective_models"] == []
+    assert receipt["effective_model_source"] == "not reported by CLI"
