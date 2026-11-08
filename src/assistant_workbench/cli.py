@@ -68,6 +68,8 @@ def parser():
     install.add_argument("--prefix", required=True)
     uninstall = commands.add_parser("uninstall")
     uninstall.add_argument("--prefix", required=True)
+    rollback = commands.add_parser("rollback")
+    rollback.add_argument("--prefix", required=True)
     deps = commands.add_parser("deps")
     deps.add_argument("operation", choices=["list", "install"])
     deps.add_argument("names", nargs="*")
@@ -102,7 +104,7 @@ def main(argv=None):
             data.pop("home")
             operation = data.pop("operation")
             result = getattr(migration, operation)(**data)
-        elif args.command in {"install", "uninstall", "restore"}:
+        elif args.command in {"install", "uninstall", "rollback", "restore"}:
             from . import operations
 
             data = vars(args)

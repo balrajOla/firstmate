@@ -319,19 +319,8 @@ def install(source, prefix, python=None):
             content.append([str(path.relative_to(source)), digest(path.read_bytes())])
     version = digest(canonical(content))[:16]
     release = prefix / "lib/assistant-workbench/releases" / version
-    launcher = prefix / "bin/awb"
-    receipt = prefix / "lib/assistant-workbench/install.json"
-    old = read_json(receipt)
-    if launcher.exists() and (
-        not old or digest(launcher.read_bytes()) != old.get("launcher_sha256")
-    ):
-        raise WorkbenchError(
-            "Existing awb launcher is not owned by this installer; choose another prefix"
-        )
-    if launcher.is_symlink():
-        raise WorkbenchError(
-            "Existing launcher is a symlink; preserve it and choose another prefix"
-        )
+    old = read_json(prefix / "lib/assistant-workbench/install.json")
+    _check_launcher(prefix, old)
     if not (release / "ready.json").exists():
         if release.exists():
             raise WorkbenchError(
@@ -373,6 +362,42 @@ def install(source, prefix, python=None):
             release / "ready.json",
             canonical({"schema": 1, "content_revision": version, "created": now()}),
         )
+    return _activate(prefix, release, old)
+
+
+def rollback(prefix):
+    """Point the owned launcher back at the previously active release."""
+    prefix = Path(prefix).expanduser().resolve()
+    old = read_json(prefix / "lib/assistant-workbench/install.json")
+    # Older receipts could name the active release as its own predecessor.
+    if not old or not old.get("previous") or old["previous"] == old.get("release"):
+        raise WorkbenchError("No previous release is recorded for this prefix")
+    _check_launcher(prefix, old)
+    previous = Path(old["previous"])
+    if previous.parent != prefix / "lib/assistant-workbench/releases" or not (
+        previous / "ready.json"
+    ).is_file():
+        raise WorkbenchError("The previous release is missing or incomplete; reinstall it from its source")
+    run_process([str(previous / "venv/bin/python"), "-m", "assistant_workbench", "--version"], timeout=20)
+    return {**_activate(prefix, previous, old), "rolled_back_from": old["release"]}
+
+
+def _check_launcher(prefix, old):
+    launcher = prefix / "bin/awb"
+    if launcher.is_symlink():
+        raise WorkbenchError(
+            "Existing launcher is a symlink; preserve it and choose another prefix"
+        )
+    if launcher.exists() and (
+        not old or digest(launcher.read_bytes()) != old.get("launcher_sha256")
+    ):
+        raise WorkbenchError(
+            "Existing awb launcher is not owned by this installer; choose another prefix"
+        )
+
+
+def _activate(prefix, release, old):
+    """Point the owned launcher at a ready release and record what it replaced."""
     import shlex
 
     text = (
@@ -380,17 +405,19 @@ def install(source, prefix, python=None):
         + shlex.quote(str(release / "venv/bin/python"))
         + ' -m assistant_workbench "$@"\n'
     )
-    atomic(launcher, text, 0o755)
+    atomic(prefix / "bin/awb", text, 0o755)
+    current = old.get("release") if old else None
     result = {
         "schema": 1,
         "prefix": str(prefix),
         "release": str(release),
-        "content_revision": version,
+        "content_revision": release.name,
+        # Reinstalling the active release keeps the real rollback target.
+        "previous": current if current != str(release) else (old or {}).get("previous"),
         "launcher_sha256": digest(text),
-        "previous": old.get("release") if old else None,
         "created": now(),
     }
-    atomic(receipt, canonical(result))
+    atomic(prefix / "lib/assistant-workbench/install.json", canonical(result))
     return result
 
 
