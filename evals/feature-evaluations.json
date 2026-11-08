@@ -1743,7 +1743,9 @@
         "tests/test_surfaces.py::test_tui_submit_outcomes_and_log_flood[size1]",
         "tests/test_surfaces.py::test_tui_submit_outcomes_and_log_flood[size2]",
         "tests/test_tui_scenarios.py::test_tui_pin_reorders_preserves_selection_and_log_flood",
-        "tests/test_tui_scenarios.py::test_view_filter_does_not_change_prompt_destination"
+        "tests/test_tui_scenarios.py::test_view_filter_does_not_change_prompt_destination",
+        "tests/test_paperclip_contract.py::test_outcome_headline_skips_headers_and_markup",
+        "tests/test_paperclip_contract.py::test_worker_instructions_ask_for_a_leading_result_sentence"
       ],
       "required_gates": [
         "gui",
