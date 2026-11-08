@@ -342,6 +342,16 @@ def test_worker_reported_block_keeps_dependents_blocked(app, project, configured
     assert json.loads(report[0]["payload"])["disposition"] == "blocked"
 
 
+def test_disposition_recorded_before_the_final_message_waits_for_the_run(app, project, configured):
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    api.finish(implement, "blocked", [("running", None)], by_worker=True)
+    assert engine.observe()[request]["implement"]["report"] == "pending"
+    assert not app.store.rows("SELECT payload FROM events WHERE kind='execution.node_blocked'")
+    run = next(r for r in api.runs.values() if r["issueId"] == implement)
+    run.update(status="succeeded", resultJson={"result": "Blocked: the file is missing."})
+    assert engine.observe()[request]["implement"]["report"] == "blocked"
+
+
 def test_paperclip_escalation_is_not_a_worker_block(app, project, configured):
     request, api, engine, implement, verify = delivered_code_request(app, project, configured)
     # A worker blocked earlier, then Paperclip escalated a later repair: the
