@@ -329,7 +329,7 @@ def test_retry_works_for_temporal_without_constructing_paperclip(
         "Paperclip",
         lambda *a, **k: pytest.fail("Paperclip must not be constructed"),
     )
-    app.dispatch("request.retry", {"request_id": request["request_id"]})
+    assert app.dispatch("request.retry", {"request_id": request["request_id"]})["reset"] == 1
     assert (
         app.store.one(
             "SELECT status FROM outbox WHERE request_id=?", (request["request_id"],)
@@ -341,7 +341,7 @@ def test_retry_works_for_temporal_without_constructing_paperclip(
             "UPDATE outbox SET status='uncertain' WHERE request_id=?",
             (request["request_id"],),
         )
-    app.dispatch("request.retry", {"request_id": request["request_id"]})
+    assert app.dispatch("request.retry", {"request_id": request["request_id"]})["reset"] == 0
     assert (
         app.store.one(
             "SELECT status FROM outbox WHERE request_id=?", (request["request_id"],)

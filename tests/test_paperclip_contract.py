@@ -374,6 +374,11 @@ def test_worker_reported_block_keeps_dependents_blocked(app, project, configured
     assert len(app.store.rows("SELECT payload FROM events WHERE kind='execution.node_blocked'")) == 1
     report = app.store.rows("SELECT payload FROM events WHERE kind='execution.node_reported'")
     assert json.loads(report[0]["payload"])["disposition"] == "blocked"
+    # Only an amendment re-runs the team; retry says it has nothing to do.
+    assert "amend the request with what would unblock it" in json.loads(events[0]["payload"])["notice"]
+    retried = app.dispatch("request.retry", {"request_id": request})
+    assert retried["reset"] == 0 and "No blocked delivery to retry" in retried["notice"]
+    assert api.issue(implement)["status"] == "blocked"
 
 
 def test_disposition_recorded_before_the_final_message_waits_for_the_run(app, project, configured):
