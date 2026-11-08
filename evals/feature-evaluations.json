@@ -2444,7 +2444,12 @@
       "automated_tests": [
         "tests/test_installed.py::test_installed_prompt_outcome_backup_restore",
         "tests/test_dependency_install.py::test_failed_build_reports_its_output_and_allows_a_clean_retry",
-        "tests/test_dependency_install.py::test_retry_after_failure_at_same_revision_runs_again"
+        "tests/test_dependency_install.py::test_retry_after_failure_at_same_revision_runs_again",
+        "tests/test_release_install.py::test_repeat_install_keeps_the_real_rollback_target",
+        "tests/test_release_install.py::test_rollback_returns_to_the_previous_release_and_back",
+        "tests/test_release_install.py::test_rollback_refuses_without_an_intact_previous_release",
+        "tests/test_release_install.py::test_rollback_preserves_a_launcher_the_installer_does_not_own",
+        "tests/test_release_install.py::test_a_receipt_naming_itself_as_previous_is_not_a_rollback_target"
       ],
       "required_gates": [
         "packages"
