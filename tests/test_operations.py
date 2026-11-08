@@ -54,6 +54,31 @@ def test_snapshot_database_is_self_contained_without_wal_sidecars(
         ).fetchone()[0] == 1
 
 
+def _root_owned_system_symlink():
+    for name in ("/tmp", "/var", "/etc", "/bin", "/lib", "/sbin"):
+        path = Path(name)
+        if path.is_symlink() and path.lstat().st_uid == 0:
+            return path
+    pytest.skip("No root-owned top-level symlink on this platform")
+
+
+def test_snapshot_paths_accept_os_symlinks_but_reject_user_symlinks(
+    app, project, tmp_path
+):
+    # macOS /tmp and /var are root-owned links; refusing them made every
+    # temporary-directory backup fail while adding no protection.
+    from assistant_workbench.operations import _plain_path
+
+    system = _root_owned_system_symlink()
+    assert _plain_path(system / "awb-not-created") == system / "awb-not-created"
+    link = tmp_path / "link"
+    link.symlink_to(tmp_path / "elsewhere", target_is_directory=True)
+    with pytest.raises(WorkbenchError, match="symlinks"):
+        backup_state(app.store, link / "backup")
+    with pytest.raises(WorkbenchError, match="symlinks"):
+        _plain_path(link)
+
+
 def test_migration_preserves_local_edits_ignored_files_and_git_history(tmp_path):
     account = tmp_path / "account"
     account.mkdir()
