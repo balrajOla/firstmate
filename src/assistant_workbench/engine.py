@@ -33,6 +33,9 @@ BYPASS_KEYS = {
     "claude": "dangerouslySkipPermissions",
     "codex": "dangerouslyBypassApprovalsAndSandbox",
 }
+# Provider keys a subscription profile must not inherit; the profile probe
+# and Temporal workers remove the same keys.
+SUBSCRIPTION_BLOCKED_KEYS = ("OPENAI_API_KEY", "ANTHROPIC_API_KEY", "AZURE_OPENAI_API_KEY")
 # Profile CLI flags that would undo that boundary.
 BYPASS_FLAGS = {
     "--dangerously-skip-permissions",
@@ -148,6 +151,16 @@ class Engine:
                     "Profile adapter_config would bypass worker permissions; "
                     "Paperclip workers run with them enforced"
                 )
+        if model["harness"] in WORKER_ADAPTERS and model.get("auth") == "subscription":
+            # Paperclip starts workers with its own environment. A provider key
+            # there would make a --bare Claude worker, which never reads a
+            # subscription sign-in, bill that key instead.
+            env = dict(adapter_config.get("env") or {})
+            if any(env.get(k) for k in SUBSCRIPTION_BLOCKED_KEYS):
+                raise WorkbenchError(
+                    "A subscription profile cannot pass a provider API key to Paperclip workers"
+                )
+            adapter_config["env"] = {**env, **{k: "" for k in SUBSCRIPTION_BLOCKED_KEYS}}
         if model["harness"] == "claude":
             adapter_config["engine"] = "cli"
             adapter_config["extraArgs"] = CLAUDE_WORKER_ARGS + [

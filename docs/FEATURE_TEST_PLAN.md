@@ -1954,6 +1954,9 @@ Mapped pytest evidence:
 - `tests/test_worker_disposition.py::test_rejects_other_statuses_and_missing_settings`
 - `tests/test_worker_disposition.py::test_remote_plain_http_is_refused`
 - `tests/test_worker_disposition.py::test_runs_as_the_module_command_workers_are_allowed`
+- `tests/test_paperclip_contract.py::test_subscription_workers_never_inherit_a_provider_api_key`
+- `tests/test_paperclip_contract.py::test_api_profiles_keep_their_own_provider_environment`
+- `tests/test_paperclip_contract.py::test_subscription_profile_passing_a_provider_key_is_refused`
 
 ### PF60
 

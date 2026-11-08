@@ -62,13 +62,13 @@ def test_replay_of_own_issue_after_lost_cache_is_accepted(app, project, configur
     assert len({i["id"] for i in api.issues_.values()}) == 2
 
 
-def official_cli_profile(app, configured, harness="claude", adapter_config=None):
+def official_cli_profile(app, configured, harness="claude", adapter_config=None, auth="subscription"):
     import json
     from assistant_workbench.util import now
 
     profile = configured["models"][0]
     profile.update(harness=harness, model="model-from-cli", effort="medium",
-                   efforts=["medium"], auth="subscription")
+                   efforts=["medium"], auth=auth)
     profile.pop("fixture_only", None)
     profile.pop("adapter_config", None)
     if adapter_config is not None:
@@ -150,6 +150,32 @@ def test_profile_bypass_is_refused_before_any_agent_exists(
     result = Engine(app.store, api).tick()
     assert result["status"] == "blocked" and "bypass" in result["error"]
     assert not api.agents_ and not api.issues_
+
+
+def test_subscription_workers_never_inherit_a_provider_api_key(app, project, configured):
+    official_cli_profile(app, configured)
+    app.store.submit("Fix bug", "a", project["id"])
+    api = PinnedPaperclip()
+    assert Engine(app.store, api).tick()["status"] == "delivered"
+    env = api.agents_[0]["adapterConfig"]["env"]
+    assert env == {"OPENAI_API_KEY": "", "ANTHROPIC_API_KEY": "", "AZURE_OPENAI_API_KEY": ""}
+
+
+def test_api_profiles_keep_their_own_provider_environment(app, project, configured):
+    official_cli_profile(app, configured, auth="api")
+    app.store.submit("Fix bug", "a", project["id"])
+    api = PinnedPaperclip()
+    assert Engine(app.store, api).tick()["status"] == "delivered"
+    assert "env" not in api.agents_[0]["adapterConfig"]
+
+
+def test_subscription_profile_passing_a_provider_key_is_refused(app, project, configured):
+    official_cli_profile(app, configured, adapter_config={"env": {"ANTHROPIC_API_KEY": "sk-test"}})
+    app.store.submit("Fix bug", "a", project["id"])
+    api = PinnedPaperclip()
+    result = Engine(app.store, api).tick()
+    assert result["status"] == "blocked" and "provider API key" in result["error"]
+    assert not api.agents_
 
 
 def test_worker_reuse_requires_explicitly_disabled_bypass(app, project, configured):
