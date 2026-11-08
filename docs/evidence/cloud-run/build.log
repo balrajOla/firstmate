@@ -1,0 +1,321 @@
+* Creating isolated environment: venv+pip...
+* Installing packages in isolated environment:
+  - setuptools>=75
+* Getting build dependencies for sdist...
+running egg_info
+writing src/assistant_workbench.egg-info/PKG-INFO
+writing dependency_links to src/assistant_workbench.egg-info/dependency_links.txt
+writing entry points to src/assistant_workbench.egg-info/entry_points.txt
+writing requirements to src/assistant_workbench.egg-info/requires.txt
+writing top-level names to src/assistant_workbench.egg-info/top_level.txt
+reading manifest file 'src/assistant_workbench.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching '*.md' under directory 'examples'
+warning: no files found matching '*.yaml' under directory 'examples'
+warning: no files found matching '*.yml' under directory 'examples'
+adding license file 'LICENSE'
+writing manifest file 'src/assistant_workbench.egg-info/SOURCES.txt'
+* Installed build dependency versions:
+  - setuptools==84.2.1
+* Building sdist...
+running sdist
+running egg_info
+writing src/assistant_workbench.egg-info/PKG-INFO
+writing dependency_links to src/assistant_workbench.egg-info/dependency_links.txt
+writing entry points to src/assistant_workbench.egg-info/entry_points.txt
+writing requirements to src/assistant_workbench.egg-info/requires.txt
+writing top-level names to src/assistant_workbench.egg-info/top_level.txt
+reading manifest file 'src/assistant_workbench.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching '*.md' under directory 'examples'
+warning: no files found matching '*.yaml' under directory 'examples'
+warning: no files found matching '*.yml' under directory 'examples'
+adding license file 'LICENSE'
+writing manifest file 'src/assistant_workbench.egg-info/SOURCES.txt'
+running check
+creating assistant_workbench-0.1.0
+creating assistant_workbench-0.1.0/evals
+creating assistant_workbench-0.1.0/evals/styles/Workbench
+creating assistant_workbench-0.1.0/examples
+creating assistant_workbench-0.1.0/scripts
+creating assistant_workbench-0.1.0/src/assistant_workbench
+creating assistant_workbench-0.1.0/src/assistant_workbench.egg-info
+creating assistant_workbench-0.1.0/src/assistant_workbench/assets
+creating assistant_workbench-0.1.0/tests
+copying files to assistant_workbench-0.1.0...
+copying LICENSE -> assistant_workbench-0.1.0
+copying MANIFEST.in -> assistant_workbench-0.1.0
+copying README.md -> assistant_workbench-0.1.0
+copying features.json -> assistant_workbench-0.1.0
+copying pyproject.toml -> assistant_workbench-0.1.0
+copying requirements-dev.lock -> assistant_workbench-0.1.0
+copying requirements-evidence.lock -> assistant_workbench-0.1.0
+copying requirements-runtime.lock -> assistant_workbench-0.1.0
+copying requirements-temporal.lock -> assistant_workbench-0.1.0
+copying evals/.vale.ini -> assistant_workbench-0.1.0/evals
+copying evals/clear.md -> assistant_workbench-0.1.0/evals
+copying evals/feature-evaluations.json -> assistant_workbench-0.1.0/evals
+copying evals/promptfooconfig.yaml -> assistant_workbench-0.1.0/evals
+copying evals/provider.cjs -> assistant_workbench-0.1.0/evals
+copying evals/routing.json -> assistant_workbench-0.1.0/evals
+copying evals/scenarios-30.json -> assistant_workbench-0.1.0/evals
+copying evals/verbose.md -> assistant_workbench-0.1.0/evals
+copying evals/styles/Workbench/Clarity.yml -> assistant_workbench-0.1.0/evals/styles/Workbench
+copying examples/config.subscription.json -> assistant_workbench-0.1.0/examples
+copying scripts/build_feature_register.py -> assistant_workbench-0.1.0/scripts
+copying scripts/capture_tui.py -> assistant_workbench-0.1.0/scripts
+copying scripts/capture_wezterm_scenarios.py -> assistant_workbench-0.1.0/scripts
+copying scripts/evaluate_feature_coverage.py -> assistant_workbench-0.1.0/scripts
+copying scripts/prepare_temporal.py -> assistant_workbench-0.1.0/scripts
+copying scripts/probe_lcm.py -> assistant_workbench-0.1.0/scripts
+copying scripts/probe_local_integrations.py -> assistant_workbench-0.1.0/scripts
+copying scripts/render_test_evidence.py -> assistant_workbench-0.1.0/scripts
+copying scripts/run_scenarios.py -> assistant_workbench-0.1.0/scripts
+copying scripts/soak.py -> assistant_workbench-0.1.0/scripts
+copying src/assistant_workbench/__init__.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/__main__.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/app.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/capabilities.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/cli.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/config.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/context.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/context_backends.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/continuation.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/engine.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/evaluation.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/execution_packs.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/integrations.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/lifecycle.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/mcp.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/migration.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/operations.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/paperclip.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/policy.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/profiles.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/qualification.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/quality.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/reports.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/runtime_backends.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/runtime_observations.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/server.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/store.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/temporal_runtime.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/terminal.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/tui.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/util.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench/workflow.py -> assistant_workbench-0.1.0/src/assistant_workbench
+copying src/assistant_workbench.egg-info/PKG-INFO -> assistant_workbench-0.1.0/src/assistant_workbench.egg-info
+copying src/assistant_workbench.egg-info/SOURCES.txt -> assistant_workbench-0.1.0/src/assistant_workbench.egg-info
+copying src/assistant_workbench.egg-info/dependency_links.txt -> assistant_workbench-0.1.0/src/assistant_workbench.egg-info
+copying src/assistant_workbench.egg-info/entry_points.txt -> assistant_workbench-0.1.0/src/assistant_workbench.egg-info
+copying src/assistant_workbench.egg-info/requires.txt -> assistant_workbench-0.1.0/src/assistant_workbench.egg-info
+copying src/assistant_workbench.egg-info/top_level.txt -> assistant_workbench-0.1.0/src/assistant_workbench.egg-info
+copying src/assistant_workbench/assets/brainstorm.md -> assistant_workbench-0.1.0/src/assistant_workbench/assets
+copying src/assistant_workbench/assets/clear-writing.md -> assistant_workbench-0.1.0/src/assistant_workbench/assets
+copying src/assistant_workbench/assets/dependencies.json -> assistant_workbench-0.1.0/src/assistant_workbench/assets
+copying src/assistant_workbench/assets/research.md -> assistant_workbench-0.1.0/src/assistant_workbench/assets
+copying src/assistant_workbench/assets/test-and-review.md -> assistant_workbench-0.1.0/src/assistant_workbench/assets
+copying src/assistant_workbench/assets/wezterm.lua -> assistant_workbench-0.1.0/src/assistant_workbench/assets
+copying src/assistant_workbench/assets/write-plan.md -> assistant_workbench-0.1.0/src/assistant_workbench/assets
+copying tests/test_app_integrations.py -> assistant_workbench-0.1.0/tests
+copying tests/test_boundaries.py -> assistant_workbench-0.1.0/tests
+copying tests/test_context_backends.py -> assistant_workbench-0.1.0/tests
+copying tests/test_context_quality.py -> assistant_workbench-0.1.0/tests
+copying tests/test_engine_preflight.py -> assistant_workbench-0.1.0/tests
+copying tests/test_evaluation.py -> assistant_workbench-0.1.0/tests
+copying tests/test_execution.py -> assistant_workbench-0.1.0/tests
+copying tests/test_execution_packs.py -> assistant_workbench-0.1.0/tests
+copying tests/test_feature_coverage.py -> assistant_workbench-0.1.0/tests
+copying tests/test_harness_surfaces.py -> assistant_workbench-0.1.0/tests
+copying tests/test_installed.py -> assistant_workbench-0.1.0/tests
+copying tests/test_intake.py -> assistant_workbench-0.1.0/tests
+copying tests/test_memory_integration_contracts.py -> assistant_workbench-0.1.0/tests
+copying tests/test_operations.py -> assistant_workbench-0.1.0/tests
+copying tests/test_policy_scenarios.py -> assistant_workbench-0.1.0/tests
+copying tests/test_report_deliverables.py -> assistant_workbench-0.1.0/tests
+copying tests/test_requirement_scenarios.py -> assistant_workbench-0.1.0/tests
+copying tests/test_runtime_backends.py -> assistant_workbench-0.1.0/tests
+copying tests/test_runtime_observations.py -> assistant_workbench-0.1.0/tests
+copying tests/test_scenario_runner.py -> assistant_workbench-0.1.0/tests
+copying tests/test_server_workers.py -> assistant_workbench-0.1.0/tests
+copying tests/test_surfaces.py -> assistant_workbench-0.1.0/tests
+copying tests/test_tui_scenarios.py -> assistant_workbench-0.1.0/tests
+copying tests/test_workspace_backup.py -> assistant_workbench-0.1.0/tests
+Writing assistant_workbench-0.1.0/setup.cfg
+Creating tar archive
+removing 'assistant_workbench-0.1.0' (and everything under it)
+* Building wheel from sdist
+* Creating isolated environment: venv+pip...
+* Installing packages in isolated environment:
+  - setuptools>=75
+* Getting build dependencies for wheel...
+running egg_info
+writing src/assistant_workbench.egg-info/PKG-INFO
+writing dependency_links to src/assistant_workbench.egg-info/dependency_links.txt
+writing entry points to src/assistant_workbench.egg-info/entry_points.txt
+writing requirements to src/assistant_workbench.egg-info/requires.txt
+writing top-level names to src/assistant_workbench.egg-info/top_level.txt
+reading manifest file 'src/assistant_workbench.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching '*.md' under directory 'examples'
+warning: no files found matching '*.yaml' under directory 'examples'
+warning: no files found matching '*.yml' under directory 'examples'
+adding license file 'LICENSE'
+writing manifest file 'src/assistant_workbench.egg-info/SOURCES.txt'
+* Installed build dependency versions:
+  - setuptools==84.2.1
+* Building wheel...
+running bdist_wheel
+running build
+running build_py
+creating build/lib/assistant_workbench
+copying src/assistant_workbench/config.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/policy.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/lifecycle.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/workflow.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/qualification.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/context_backends.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/paperclip.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/reports.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/temporal_runtime.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/operations.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/runtime_backends.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/engine.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/tui.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/execution_packs.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/server.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/util.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/profiles.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/mcp.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/runtime_observations.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/app.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/context.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/quality.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/migration.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/cli.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/evaluation.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/__main__.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/__init__.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/integrations.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/terminal.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/capabilities.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/continuation.py -> build/lib/assistant_workbench
+copying src/assistant_workbench/store.py -> build/lib/assistant_workbench
+running egg_info
+writing src/assistant_workbench.egg-info/PKG-INFO
+writing dependency_links to src/assistant_workbench.egg-info/dependency_links.txt
+writing entry points to src/assistant_workbench.egg-info/entry_points.txt
+writing requirements to src/assistant_workbench.egg-info/requires.txt
+writing top-level names to src/assistant_workbench.egg-info/top_level.txt
+reading manifest file 'src/assistant_workbench.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no files found matching '*.md' under directory 'examples'
+warning: no files found matching '*.yaml' under directory 'examples'
+warning: no files found matching '*.yml' under directory 'examples'
+adding license file 'LICENSE'
+writing manifest file 'src/assistant_workbench.egg-info/SOURCES.txt'
+creating build/lib/assistant_workbench/assets
+copying src/assistant_workbench/assets/dependencies.json -> build/lib/assistant_workbench/assets
+copying src/assistant_workbench/assets/brainstorm.md -> build/lib/assistant_workbench/assets
+copying src/assistant_workbench/assets/clear-writing.md -> build/lib/assistant_workbench/assets
+copying src/assistant_workbench/assets/research.md -> build/lib/assistant_workbench/assets
+copying src/assistant_workbench/assets/test-and-review.md -> build/lib/assistant_workbench/assets
+copying src/assistant_workbench/assets/write-plan.md -> build/lib/assistant_workbench/assets
+copying src/assistant_workbench/assets/wezterm.lua -> build/lib/assistant_workbench/assets
+installing to build/bdist.linux-x86_64/wheel
+running install
+running install_lib
+creating build/bdist.linux-x86_64/wheel
+creating build/bdist.linux-x86_64/wheel/assistant_workbench
+creating build/bdist.linux-x86_64/wheel/assistant_workbench/assets
+copying build/lib/assistant_workbench/assets/brainstorm.md -> build/bdist.linux-x86_64/wheel/./assistant_workbench/assets
+copying build/lib/assistant_workbench/assets/wezterm.lua -> build/bdist.linux-x86_64/wheel/./assistant_workbench/assets
+copying build/lib/assistant_workbench/assets/clear-writing.md -> build/bdist.linux-x86_64/wheel/./assistant_workbench/assets
+copying build/lib/assistant_workbench/assets/research.md -> build/bdist.linux-x86_64/wheel/./assistant_workbench/assets
+copying build/lib/assistant_workbench/assets/test-and-review.md -> build/bdist.linux-x86_64/wheel/./assistant_workbench/assets
+copying build/lib/assistant_workbench/assets/dependencies.json -> build/bdist.linux-x86_64/wheel/./assistant_workbench/assets
+copying build/lib/assistant_workbench/assets/write-plan.md -> build/bdist.linux-x86_64/wheel/./assistant_workbench/assets
+copying build/lib/assistant_workbench/config.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/policy.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/lifecycle.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/workflow.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/qualification.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/context_backends.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/paperclip.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/reports.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/temporal_runtime.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/operations.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/runtime_backends.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/engine.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/tui.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/execution_packs.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/server.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/util.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/profiles.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/mcp.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/runtime_observations.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/app.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/context.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/quality.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/migration.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/cli.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/evaluation.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/__main__.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/__init__.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/integrations.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/terminal.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/capabilities.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/continuation.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+copying build/lib/assistant_workbench/store.py -> build/bdist.linux-x86_64/wheel/./assistant_workbench
+running install_egg_info
+Copying src/assistant_workbench.egg-info to build/bdist.linux-x86_64/wheel/./assistant_workbench-0.1.0-py3.12.egg-info
+running install_scripts
+creating build/bdist.linux-x86_64/wheel/assistant_workbench-0.1.0.dist-info/WHEEL
+creating 'TEST_CHECKOUT/dist/.tmp-3e9r7mre/assistant_workbench-0.1.0-py3-none-any.whl' and adding 'build/bdist.linux-x86_64/wheel' to it
+adding 'assistant_workbench/__init__.py'
+adding 'assistant_workbench/__main__.py'
+adding 'assistant_workbench/app.py'
+adding 'assistant_workbench/capabilities.py'
+adding 'assistant_workbench/cli.py'
+adding 'assistant_workbench/config.py'
+adding 'assistant_workbench/context.py'
+adding 'assistant_workbench/context_backends.py'
+adding 'assistant_workbench/continuation.py'
+adding 'assistant_workbench/engine.py'
+adding 'assistant_workbench/evaluation.py'
+adding 'assistant_workbench/execution_packs.py'
+adding 'assistant_workbench/integrations.py'
+adding 'assistant_workbench/lifecycle.py'
+adding 'assistant_workbench/mcp.py'
+adding 'assistant_workbench/migration.py'
+adding 'assistant_workbench/operations.py'
+adding 'assistant_workbench/paperclip.py'
+adding 'assistant_workbench/policy.py'
+adding 'assistant_workbench/profiles.py'
+adding 'assistant_workbench/qualification.py'
+adding 'assistant_workbench/quality.py'
+adding 'assistant_workbench/reports.py'
+adding 'assistant_workbench/runtime_backends.py'
+adding 'assistant_workbench/runtime_observations.py'
+adding 'assistant_workbench/server.py'
+adding 'assistant_workbench/store.py'
+adding 'assistant_workbench/temporal_runtime.py'
+adding 'assistant_workbench/terminal.py'
+adding 'assistant_workbench/tui.py'
+adding 'assistant_workbench/util.py'
+adding 'assistant_workbench/workflow.py'
+adding 'assistant_workbench/assets/brainstorm.md'
+adding 'assistant_workbench/assets/clear-writing.md'
+adding 'assistant_workbench/assets/dependencies.json'
+adding 'assistant_workbench/assets/research.md'
+adding 'assistant_workbench/assets/test-and-review.md'
+adding 'assistant_workbench/assets/wezterm.lua'
+adding 'assistant_workbench/assets/write-plan.md'
+adding 'assistant_workbench-0.1.0.dist-info/licenses/LICENSE'
+adding 'assistant_workbench-0.1.0.dist-info/METADATA'
+adding 'assistant_workbench-0.1.0.dist-info/WHEEL'
+adding 'assistant_workbench-0.1.0.dist-info/entry_points.txt'
+adding 'assistant_workbench-0.1.0.dist-info/top_level.txt'
+adding 'assistant_workbench-0.1.0.dist-info/RECORD'
+removing build/bdist.linux-x86_64/wheel
+Successfully built assistant_workbench-0.1.0.tar.gz and assistant_workbench-0.1.0-py3-none-any.whl

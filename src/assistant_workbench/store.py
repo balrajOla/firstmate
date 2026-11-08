@@ -83,6 +83,158 @@ class Store:
             (kind, entity, canonical(payload), now()),
         )
 
+    def _has_workflow(self, db):
+        return (
+            db.execute("SELECT 1 FROM sqlite_master WHERE name='obligations'")
+            .fetchone() is not None
+        )
+
+    def _add_obligation(self, db, request_id, revision, description, acceptance, origin):
+        ident = uid("obl_")
+        db.execute(
+            "INSERT INTO obligations VALUES(?,?,?,?,?,'pending',NULL)",
+            (ident, request_id, revision, description, acceptance),
+        )
+        db.execute("INSERT INTO obligation_origins VALUES(?,?)", (ident, origin))
+        return ident
+
+    def _legacy_obligation_origin(self, db, item):
+        """Recover old generated group criteria only when ownership is clear."""
+        source = item["request_id"]
+        children = list(
+            db.execute(
+                "SELECT r.* FROM request_links l JOIN requests r ON r.id=l.child WHERE l.parent=? AND l.kind='group'",
+                (source,),
+            )
+        )
+        generated_acceptance = {
+            "Address this original request and its constraints",
+            "Address surviving demand and its constraints",
+        }
+        if not children or item["acceptance"] not in generated_acceptance:
+            return source
+        # Explicitly supplied parent criteria have a saved event and must not be
+        # reassigned just because their wording resembles a generated criterion.
+        for event in db.execute(
+            "SELECT payload FROM events WHERE entity=? AND kind='obligations.saved'",
+            (source,),
+        ):
+            if item["id"] in json.loads(event["payload"]).get("ids", []):
+                return source
+        matches = []
+        for child in children:
+            bodies = {child["body"]}
+            body = ""
+            for prompt in db.execute(
+                "SELECT body FROM prompts WHERE request_id=? ORDER BY rowid",
+                (child["id"],),
+            ):
+                body = (
+                    body + "\n\nAmendment:\n" + prompt["body"]
+                    if body else prompt["body"]
+                )
+                bodies.add(body)
+            if item["description"] in bodies:
+                matches.append(child["id"])
+        if len(matches) != 1:
+            raise WorkbenchError(
+                "Legacy group criterion ownership is ambiguous; reopen the group as independent work before changing its scope"
+            )
+        return matches[0]
+
+    def _copy_obligations(
+        self, db, source, source_revision, target, revision,
+        exclude_origins=(), origin_override=None,
+    ):
+        if not self._has_workflow(db):
+            return []
+        rows = list(
+            db.execute(
+                "SELECT o.*,p.origin_request_id FROM obligations o LEFT JOIN obligation_origins p ON p.obligation_id=o.id WHERE o.request_id=? AND o.revision=? ORDER BY o.rowid",
+                (source, source_revision),
+            )
+        )
+        result = []
+        for item in rows:
+            origin = origin_override or item["origin_request_id"]
+            if origin is None:
+                origin = self._legacy_obligation_origin(db, item)
+                db.execute(
+                    "INSERT INTO obligation_origins VALUES(?,?)", (item["id"], origin)
+                )
+            if origin in exclude_origins:
+                continue
+            result.append(
+                self._add_obligation(
+                    db, target, revision, item["description"], item["acceptance"], origin
+                )
+            )
+        return result
+
+    def _refresh_group(self, db, parent_id, changed_child, withdrawn=False):
+        """Rebuild one active group without discarding its direct amendments."""
+        parent = db.execute(
+            "SELECT * FROM requests WHERE id=?", (parent_id,)
+        ).fetchone()
+        if not parent or parent["status"] in {"accepted", "cancelled", "grouped"}:
+            raise WorkbenchError(
+                "Grouped request is closed or nested; reopen its active parent explicitly"
+            )
+        children = list(
+            db.execute(
+                "SELECT r.* FROM request_links l JOIN requests r ON r.id=l.child WHERE l.parent=? AND l.kind='group' ORDER BY l.rowid",
+                (parent_id,),
+            )
+        )
+        survivors = [
+            c for c in children if c["status"] != "cancelled"
+            and not (withdrawn and c["id"] == changed_child)
+        ]
+        direct = list(
+            db.execute(
+                "SELECT body FROM prompts WHERE request_id=? ORDER BY rowid", (parent_id,)
+            )
+        )
+        parts = ["Request " + c["id"] + ":\n" + c["body"] for c in survivors]
+        parts.extend("Group amendment:\n" + p["body"] for p in direct)
+        revision = parent["revision"] + 1
+        db.execute(
+            "UPDATE requests SET body=?,revision=?,plan=NULL,status=?,updated=? WHERE id=?",
+            (
+                "\n\n".join(parts), revision,
+                "queued" if survivors else "cancelled", now(), parent_id,
+            ),
+        )
+        db.execute(
+            "UPDATE outbox SET status='superseded' WHERE request_id=? AND status IN ('pending','retry','blocked')",
+            (parent_id,),
+        )
+        db.execute("UPDATE outcomes SET status='superseded' WHERE request_id=?", (parent_id,))
+        db.execute(
+            "INSERT INTO outbox(id,request_id,revision,operation,payload) VALUES(?,?,?,?,?)",
+            (uid("ob_"), parent_id, revision, "submit" if survivors else "cancel", "{}"),
+        )
+        # Parent-specific criteria survive. Criteria owned by a child are rebuilt
+        # from that child's latest revision, so withdrawal cannot remove others.
+        self._copy_obligations(
+            db, parent_id, parent["revision"], parent_id, revision,
+            exclude_origins={c["id"] for c in children},
+        )
+        for child in survivors:
+            self._add_obligation(
+                db, parent_id, revision, child["body"],
+                "Address this original request and its constraints", child["id"],
+            )
+            self._copy_obligations(
+                db, child["id"], child["revision"], parent_id, revision,
+                origin_override=child["id"],
+            )
+        self.event(
+            db, "group.scope_changed", parent_id,
+            {"withdrawn" if withdrawn else "amended": changed_child, "revision": revision},
+        )
+        return {"request_id": parent_id, "revision": revision}
+
     def add_project(self, name, repository=None, aliases=()):
         name = name.strip()
         if not name or len(name) > 160:
@@ -142,6 +294,8 @@ class Store:
                 "A stable client key of at most 240 characters is required"
             )
         payload_hash = digest(canonical([text, project, reply_to, expected_revision]))
+        group_parent = None
+        refreshed_group = None
         with self.transaction() as db:
             old = db.execute(
                 "SELECT * FROM prompts WHERE client_key=?", (client_key,)
@@ -173,15 +327,34 @@ class Store:
                     raise WorkbenchError(
                         "Revision changed; reread the request before amending"
                     )
+                if prior["status"] == "grouped":
+                    parents = list(
+                        db.execute(
+                            "SELECT r.* FROM request_links l JOIN requests r ON r.id=l.parent WHERE l.child=? AND l.kind='group' AND r.status NOT IN ('accepted','cancelled')",
+                            (reply_to,),
+                        )
+                    )
+                    if len(parents) != 1 or parents[0]["status"] == "grouped":
+                        raise WorkbenchError(
+                            "Grouped request has no single active parent; reopen the group explicitly"
+                        )
+                    group_parent = parents[0]["id"]
                 request_id = reply_to
                 revision = prior["revision"] + 1
                 body = prior["body"] + "\n\nAmendment:\n" + text
                 db.execute(
-                    "UPDATE requests SET body=?,revision=?,status='queued',plan=NULL,updated=? WHERE id=?",
-                    (body, revision, now(), request_id),
+                    "UPDATE requests SET body=?,revision=?,status=?,plan=NULL,updated=? WHERE id=?",
+                    (
+                        body, revision,
+                        "grouped" if group_parent else "queued" if project_id else "needs_project",
+                        now(), request_id,
+                    ),
+                )
+                self._copy_obligations(
+                    db, request_id, prior["revision"], request_id, revision
                 )
                 db.execute(
-                    "UPDATE outbox SET status='superseded' WHERE request_id=? AND status IN ('pending','retry')",
+                    "UPDATE outbox SET status='superseded' WHERE request_id=? AND status IN ('pending','retry','blocked')",
                     (request_id,),
                 )
                 db.execute(
@@ -208,7 +381,7 @@ class Store:
                 "INSERT INTO prompts VALUES(?,?,?,?,?,?)",
                 (prompt_id, client_key, payload_hash, request_id, text, now()),
             )
-            if project_id:
+            if project_id and not group_parent:
                 db.execute(
                     "INSERT INTO outbox(id,request_id,revision,operation,payload) VALUES(?,?,?,?,?)",
                     (uid("ob_"), request_id, revision, "submit", canonical({})),
@@ -219,12 +392,15 @@ class Store:
                 request_id,
                 {"prompt_id": prompt_id, "revision": revision, "routing": reason},
             )
+            if group_parent:
+                refreshed_group = self._refresh_group(db, group_parent, request_id)
         return {
             "prompt_id": prompt_id,
             "request_id": request_id,
             "revision": revision,
             "routing": reason,
             "duplicate": False,
+            **({"group": refreshed_group} if refreshed_group else {}),
         }
 
     def assign(self, request_id, project):
@@ -277,69 +453,21 @@ class Store:
                 parent = db.execute(
                     "SELECT * FROM requests WHERE id=?", (link["parent"],)
                 ).fetchone()
-                if parent["status"] in {"cancelled", "accepted"}:
-                    continue
-                survivors = list(
-                    db.execute(
-                        "SELECT r.* FROM request_links l JOIN requests r ON r.id=l.child WHERE l.parent=? AND l.kind='group' AND r.id!=? AND r.status!='cancelled'",
-                        (parent["id"], request_id),
-                    )
-                )
-                revision = parent["revision"] + 1
-                body = "\n\n".join(
-                    "Request " + r["id"] + ":\n" + r["body"] for r in survivors
-                )
-                db.execute(
-                    "UPDATE requests SET body=?,revision=?,plan=NULL,status=?,updated=? WHERE id=?",
-                    (
-                        body,
-                        revision,
-                        "queued" if survivors else "cancelled",
-                        now(),
-                        parent["id"],
-                    ),
-                )
-                db.execute(
-                    "UPDATE outbox SET status='superseded' WHERE request_id=? AND status IN ('pending','retry','blocked')",
-                    (parent["id"],),
-                )
-                db.execute(
-                    "UPDATE outcomes SET status='superseded' WHERE request_id=?",
-                    (parent["id"],),
-                )
-                db.execute(
-                    "INSERT INTO outbox(id,request_id,revision,operation,payload) VALUES(?,?,?,?,?)",
-                    (
-                        uid("ob_"),
-                        parent["id"],
-                        revision,
-                        "submit" if survivors else "cancel",
-                        "{}",
-                    ),
-                )
-                for survivor in survivors:
-                    db.execute(
-                        "INSERT INTO obligations VALUES(?,?,?,?,?,'pending',NULL)",
-                        (
-                            uid("obl_"),
-                            parent["id"],
-                            revision,
-                            survivor["body"],
-                            "Address surviving demand and its constraints",
-                        ),
-                    )
-                self.event(
-                    db,
-                    "group.scope_changed",
-                    parent["id"],
-                    {"withdrawn": request_id, "revision": revision},
-                )
+                if parent["status"] not in {"cancelled", "accepted"}:
+                    self._refresh_group(db, parent["id"], request_id, withdrawn=True)
             db.execute(
                 "UPDATE requests SET status='cancelled',revision=revision+1,updated=? WHERE id=?",
                 (now(), request_id),
             )
+            self._copy_obligations(
+                db, request_id, req["revision"], request_id, req["revision"] + 1
+            )
             db.execute(
-                "UPDATE outbox SET status='superseded' WHERE request_id=? AND status IN ('pending','retry')",
+                "UPDATE outbox SET status='superseded' WHERE request_id=? AND status IN ('pending','retry','blocked')",
+                (request_id,),
+            )
+            db.execute(
+                "UPDATE outcomes SET status='cancelled' WHERE request_id=? AND status IN ('needs_review','needs_revision')",
                 (request_id,),
             )
             db.execute(
@@ -347,10 +475,78 @@ class Store:
                 (uid("ob_"), request_id, req["revision"] + 1, "cancel", "{}"),
             )
             self.event(db, "request.cancelled", request_id, {})
+        return {
+            "request_id": request_id, "status": "cancelled",
+            "revision": req["revision"] + 1, "duplicate": False,
+        }
 
     def reopen(self, request_id):
-        req = self.one("SELECT * FROM requests WHERE id=?", (request_id,))
-        return self.submit(req["body"], uid("reopen_"), req["project_id"])
+        # Creation, lineage and requirements are one transaction: an execution
+        # poller cannot observe the reopened work before its criteria exist.
+        with self.transaction() as db:
+            req = db.execute(
+                "SELECT * FROM requests WHERE id=?", (request_id,)
+            ).fetchone()
+            if not req:
+                raise WorkbenchError("Request not found")
+            if not req["body"].strip():
+                raise WorkbenchError(
+                    "No active group scope remains; reopen a specific original request"
+                )
+            ident, prompt_id, key = uid("r_"), uid("pr_"), uid("reopen_")
+            db.execute(
+                "INSERT INTO requests(id,project_id,title,body,status,created,updated) VALUES(?,?,?,?,?,?,?)",
+                (
+                    ident, req["project_id"], req["title"], req["body"],
+                    "queued" if req["project_id"] else "needs_project", now(), now(),
+                ),
+            )
+            db.execute(
+                "INSERT INTO prompts VALUES(?,?,?,?,?,?)",
+                (
+                    prompt_id, key,
+                    digest(canonical([req["body"], req["project_id"], None, None])),
+                    ident, req["body"], now(),
+                ),
+            )
+            if self._has_workflow(db):
+                latest = req["revision"]
+                grouped = db.execute(
+                    "SELECT COUNT(*),SUM(r.status!='cancelled') FROM request_links l JOIN requests r ON r.id=l.child WHERE l.parent=? AND l.kind='group'",
+                    (request_id,),
+                ).fetchone()
+                # Older installations did not copy criteria on cancellation.
+                # Never resurrect a group's deliberately withdrawn demands.
+                if req["status"] == "cancelled" and (not grouped[0] or grouped[1]):
+                    latest = db.execute(
+                        "SELECT MAX(revision) FROM obligations WHERE request_id=? AND revision<=?",
+                        (request_id, req["revision"]),
+                    ).fetchone()[0]
+                if latest is not None:
+                    self._copy_obligations(
+                        db, request_id, latest, ident, 1, origin_override=ident
+                    )
+                db.execute(
+                    "INSERT INTO request_links VALUES(?,?,'reopen')", (ident, request_id)
+                )
+            if req["project_id"]:
+                db.execute(
+                    "INSERT INTO outbox(id,request_id,revision,operation,payload) VALUES(?,?,1,'submit','{}')",
+                    (uid("ob_"), ident),
+                )
+            self.event(
+                db, "request.reopened", ident,
+                {"original_request": request_id, "original_revision": req["revision"]},
+            )
+            self.event(
+                db, "prompt.saved", ident,
+                {"prompt_id": prompt_id, "revision": 1, "routing": "historical request"},
+            )
+        return {
+            "prompt_id": prompt_id, "request_id": ident, "revision": 1,
+            "routing": "historical request", "duplicate": False,
+            "reopened_from": request_id,
+        }
 
     def grant(self, project, target):
         a, b = self.project(project)["id"], self.project(target)["id"]

@@ -69,6 +69,13 @@ try:
     cfg = json.loads((app.home / "config.json").read_text())
     cfg["integrations"]["lcm"] = {
         "enabled": True,
+        "auth": "local",
+        "allow_write": True,
+        "summary_provider": "disabled",
+        "projects": {
+            project["id"]: {"cwd": str(repo)},
+            project2["id"]: {"cwd": str(other)},
+        },
         "url": "http://127.0.0.1:" + str(state["port"]),
         "token_env": "AWB_LCM_PROBE_TOKEN",
     }
@@ -78,6 +85,7 @@ try:
         project["id"],
         "capture",
         session_id="awb-session-1",
+        client="codex",
         messages=[
             {
                 "role": "user",

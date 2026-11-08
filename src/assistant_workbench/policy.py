@@ -30,16 +30,78 @@ WORKFLOW_SKILLS = {
 }
 
 
+def classification(text):
+    """Explain a bounded lexical decision; never imply semantic understanding.
+
+    The requested action takes precedence over a noun describing its subject:
+    reporting an architecture review is a report, not an architecture task.
+    A caller can still select an explicit workflow after reviewing ambiguity.
+    """
+    text = text.strip()
+    intents = [
+        ("research", r"(?:research|investigate|compare|fact[- ]check)\b"),
+        (
+            "code",
+            r"(?:write|create|generate)\s+(?:the\s+|a\s+|an\s+)?(?:code|function|script|test|website|web\s+app|mobile\s+app|application|app)\b",
+        ),
+        (
+            "design",
+            r"(?:create|prepare|write)\s+(?:the\s+|a\s+|an\s+)?(?:plan|architecture|design)\b",
+        ),
+        ("report", r"(?:report|document|summari[sz]e|draft|write)\b"),
+        (
+            "report",
+            r"(?:create|prepare|generate)\s+(?:the\s+|a\s+|an\s+)?(?:report|document|summary|table|diagram)\b",
+        ),
+        ("design", r"(?:brainstorm|design|plan|architect)\b"),
+        (
+            "code",
+            r"(?:build|implement|debug|refactor|fix|test|add|remove|update|extend)\b",
+        ),
+    ]
+    leading = re.sub(
+        r"^(?:please\s+|can you\s+|could you\s+|i want you to\s+)", "", text, flags=re.I
+    )
+    leading = re.sub(r"^(?:as|while)\b[^,]{0,180},\s*", "", leading, flags=re.I)
+    candidates = []
+    for workflow, pattern in intents:
+        match = re.match(pattern, leading, re.I)
+        if match:
+            return {
+                "workflow": workflow,
+                "reason": "Leading requested action: " + match.group(),
+                "method": "lexical policy",
+                "requires_review": True,
+            }
+        if re.search(pattern, text, re.I) and workflow not in candidates:
+            candidates.append(workflow)
+    for workflow, pattern in [
+        ("research", r"\b(research|investigate|compare)\b"),
+        ("design", r"\b(architecture|brainstorm|design|plan)\b"),
+        (
+            "code",
+            r"\b(code|implement|build|bug|test|fix|function|website|mobile app|web app|feature)\b",
+        ),
+        ("report", r"\b(report|document|summarize|write|memo)\b"),
+    ]:
+        if re.search(pattern, text, re.I):
+            return {
+                "workflow": workflow,
+                "reason": "Subject-word fallback; review mixed requests",
+                "method": "lexical policy",
+                "candidates": candidates,
+                "requires_review": True,
+            }
+    return {
+        "workflow": "simple",
+        "reason": "No supported task intent recognized",
+        "method": "lexical policy",
+        "requires_review": True,
+    }
+
+
 def classify(text):
-    if re.search(r"\b(research|investigate|compare)\b", text, re.I):
-        return "research"
-    if re.search(r"\b(architecture|brainstorm|design|plan)\b", text, re.I):
-        return "design"
-    if re.search(r"\b(code|implement|build|bug|test|fix|function)\b", text, re.I):
-        return "code"
-    if re.search(r"\b(report|document|summarize|write)\b", text, re.I):
-        return "report"
-    return "simple"
+    return classification(text)["workflow"]
 
 
 def select_model(config, kind, override=None):
@@ -130,6 +192,7 @@ def compile_plan(request, config, kind=None, model_override=None):
         "request_id": request["id"],
         "revision": request["revision"],
         "workflow": kind,
+        "routing": classification(request["body"]),
         "nodes": nodes,
         "model": model,
         "selection": decision,

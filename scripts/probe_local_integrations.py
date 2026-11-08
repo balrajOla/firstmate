@@ -22,6 +22,7 @@ settings = json.loads((app.home / "config.json").read_text())
 if args.basic_memory:
     settings["integrations"]["basic-memory"] = {
         "enabled": True,
+        "allow_write": True,
         "command": [str(Path(args.basic_memory).absolute())],
         "auth": "local",
         "env": {

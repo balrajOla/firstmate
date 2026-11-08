@@ -7,6 +7,7 @@ from .util import WorkbenchError, canonical, now, uid
 
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS obligations(id TEXT PRIMARY KEY,request_id TEXT NOT NULL REFERENCES requests(id),revision INTEGER NOT NULL,description TEXT NOT NULL,acceptance TEXT NOT NULL,status TEXT NOT NULL,outcome_id TEXT REFERENCES outcomes(id));
+CREATE TABLE IF NOT EXISTS obligation_origins(obligation_id TEXT PRIMARY KEY REFERENCES obligations(id),origin_request_id TEXT NOT NULL REFERENCES requests(id));
 CREATE TABLE IF NOT EXISTS request_links(parent TEXT NOT NULL REFERENCES requests(id),child TEXT NOT NULL REFERENCES requests(id),kind TEXT NOT NULL,PRIMARY KEY(parent,child,kind));
 CREATE TABLE IF NOT EXISTS project_policy(project_id TEXT PRIMARY KEY REFERENCES projects(id),priority INTEGER NOT NULL DEFAULT 50,paused INTEGER NOT NULL DEFAULT 0);
 CREATE TABLE IF NOT EXISTS plan_versions(id TEXT PRIMARY KEY,request_id TEXT NOT NULL REFERENCES requests(id),revision INTEGER NOT NULL,plan TEXT NOT NULL,created REAL NOT NULL);
@@ -44,18 +45,11 @@ class Workflow:
                     or not item.get("acceptance", "").strip()
                 ):
                     raise WorkbenchError("Every deliverable needs acceptance criteria")
-                ident = uid("obl_")
-                result.append(ident)
-                db.execute(
-                    "INSERT INTO obligations VALUES(?,?,?,?,?,'pending',NULL)",
-                    (
-                        ident,
-                        request_id,
-                        revision,
-                        item["description"],
-                        item["acceptance"],
-                    ),
+                ident = self.store._add_obligation(
+                    db, request_id, revision,
+                    item["description"], item["acceptance"], request_id,
                 )
+                result.append(ident)
             self.store.event(
                 db,
                 "obligations.saved",
@@ -81,7 +75,23 @@ class Workflow:
                 raise WorkbenchError(
                     "Outcome does not address this obligation revision"
                 )
-            if out["status"] not in {"needs_review", "accepted"}:
+            req = db.execute(
+                "SELECT * FROM requests WHERE id=?", (item["request_id"],)
+            ).fetchone()
+            if (
+                item["status"] == "accepted"
+                and item["outcome_id"] == outcome_id
+                and out["status"] == "accepted"
+                and req["revision"] == item["revision"]
+            ):
+                return {"id": obligation_id, "status": "accepted"}
+            if req["revision"] != item["revision"] or req["status"] in {
+                "accepted", "cancelled", "grouped"
+            }:
+                raise WorkbenchError("Cannot change a closed or stale deliverable")
+            if item["status"] == "accepted":
+                raise WorkbenchError("An accepted deliverable cannot be reassigned")
+            if out["status"] != "needs_review":
                 raise WorkbenchError("Outcome is not reviewable")
             db.execute(
                 "UPDATE obligations SET status='submitted',outcome_id=? WHERE id=?",
@@ -135,6 +145,13 @@ class Workflow:
                     (ident,),
                 ).fetchone():
                     raise WorkbenchError("Delivery is in progress; grouping must wait")
+                if db.execute(
+                    "SELECT 1 FROM request_links WHERE parent=? AND kind='group'",
+                    (ident,),
+                ).fetchone():
+                    raise WorkbenchError(
+                        "Nested request groups are not supported; group the original independent requests"
+                    )
                 rows.append(row)
             if len({r["project_id"] for r in rows}) != 1:
                 raise WorkbenchError(
@@ -166,15 +183,13 @@ class Workflow:
                     "UPDATE outbox SET status='superseded' WHERE request_id=? AND status IN ('pending','retry','blocked')",
                     (row["id"],),
                 )
-                db.execute(
-                    "INSERT INTO obligations VALUES(?,?,?,?,?,'pending',NULL)",
-                    (
-                        uid("obl_"),
-                        leader,
-                        1,
-                        row["body"],
-                        "Address this original request and its constraints",
-                    ),
+                self.store._add_obligation(
+                    db, leader, 1, row["body"],
+                    "Address this original request and its constraints", row["id"],
+                )
+                self.store._copy_obligations(
+                    db, row["id"], row["revision"], leader, 1,
+                    origin_override=row["id"],
                 )
             db.execute(
                 "INSERT INTO outbox(id,request_id,revision,operation,payload) VALUES(?,?,1,'submit','{}')",

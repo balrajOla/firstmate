@@ -1,0 +1,5 @@
+include requirements-*.lock
+include features.json
+recursive-include scripts *.py
+recursive-include evals *.json *.md *.yaml *.yml *.cjs *.ini
+recursive-include examples *.json *.md *.yaml *.yml

@@ -5,8 +5,13 @@ import time
 import fcntl
 from .config import config
 from .paperclip import Paperclip, CoordinatorError
-from .policy import compile_plan
+from .policy import TEMPLATES, compile_plan, select_model, validate_plan
+from .runtime_backends import select_runtime
 from .util import WorkbenchError, canonical, digest, now, uid
+
+
+class SupersededDelivery(WorkbenchError):
+    """The saved scope changed; this outbox job must not be retried."""
 
 
 class Engine:
@@ -16,7 +21,13 @@ class Engine:
         Workflow(store)
         self.store = store
         self.settings = config(store.home)
+        select_runtime(store, self.settings, "paperclip")
         self.api = coordinator or Paperclip(self.settings["coordinator"])
+
+    def _runtime_guard(self):
+        settings = config(self.store.home)
+        select_runtime(self.store, settings, "paperclip")
+        return settings
 
     def claim(self):
         with self.store.transaction() as db:
@@ -48,10 +59,15 @@ class Engine:
 
     def ensure_agent(self, node, plan):
         model = plan["model"]
+        timeout = plan["limits"]["max_seconds"]
         runtime = {
             k: model.get(k)
             for k in ("id", "harness", "model", "effort", "auth", "adapter_config")
         }
+        # Narrow per-plan limits need their own runtime identity. Preserve the
+        # existing default-budget identity, with its timeout checked on reuse.
+        if timeout != self.settings["limits"]["max_seconds"]:
+            runtime["timeout_seconds"] = timeout
         key = (
             "awb:"
             + digest(canonical([runtime, node["role"], node.get("slot", 0)]))[:24]
@@ -71,6 +87,10 @@ class Engine:
             if matched[0].get("status") in {"paused", "terminated"}:
                 raise WorkbenchError(
                     "Selected managed agent is paused or terminated; reconcile its capacity explicitly"
+                )
+            if (matched[0].get("adapterConfig") or {}).get("timeoutSec") != timeout:
+                raise WorkbenchError(
+                    "Managed agent timeout differs from the execution budget; reconcile the existing agent before reuse"
                 )
             self._cache("agent:" + key, {"id": matched[0]["id"]})
             return matched[0]["id"]
@@ -95,7 +115,7 @@ class Engine:
         }[model["harness"]]
         adapter_config = dict(model.get("adapter_config", {}))
         adapter_config.update(
-            model=model["model"], timeoutSec=self.settings["limits"]["max_seconds"]
+            model=model["model"], timeoutSec=timeout
         )
         if model["harness"] == "claude":
             adapter_config.setdefault("dangerouslySkipPermissions", False)
@@ -134,6 +154,7 @@ class Engine:
                 "heartbeat": {"enabled": True, "intervalSec": 0, "maxConcurrentRuns": 1}
             },
         }
+        self._check_current(plan["request_id"], plan["revision"])
         self._cache("agent:" + key, {"state": "creating"})
         try:
             agent = self.api.create_agent(body)
@@ -145,22 +166,130 @@ class Engine:
         return agent["id"]
 
     def _check_current(self, request_id, revision):
+        self._runtime_guard()
         current = self.store.one("SELECT * FROM requests WHERE id=?", (request_id,))
-        if current["revision"] != revision or current["status"] == "cancelled":
-            raise WorkbenchError("Request superseded during delivery")
+        if current["revision"] != revision or current["status"] in {
+            "cancelled", "accepted", "grouped", "needs_project"
+        }:
+            raise SupersededDelivery("Request superseded during delivery")
         return current
 
+    def _execution_packet(self, req, project, plan, node):
+        return (
+            req["body"]
+            + "\n\n## Workbench execution contract\n"
+            + canonical(
+                {
+                    "request": req["id"],
+                    "revision": req["revision"],
+                    "project": project["id"],
+                    "node": node,
+                    "limits": plan["limits"],
+                    "audience": plan["audience"],
+                    "home": str(self.store.home),
+                }
+            )
+            + "\n\n"
+            + "\n\n".join(
+                "## Procedure " + s["name"] + " (" + s["sha256"] + ")\n" + s["text"]
+                for s in plan["skills"]
+            )
+        )
+
+    def _preflight(self, req, project):
+        """Validate the entire saved team and every packet before remote writes."""
+        try:
+            plan = json.loads(req["plan"]) if req.get("plan") else compile_plan(req, self.settings)
+            if (
+                plan.get("schema") != 1
+                or plan.get("request_id") != req["id"]
+                or plan.get("revision") != req["revision"]
+                or plan.get("workflow") not in TEMPLATES
+            ):
+                raise WorkbenchError("Plan identity, schema or workflow is invalid for this request")
+            for key, ceiling in self.settings["limits"].items():
+                value = plan["limits"].get(key)
+                if not isinstance(value, int) or isinstance(value, bool) or not 1 <= value <= ceiling:
+                    raise WorkbenchError("Plan limit exceeds the configured budget or is invalid: " + key)
+            # A plan may narrow the configured limits, never enlarge them.
+            validate_plan(plan, {**self.settings, "limits": plan["limits"]})
+            select_model(self.settings, plan["workflow"], plan["model"]["id"])
+            field = {"claude": "effort", "codex": "modelReasoningEffort"}.get(
+                plan["model"]["harness"]
+            )
+            if plan["model"].get("effort_field") and plan["model"]["effort_field"] != field:
+                raise WorkbenchError("Effort mapping does not match the pinned adapter")
+            if not isinstance(plan["model"].get("adapter_config", {}), dict):
+                raise WorkbenchError("Adapter configuration must be an object")
+            audience = plan["audience"]
+            if (
+                any(not isinstance(audience.get(k), str) or not audience[k].strip() for k in ("reader", "style"))
+                or not isinstance(audience.get("max_words"), int)
+                or isinstance(audience["max_words"], bool)
+                or audience["max_words"] < 1
+            ):
+                raise WorkbenchError("Plan requires a reader, style and positive word budget")
+            if not isinstance(plan["skills"], list):
+                raise WorkbenchError("Plan procedures must be a list")
+            for skill in plan["skills"]:
+                if (
+                    not all(isinstance(skill.get(k), str) for k in ("name", "text", "sha256"))
+                    or digest(skill["text"]) != skill["sha256"]
+                ):
+                    raise WorkbenchError("Plan procedure content no longer matches its pinned hash")
+            for node in plan["nodes"]:
+                if (
+                    any(not isinstance(node.get(k), str) or not node[k].strip() for k in ("id", "role"))
+                    or not isinstance(node["depends_on"], list)
+                    or not isinstance(node.get("slot", 0), int)
+                    or isinstance(node.get("slot", 0), bool)
+                    or node.get("slot", 0) < 0
+                ):
+                    raise WorkbenchError("Plan nodes require identities, roles, dependency lists and nonnegative slots")
+            pending = list(plan["nodes"])
+            ordered, visited = [], set()
+            while pending:
+                ready = [n for n in pending if set(n["depends_on"]) <= visited]
+                if not ready:
+                    raise WorkbenchError("Plan has unresolved dependencies")
+                ordered.extend(ready)
+                visited.update(n["id"] for n in ready)
+                pending = [n for n in pending if n["id"] not in visited]
+            packets = {n["id"]: self._execution_packet(req, project, plan, n) for n in ordered}
+            if any(len(packet) > plan["limits"]["context_chars"] for packet in packets.values()):
+                raise WorkbenchError(
+                    "Execution packet exceeds the configured character budget; create a bounded evidence/coverage plan before dispatch. Original prompts remain saved."
+                )
+        except (KeyError, TypeError, ValueError, AttributeError) as exc:
+            raise WorkbenchError("Saved execution plan is malformed; revise it before dispatch") from exc
+        return plan, ordered, packets
+
     def deliver(self, job):
+        self.settings = self._runtime_guard()
         req = self.store.one("SELECT * FROM requests WHERE id=?", (job["request_id"],))
+        if req["revision"] != job["revision"]:
+            return "superseded"
         issue_map = self._cache("issues:" + req["id"]) or {}
         if job["operation"] == "cancel":
+            if req["status"] != "cancelled":
+                return "superseded"
             for identity in issue_map.values():
                 self.api.update_issue(identity, {"status": "cancelled"})
             return "delivered"
-        if req["revision"] != job["revision"] or req["status"] == "cancelled":
+        if req["status"] in {"cancelled", "accepted", "grouped", "needs_project"}:
             return "superseded"
         project = self.store.project(req["project_id"])
+        plan, ordered, packets = self._preflight(req, project)
+        self._check_current(req["id"], req["revision"])
+        with self.store.transaction() as db:
+            changed = db.execute(
+                "UPDATE requests SET plan=? WHERE id=? AND revision=? AND status NOT IN ('cancelled','accepted','grouped','needs_project')",
+                (canonical(plan), req["id"], req["revision"]),
+            ).rowcount
+            if not changed:
+                return "superseded"
         if not project["remote_id"]:
+            self._check_current(req["id"], req["revision"])
             body = {
                 "name": project["name"],
                 "description": "Assistant Workbench project " + project["id"],
@@ -179,54 +308,21 @@ class Engine:
                     (remote["id"], project["id"]),
                 )
             project["remote_id"] = remote["id"]
-        plan = (
-            json.loads(req["plan"])
-            if req.get("plan")
-            else compile_plan(req, self.settings)
-        )
-        with self.store.transaction() as db:
-            db.execute(
-                "UPDATE requests SET plan=? WHERE id=? AND revision=?",
-                (canonical(plan), req["id"], req["revision"]),
-            )
         # Old-revision work is cancelled by its coordinator before replacement tasks.
         if req["revision"] > 1:
             for key, identity in issue_map.items():
                 if not key.startswith(str(req["revision"]) + ":"):
+                    self._check_current(req["id"], req["revision"])
                     self.api.update_issue(identity, {"status": "cancelled"})
         created = {}
-        for node in plan["nodes"]:
+        for node in ordered:
             self._check_current(req["id"], req["revision"])
             agent = self.ensure_agent(node, plan)
             node_key = str(req["revision"]) + ":" + node["id"]
-            description = (
-                req["body"]
-                + "\n\n## Workbench execution contract\n"
-                + canonical(
-                    {
-                        "request": req["id"],
-                        "revision": req["revision"],
-                        "project": project["id"],
-                        "node": node,
-                        "limits": plan["limits"],
-                        "audience": plan["audience"],
-                        "home": str(self.store.home),
-                    }
-                )
-                + "\n\n"
-                + "\n\n".join(
-                    "## Procedure " + s["name"] + " (" + s["sha256"] + ")\n" + s["text"]
-                    for s in plan["skills"]
-                )
-            )
-            if len(description) > self.settings["limits"]["context_chars"]:
-                raise WorkbenchError(
-                    "Execution packet exceeds the configured character budget; create a bounded evidence/coverage plan before dispatch. Original prompts remain saved."
-                )
             body = {
                 "projectId": project["remote_id"],
                 "title": node["id"] + ": " + req["title"],
-                "description": description,
+                "description": packets[node["id"]],
                 "status": "todo",
                 "assigneeAgentId": agent,
                 "blockedByIssueIds": [created[d] for d in node["depends_on"]],
@@ -239,6 +335,7 @@ class Engine:
                     body["inheritExecutionWorkspaceFromIssueId"] = created[
                         node["depends_on"][0]
                     ]
+            self._check_current(req["id"], req["revision"])
             remote = self.api.create_issue(body)
             created[node["id"]] = remote["id"]
             issue_map[node_key] = remote["id"]
@@ -246,15 +343,17 @@ class Engine:
             current = self.store.one("SELECT * FROM requests WHERE id=?", (req["id"],))
             if (
                 current["revision"] != req["revision"]
-                or current["status"] == "cancelled"
+                or current["status"] in {"cancelled", "accepted", "grouped", "needs_project"}
             ):
                 self.api.update_issue(remote["id"], {"status": "cancelled"})
                 return "superseded"
         with self.store.transaction() as db:
-            db.execute(
-                "UPDATE requests SET remote_id=?,status='running',updated=? WHERE id=? AND revision=? AND status!='cancelled'",
+            changed = db.execute(
+                "UPDATE requests SET remote_id=?,status=CASE WHEN status='queued' THEN 'running' ELSE status END,updated=? WHERE id=? AND revision=? AND status NOT IN ('cancelled','accepted','grouped','needs_project')",
                 (next(iter(created.values())), now(), req["id"], req["revision"]),
-            )
+            ).rowcount
+            if not changed:
+                return "superseded"
             self.store.event(
                 db,
                 "request.delivered",
@@ -266,6 +365,7 @@ class Engine:
     def tick(self):
         # Serialize bridge admission and agent creation across local processes.
         # Paperclip still runs independent issues concurrently.
+        self.settings = self._runtime_guard()
         with open(self.store.home / "bridge.lock", "a") as lock:
             try:
                 fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -287,6 +387,8 @@ class Engine:
         try:
             status = self.deliver(job)
             error = None
+        except SupersededDelivery:
+            status, error = "superseded", None
         except WorkbenchError as exc:
             status = "uncertain" if getattr(exc, "uncertain", False) else "blocked"
             error = str(exc)

@@ -1,73 +1,92 @@
 # Architecture
 
-The replacement keeps execution, durable intent and presentation separate. Paperclip is the only component that schedules agent workers. Workbench never launches a competing Ralph or multi-agent daemon.
+Workbench owns saved intent, context, review and terminal presentation. Exactly one coordinator owns agent execution: **Paperclip by default, or the optional Temporal backend**. Selecting Temporal does not start a second scheduler beside Paperclip. Local language checks are explicit operator commands, not another agent scheduler.
 
 ```mermaid
 flowchart TD
-  H["CLI, MCP and WezTerm"] --> I["Durable prompt inbox"]
-  I --> P["Project and revision policy"]
-  P --> C["Context and capability packets"]
-  C --> O["Delivery outbox"]
-  O --> R["Paperclip coordinator"]
-  R --> A["Official harness workers"]
-  A --> E["Artifacts and proposed outcomes"]
-  E --> V["Independent review"]
-  V --> U["Persistent outcome views"]
-  C <--> M["Archive and memory adapters"]
-  A --> K["Checkpoint and effect receipts"]
-  K --> R
+  UI["CLI, MCP and WezTerm"] --> I["Prompts and revisions"]
+  I --> P["Plan and budget checks"]
+  P --> C{"Selected coordinator"}
+  C --> PC["Paperclip issues"]
+  C --> T["Temporal workflows"]
+  T --> F["Host queues and leases"]
+  PC --> W["Official CLI workers"]
+  F --> W
+  I <--> X["Archive and scoped context"]
+  X --> W
+  W --> O["Proposed outcomes and review"]
+  O --> UI
 ```
 
 ## Ownership
 
 | Concern | Owner | Durable representation |
 |---|---|---|
-| Original intent, revision and grouping | Workbench | SQLite prompts, requests, links, obligations |
-| Agent ownership, issue execution and workspaces | Paperclip | Paperclip projects, agents, issues, runs |
-| Delivery/reconciliation | Workbench bridge | Outbox, leases, operation keys, agent creation journal |
-| Evidence | Workbench plus optional index adapters | Original byte archive, sources, coverage, provenance |
-| History and curated knowledge | LCM and Basic Memory adapters | Explicit project bindings; no unrelated chat-directory scan |
-| Search acceleration | Optional QMD | Named collection per project |
-| Fresh-context handoff | Workbench protocol through Paperclip | Checkpoint generations, parent budget, stop evidence, idempotent wakeup |
-| Result acceptance | Workbench reviewer | Outcome version, citations, review record, obligation links |
-| Terminal navigation | WezTerm and Textual | Small status snapshot; persistent result records |
+| Intent and project scope | Workbench | Original prompts, client-key receipts, request revisions, group/reopen links and deliverable criteria |
+| Plans and admission | Workbench | Saved DAG, qualified model profile, pinned procedures, explicit budgets and outbox |
+| Agent execution | Selected coordinator | Paperclip projects/issues/runs **or** Temporal workflow history and activities |
+| Multi-host admission | Workbench control service | Named queues, project/workspace mappings, host credentials and fenced leases |
+| Context | Local archive; optional adapters | Original bytes, extracted-text hashes, coverage, assertions, source authority and supersession |
+| Conversation and editable memory | LCM and Basic Memory adapters | Explicit project bindings; no unrelated chat-directory scan |
+| Retrieval and derived memory | QMD; optional Hindsight/OpenViking | Scoped collections or managed copies with readback/deletion receipts |
+| Fresh-context handoff | Workbench protocol plus selected coordinator | Checkpoint generations, cumulative budgets, uncertain effects and process-stop evidence |
+| Local test/build execution | Execution packs | Private source copies, reviewed argv plans, bounded process results and artifact hashes |
+| Acceptance and presentation | Workbench | Outcome/review records, obligation links, immutable exports and persistent terminal views |
 
-## Request flow
+## Requests and execution
 
-Ingress commits a client-key receipt before execution. Different keys remain distinct prompts. Explicit project/reply links take precedence over exact project-name matching. Lexical similarity only suggests grouping; it does not silently merge work. Grouping keeps the original requests and creates explicit deliverable obligations.
+Ingress commits a client-key receipt before dispatch. Different keys remain distinct prompts. Explicit project/reply links take precedence over exact project-name matching. Task classification and grouping suggestions are lexical policies, not semantic understanding. Grouping requires an explicit compatibility decision and preserves the original requests and their acceptance criteria.
 
-A short bridge lock serializes local coordinator mutations. It does not serialize worker execution: independent issue branches can run concurrently in Paperclip. Role slots prevent two independent researcher branches from accidentally sharing one serial worker. The managed agent pool is bounded. Profile changes alter agent identity rather than silently reusing an old model/effort configuration.
+Amendments advance the revision and carry deliverable criteria forward as pending. A grouped child's amendment updates its parent in the same transaction; it does not create duplicate independent work. Withdrawing a member preserves surviving demands and parent-specific amendments. Reopening creates new work with copied criteria and historical lineage. Nested request groups are rejected. Ambiguous ownership in old group records blocks a scope rewrite instead of guessing which requirement to remove.
 
-A request amendment advances its revision. Old queued deliveries and outcomes become superseded. A cancellation barrier is committed before remote cancellation. Withdrawing a grouped demand creates a new scope for surviving demands; old remote work must stop before replacement work is accepted. External shell effects still require the underlying coordinator's real process and workspace controls.
+Paperclip delivery validates the current plan, model qualification, procedure hashes and **all** execution packets before creating a remote project, agent or issue. Dependencies dispatch in topological order. A short bridge lock serializes local admission, while independent issues can execute concurrently. Role slots keep parallel researcher branches distinct. Stale, accepted or cancelled scope cannot start new work. Per-plan runtime limits may narrow configured limits; they cannot increase them.
+
+Temporal uses the real optional Python SDK, deterministic workflow IDs and per-host activity queues. Independent DAG nodes can run concurrently; dependent nodes receive predecessor results. An actual queue poller and fresh heartbeat are required for admission. Each worker has a local qualified model profile and process-receipt directory. Remote workers call the host-scoped control API; they do not share the controller's SQLite file. A host registration is not proof of a running model.
+
+The backend selection fence blocks changes while running requests, delivery, active leases or uncertain executions remain. This is a single-controller guard, not distributed consensus. A timed-out lease stays uncertain and occupies capacity until reconciled. There is no automatic duplicate execution on another host. Fleet usage aggregates reported CLI counters by request, node and generation while keeping missing/conflicting data unknown; it does not invent provider cost, subscription balance or host CPU/memory telemetry. See [runtime contracts](RUNTIME_BACKENDS.md).
 
 ## Context handoff
 
 ```mermaid
 stateDiagram-v2
   [*] --> Working
-  Working --> Checkpoint: bounded handoff requested
+  Working --> Checkpoint: explicit handoff
   Checkpoint --> Blocked: stale scope or uncertain effect
-  Checkpoint --> Quiescing: durable checkpoint
-  Quiescing --> Quiescing: stop not acknowledged
-  Quiescing --> Ready: coordinator stop evidence
-  Ready --> Successor: idempotent fresh-session wake
+  Checkpoint --> Quiescing: saved evidence
+  Quiescing --> Quiescing: stop unconfirmed
+  Quiescing --> Successor: stop receipt and budget
   Successor --> Working: reload and understanding check
-  Ready --> Blocked: changed scope or budget exhausted
+  Quiescing --> Blocked: scope changed or budget exhausted
   Blocked --> [*]
 ```
 
-A finished/cancelled run status alone is insufficient. The adapter requires the pinned Paperclip cancellation acknowledgement contract before asking for a successor. Checkpoints retain requirement hashes, artifacts, unresolved work, generations and cumulative budget. Repeated artifact fingerprints stop unproductive loops. A lost mutation response becomes uncertain; it is not retried as an unqualified new operation.
+Paperclip continuation requires its cancellation acknowledgement before a fresh-session wakeup. Temporal continuation cancels the node activity and requires the matching prior process-stop receipt before admitting a new generation. A terminal coordinator status alone does not prove that an OS process stopped.
 
-The current default limit is eight generations, one hour and six managed agent slots. Those are pilot limits, not claims about a model's context length. The input character budget includes procedures and the execution contract; it is a conservative bound, not an exact tokenizer. An oversized packet blocks visibly rather than silently truncating.
+Handoff is explicit: the system does not detect every provider's exact remaining context window or guarantee recovery from every context-limit error. Checkpoints retain requirement hashes, artifacts, unresolved work and generation/budget data. Repeated artifact fingerprints stop no-progress loops. Temporal node rollovers currently share the request checkpoint sequence, so simultaneous node rollovers require coordination.
 
-## Source authority and outputs
+Persistent context can grow on storage, subject to disk and retention limits. Each model input remains finite. Retrieval, original-source expansion and corpus coverage are separate operations; a relevant search result does not establish that the whole corpus was reviewed.
 
-Original bytes are content-addressed and verified when reopened. Extracted text is indexed separately. Sources carry authority and supersession. Contradictory dated assertions remain unresolved until reconciled. Coverage distinguishes extraction from review. Scoped retrieval and complete-corpus accounting answer different questions.
+## Current bounds
 
-Citation checks establish that a quoted passage exists in an accessible original; they do not establish entailment. Acceptance requires another reviewer identity and all explicit obligations. The current local operator controls those identities; this is an audit distinction, not cryptographic independence.
+| Area | Current bound |
+|---|---|
+| Default execution policy | 6 agent slots, 8 checkpoint generations, 3,600 seconds, child depth 2 |
+| Default packet / writing budget | 24,000 characters per execution packet; 600 words for advisory outcome lint |
+| Scoped retrieval packet | 100–1,000,000 characters; omitted sources remain visible |
+| Fleet registration / leases | Capacity 1–1,024 per host, reserve below capacity; 10–300 second leases; heartbeat freshness 60 seconds |
+| Execution workspace | At most 10,000 files and 100 MiB; excluded secrets, dependencies and build outputs are not copied |
+| Local test/build process | 0.1–600 seconds; 256 bytes–8 MiB captured output; optional 64–16,384 MiB virtual-address limit |
+| Optional context backend | 1 MiB source text; 2 MiB request; 4 MiB response; 1–100 recall results; 1–120 second timeout |
+| Terminal tables | Up to 200 requests/outcomes after project and text filters; details are separate from logs |
 
-HTML exports escape all source/model text and use a restrictive CSP. Diagrams are generated from the plan DAG. Human and machine exports come from the same saved records. Exports are immutable snapshots; source revocation invalidates live outcomes but does not retract already-copied files.
+These are configurable policy or adapter bounds, not measured fleet throughput or tokenizer-exact limits. Workspace copies and process limits are not an OS sandbox. Distributed shared-filesystem locking, automatic host provisioning and a global CPU/memory scheduler are not provided.
 
-## Decision replacing the earlier plan
+## Evidence and outcomes
 
-The old Rust/Olympus tree is not copied into this branch. This follows the requested fresh replacement. Paperclip was selected as the single runtime integration target following the recorded comparison; it is not claimed to have passed the outstanding full-system live tests. An alternative coordinator would require a new conformance decision, not activation of a second scheduler beside it.
+Original bytes and extracted text are verified when reopened. Sources retain authority, supersession and explicit contradictions. Optional Hindsight/OpenViking copies require separate configuration and write authorization; their derived recall is linked to accessible originals and remains review-required. Copying, retrieval, deletion and backend/model qualification have distinct receipts. Local purge does not erase remote backups or exported copies. See [context backend contracts](CONTEXT_BACKENDS.md).
+
+Citation checks establish passage presence and source integrity, not entailment. An outcome can satisfy one deliverable while the request remains open for others. Only acceptance of all current-revision criteria closes the request. Revoked or corrupt evidence from an already accepted deliverable blocks later completion. Reviewer identities are caller-supplied audit labels; they are not cryptographic or OS isolation.
+
+HTML and Markdown exports include every accepted current deliverable, with drafts and incomplete scope clearly labelled. JSON retains historical records. Exports escape model/source text and are immutable snapshots. Plan DAGs, artifact manifests and local language checks provide inspectable evidence; none proves that a generated website, mobile app or research report meets its intended purpose.
+
+The old Olympus runtime is not part of this architecture. Cloud tests and native WezTerm captures do not authorize retirement of a customized user installation: target-host qualification and the reviewed migration procedure still apply.

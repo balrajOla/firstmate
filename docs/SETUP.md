@@ -1,32 +1,98 @@
 # Setup
 
-## Core and Paperclip
+Install Python 3.11 or later and work from the reviewed repository checkout. The default coordinator is Paperclip. Temporal is an optional alternative; select one backend for an installation.
 
-Install Workbench using the README. Run `awb doctor` before starting execution. Use an isolated Paperclip installation, following its pinned upstream instructions. `awb deps install paperclip` fetches the recorded commit and runs its build; Node and pnpm must already be available. The upstream package can require substantial disk space and PostgreSQL.
+```sh
+python3 -m venv .venv
+. .venv/bin/activate
+python -m pip install '.[tui]'
+awb init
+awb doctor
+```
 
-Complete Paperclip's onboarding and create a company using its supported interface. In the Workbench state `config.json`, set `coordinator.url`, `coordinator.company_id` and, where required, `coordinator.token_env`. Put a token in that environment variable through your normal credential manager, never inside a prompt, repository or URL. Local-trusted and authenticated deployments have different authorization behavior; preserve the mode you actually selected.
+Use `awb --home /absolute/private/state ...` when keeping separate installations. Configuration, installed tools, authenticated models, running workers and accepted outcomes are separate readiness states. A green configuration check does not establish the others.
 
-The bridge needs permission to manage the selected company's projects, agent pool and issues. A board approval or authorization failure is a blocker, not permission to disable the coordinator's policy.
+## Default Paperclip backend
 
-## Models without API keys
+Use an isolated Paperclip installation and its pinned upstream setup. `awb deps install paperclip` fetches the recorded commit and runs its build; Node and pnpm must already be available. The upstream stack can require substantial disk space and PostgreSQL.
 
-Install and sign into the unmodified official Claude Code or Codex CLI on the target machine. Choose a model and effort supported by that installed CLI/account; Workbench does not invent universal model IDs.
+Complete Paperclip onboarding and create a company through its supported interface. Set `coordinator.kind` to `paperclip`, with the actual `url`, `company_id` and, where required, `token_env` in the Workbench state `config.json`. Keep the token in the named environment variable through your credential manager, never in a prompt, repository or URL.
+
+The bridge needs permission to manage that company's projects, agent pool and issues. An authorization or board-approval failure remains a blocker. Existing agent adapter timeouts must match their plan budget before reuse. Changing a profile or runtime limit may require explicitly reconciling an old managed agent.
+
+## Models with or without provider API keys
+
+Install and sign into the unmodified official Claude Code or Codex CLI on the worker machine. Choose a model and effort supported by that installed CLI/account. Replace the model value in this example with your actual supported model ID:
 
 ```json
 {"action":"profile.add","args":{"identity":"my-codex","harness":"codex","model":"MODEL_ID_FROM_YOUR_CLI","effort":"high","auth":"subscription","classes":["simple","code","design","report","research"],"priority":10}}
 ```
 
-Send this JSON to `awb request -`, then run a probe:
+Send the JSON using `awb request -`, then probe the configured profile:
 
 ```sh
 awb request '{"action":"profile.probe","args":{"identity":"my-codex"}}'
 ```
 
-This can consume a small amount of your normal account allowance. It requires an actual assistant canary event, records the CLI version, and expires after seven days or a profile change. It does not prove provider-side effective model/effort, team execution or output quality. Those are additional release checks. A failed login must be completed by the account owner in the official CLI; Workbench never extracts subscription tokens.
+A probe consumes a small amount of the account's allowance. It requires the exact assistant canary response and successful completion, records the CLI version and expires after seven days or a profile change. A failed reprobe invalidates the old qualification. Login must be completed by the account owner in the official CLI. Workbench does not extract subscription credentials or manufacture an API key from a sign-in.
 
-For API/local profiles, select the corresponding `auth` mode explicitly and configure the provider through the official CLI. There is no silent paid-provider fallback. Paperclip receives `claude_local` or `codex_local`; Codex effort maps to `modelReasoningEffort`, Claude to `effort`. Sandbox/permission bypass flags default to false.
+For provider API or local inference, use the matching `auth` mode and configure a supported provider through the official CLI. There is no silent paid-provider fallback. The profile probe and Temporal CLI activity remove provider API-key environment variables in subscription mode and rely on the CLI's existing sign-in. For Paperclip, configure and qualify the actual adapter's service environment; the declared auth mode alone does not establish how a provider authenticated a run. CLI qualification does not prove effective provider/model identity, coordinated team behavior or output quality.
 
-## Optional context and writing integrations
+Paperclip receives `claude_local` or `codex_local`; Codex effort maps to `modelReasoningEffort`, Claude to `effort`. Permission/sandbox bypass flags default to false. Temporal workers invoke the same official CLIs using their own locally qualified profiles.
+
+## Optional Temporal backend and fleet
+
+Install the optional SDK in the Workbench environment:
+
+```sh
+python -m pip install '.[tui,temporal]'
+```
+
+Install the official Temporal CLI and start a persistent local development server:
+
+```sh
+temporal server start-dev --ip 127.0.0.1 --port 7233 \
+  --db-filename /absolute/private/state/temporal.sqlite --headless
+```
+
+Replace the `coordinator` object in the controller's configuration, retaining the rest of the configuration:
+
+```json
+{
+  "kind": "temporal",
+  "target": "127.0.0.1:7233",
+  "namespace": "default",
+  "task_queue": "awb-control",
+  "host_id": "local"
+}
+```
+
+Stop and reconcile old work before changing backends. The selection fence rejects changes while active or uncertain work remains; it does not migrate an existing Paperclip run into Temporal. A development server is not a hardened production deployment. Non-loopback Temporal targets require TLS; optional mTLS paths and `api_key_env` configure service access separately from model authentication.
+
+Register a project, then register the worker's actual absolute workspace path using the returned project ID:
+
+```json
+{"action":"fleet.register","args":{"host_id":"local","name":"Local workstation","task_queue":"awb-local","capacity":4,"interactive_reserve":1,"capabilities":["codex"],"workspaces":{"PROJECT_ID":"/absolute/path/to/project"}}}
+```
+
+Registration returns a host token once. Save it in a private regular file with mode `0600`. Do not copy it into command arguments, logs or screenshots. Start a local worker:
+
+```sh
+awb --home /absolute/state temporal-worker \
+  --host-id local --token-file /absolute/private/host-token
+```
+
+A remote worker requires its own Workbench state, qualified CLI profile, unique queue and checkout. Public profile ID, harness, model, effort and auth mode must match the dispatched profile. Use a host-scoped control connection rather than sharing the controller database:
+
+```sh
+awb --home /absolute/worker-state temporal-worker \
+  --host-id remote-a --token-file /absolute/private/host-token \
+  --control-endpoint http://127.0.0.1:18765
+```
+
+That loopback endpoint is the worker-side end of a secure tunnel. Direct remote control requires HTTPS; Temporal TLS is a separate connection. Workbench does not provision hosts, tunnels or shared-filesystem locks. Registration and heartbeat do not prove model readiness. Check `coordinator.health`, `fleet.status` and actual execution results separately. See [runtime setup and tests](RUNTIME_BACKENDS.md).
+
+## Context, research and writing integrations
 
 ```sh
 awb deps list
@@ -34,41 +100,49 @@ awb deps install basic-memory docling lcm superpowers elements-of-style humanize
 awb request '{"action":"capabilities.activate","args":{"names":["superpowers","elements-of-style","humanizer"]}}'
 ```
 
-Inspect the installation receipts for exact paths. Configure command arrays in `config.json`; do not use shell command strings. Dependencies remain separate private environments. Installation, configuration, activation, successful execution and accepted outputs are separate states.
+Inspect dependency receipts for actual paths. Command configuration uses argv arrays, not shell strings. Installation, configuration, procedure activation, successful execution and accepted outputs remain separate facts.
 
-| Integration | Configuration |
+| Integration | Required configuration and boundary |
 |---|---|
-| Basic Memory | `enabled`, `command: ["/absolute/path/to/bm"]`, `auth: "local"`; register each project with `integration.basic_memory`, action `register` |
-| Docling | `command: ["/absolute/path/to/venv/bin/python"]`; convert with `integration.docling` |
-| LCM | `url`, `token_env`, root routes; bind a project to its declared repository directory |
-| QMD | `command`, `collections: {"PROJECT_ID": "COLLECTION_NAME"}`; exact mode uses `search`, semantic mode uses `query` |
-| Open Notebook | `url`, `api_prefix: "/api"`, `token_env`, `notebooks`, `ask_models`, explicit `auth: "api"` or `"local"` |
-| GPT Researcher | Python command, reviewed `config_path`, explicit `auth: "api"` or `"local"` |
-| Vale | Executable command and optional `--config=...`; inspect JSON warnings, not just exit code |
-| Promptfoo | Executable command; a reviewed configuration determines whether an evaluation uses a provider |
+| Basic Memory | Enabled executable command, `auth: "local"`, explicit project registration through `integration.basic_memory` |
+| Docling | Python executable command; call `integration.docling` for conversion |
+| LCM | Service URL/token settings and a declared project repository binding; capture hooks need separate installation |
+| QMD | Executable command and project-to-collection mapping; exact `search` and semantic `query` are separately qualified |
+| Hindsight / OpenViking | Independently installed service, enabled URL/auth settings, explicit bank/root binding and `allow_write: true` for copies; use `backend.*` |
+| Open Notebook | Service URL, `/api` prefix, token, notebook/model mapping and explicit provider auth mode |
+| GPT Researcher | Python command, reviewed configuration path and explicit provider auth mode |
+| Vale / Promptfoo | Executable command and reviewed configuration; provider-backed evaluations require their own credentials and approval |
 
-QMD's inspected release had a lockfile mismatch. Its dependency command fetches pinned source but does not claim a reproducible build. Open Notebook and GPT Researcher source fetches do not install their service stacks or qualify generation. See the compatibility matrix before enabling either.
+Hindsight/OpenViking adapters are integrated, but their services and inference providers are not installed by the dependency command. A service may support a local model or an official subscription provider; that must be configured and tested in the service itself. A signed-in Workbench harness does not automatically authenticate another application. Service access tokens are distinct from provider API keys. There is no automatic upload or fallback. Use [context backend configuration](CONTEXT_BACKENDS.md) for mappings, limits, readback and deletion.
 
-The LCM dependency installer copies required packaged YAML assets without running upstream's global plugin-cache sync. Harness capture hooks still need installation and target-host qualification. Workbench's explicit capture adapter does not establish that every turn in every host is captured.
+QMD's inspected release had a lockfile mismatch; a pinned source fetch is not a reproducible build claim. Open Notebook and GPT Researcher source fetches do not provision their full stacks or qualify generation. LCM capture/recall with summarization disabled does not qualify semantic summarization or complete cross-session capture. See the [compatibility matrix](COMPATIBILITY.md) for retained evidence and pending checks.
 
-Named upstream procedures are loaded with paths and hashes. The bundled short procedures are fallbacks with different provenance. If a prompt explicitly requests Superpowers before activation, dispatch blocks rather than claiming the named workflow ran. Procedure files may refer to companion files in their checkout; keep the pinned checkout available to the worker.
+Named procedures are loaded with paths and hashes. Bundled short procedures have different provenance. An explicit Superpowers request blocks dispatch before its named procedures are activated. Keep the pinned checkout available where companion files are referenced. Clear-writing/Humanizer/Vale checks assist editing; they cannot guarantee meaning preservation or remove hallucinations.
 
-## WezTerm
+## Local language and artifact checks
 
-Install the official WezTerm release for your platform and record its actual version. On macOS, follow [the official installation instructions](https://wezterm.org/install/macos.html). The current build does not install a GUI into a Linux container and call that a Mac test.
+Register the repository, call `execution.create_workspace`, inspect it, and create an `execution.plan` for Python, JavaScript, TypeScript or Rust. Review the command and execute exactly its returned digest with `execution.run`. These actions are wired through the CLI/operator API. They run actual local commands without invoking an AI model.
 
-For a conventional config ending in `return config`:
+Dependencies are not installed automatically. Package scripts require explicit opt-in; Rust checks use locked offline Cargo commands. Workspace copies preserve uncommitted source edits while excluding secrets, dependency directories and build outputs. The current copy limit is 10,000 files / 100 MiB; process runs are bounded to 0.1–600 seconds and 256 bytes–8 MiB captured output. A passing command or artifact hash does not certify a working website, signed mobile app or well-supported report. See [execution pack examples](EXECUTION_PACKS.md).
+
+## WezTerm and service
+
+Install the official WezTerm build for your platform and record its version. A native WezTerm UI has been run in the cloud environment. That evidence does not qualify the user's Mac fonts, shortcuts, configuration, reconnect, sleep or reboot behavior.
+
+For a conventional configuration ending in `return config`:
 
 ```sh
 awb terminal install --config-file "$HOME/.wezterm.lua" --executable "$HOME/.local/bin/awb"
 ```
 
-This backs up the file, installs a pinned local module, and inserts one managed include. Existing theme/settings remain. Complex Lua layouts require the documented include to be placed manually. A conflicting Ctrl+Shift+A shortcut is reported rather than overwritten. Add `--status` only if Workbench should own the right status area.
+Use your actual installed absolute executable path. The installer backs up the Lua file, installs a pinned local module and inserts one managed include. It preserves existing settings and reports a conflicting Ctrl+Shift+A shortcut. Complex Lua layouts need manual placement of the documented include. Use `--status` only when Workbench should own the right status area.
 
-Ctrl+Shift+A opens `awb tui` in a new tab. Inside it: Ctrl+N creates a prompt; Ctrl+B pins an outcome; Ctrl+D marks it read; Ctrl+O reopens a request; Ctrl+Q exits the view. Worker execution belongs to Paperclip, so closing the view is not evidence that a job stopped or resumed.
+Ctrl+Shift+A opens `awb tui`. The view separates prompt destination from project filtering, outcomes from logs, and accepted deliverables from overall request completion. F1 shows controls; F2 creates a project; F3 amends; F4 confirms cancellation; F5 pauses new dispatch; F6 exports. Ctrl+B pins, Ctrl+D marks read, Ctrl+O reopens and Ctrl+Q closes the view. Closing the terminal does not stop coordinator-owned agents. See [terminal scenarios](TERMINAL_SCENARIOS.md).
 
-`awb serve` runs the local operator bridge. `awb service launchd --executable /absolute/path/to/awb` prints a service definition for review/installation. It does not start a service behind your back. The target installation agent must verify the service environment, official CLI PATH and authentication after login/reboot.
+`awb serve` runs the loopback operator/control service. `awb service launchd --executable /absolute/path/to/awb` or `awb service systemd --executable /absolute/path/to/awb` prints a service definition; it does not silently install or start it. Verify PATH, profile authentication, coordinator connectivity and restart behavior in the real service environment before cutover.
 
-## MCP
+## Harness connection and qualification
 
-Configure your host's MCP server entry with the installed absolute executable and arguments `["--home","/absolute/state/path","mcp"]`. The included stdio server offers prompt submission, scoped search, context packets, outcomes and checkpointing. Other actions use `awb request` or the authenticated loopback operator API. Do not publish the operator API token to untrusted workers.
+Configure an MCP host with the installed absolute executable and arguments `["--home","/absolute/state/path","mcp"]`. Typed MCP tools cover requests/plans, capabilities, scoped context and backend recall, local execution, outcomes, checkpoints/rollover and writing checks. See [the exact MCP tool list](API.md). Use `awb request` or authenticated HTTP for the broader operator API. Do not give an operator token to untrusted workers.
+
+The current defaults are six agent slots, eight checkpoint generations, one hour of task time and a 24,000-character execution packet. These are finite policy bounds, not unlimited context or a throughput guarantee. Run the [feature evaluation plan](FEATURE_TEST_PLAN.md) with actual configured services, models and desktop before claiming full readiness. Follow [the replacement procedure](INSTALL_AND_REPLACE_OLYMPUS.md) to preserve local changes and qualify the user machine before retiring Olympus.
