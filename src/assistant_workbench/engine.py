@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 import fcntl
 from .config import config
@@ -37,6 +38,13 @@ BYPASS_FLAGS = {
     "--dangerously-bypass-approvals-and-sandbox",
     "--yolo",
 }
+
+
+def task_branch(request_id, revision, node_id):
+    """Name a task's branch before it runs, already in Paperclip's branch form,
+    so a dependent can be created on its predecessor's branch."""
+    name = "awb/" + request_id + "-r" + str(revision) + "-" + node_id
+    return re.sub(r"-+", "-", re.sub(r"[^A-Za-z0-9._/-]+", "-", name)).strip("-/.")[:120]
 
 
 def verify_worker_agent(agent, harness):
@@ -478,11 +486,21 @@ class Engine:
             if project["repository"]:
                 # Paperclip resolves the run workspace from these settings; the
                 # older executionWorkspacePreference field does not isolate.
-                body["executionWorkspaceSettings"] = {"mode": "isolated_workspace"}
+                # Each task gets its own worktree on a branch named here, so a
+                # single-dependency task starts from its predecessor's commits
+                # even when Paperclip wakes it the moment that task is done.
+                strategy = {
+                    "type": "git_worktree",
+                    "branchTemplate": task_branch(req["id"], req["revision"], node["id"]),
+                }
                 if len(node["depends_on"]) == 1:
-                    body["inheritExecutionWorkspaceFromIssueId"] = created[
-                        node["depends_on"][0]
-                    ]
+                    strategy["baseRef"] = task_branch(
+                        req["id"], req["revision"], node["depends_on"][0]
+                    )
+                body["executionWorkspaceSettings"] = {
+                    "mode": "isolated_workspace",
+                    "workspaceStrategy": strategy,
+                }
             self._check_current(req["id"], req["revision"])
             remote = self.api.create_issue(body)
             # The packet names this request, revision and node, so only this
@@ -600,7 +618,6 @@ class Engine:
                         "updatedAt",
                     )
                 }
-                self._bind_dependents(req, mapping, node, issue)
                 items[node.split(":", 1)[1]]["report"] = self._capture_report(
                     req, node, issue
                 )
@@ -624,35 +641,6 @@ class Engine:
                     self._cache(key, True)
         atomic(self.store.home / "observations.json", canonical(observations))
         return observations
-
-    def _bind_dependents(self, req, mapping, node, issue):
-        """Start a single-dependency task from its predecessor's task branch.
-
-        The whole team is created before any task runs, so Paperclip cannot
-        inherit a workspace at creation; dependents are still blocked when
-        the predecessor's worktree and branch appear."""
-        current = issue.get("currentExecutionWorkspace") or {}
-        workspace, branch = current.get("id"), current.get("branchName")
-        if not workspace or not branch or not req.get("plan"):
-            return
-        revision, node_id = node.split(":", 1)
-        for child in json.loads(req["plan"])["nodes"]:
-            target = mapping.get(revision + ":" + child["id"])
-            key = "workspace:" + req["id"] + ":" + revision + ":" + child["id"]
-            if child["depends_on"] != [node_id] or not target or self._cache(key):
-                continue
-            # Each isolated task gets its own worktree; the dependent one is
-            # cut from the predecessor's branch, which carries its commits.
-            self.api.update_issue(
-                target,
-                {
-                    "executionWorkspaceSettings": {
-                        "mode": "isolated_workspace",
-                        "workspaceStrategy": {"type": "git_worktree", "baseRef": branch},
-                    },
-                },
-            )
-            self._cache(key, {"base": branch, "workspace": workspace, "from": issue["id"]})
 
     def _capture_report(self, req, node, issue):
         """Keep the worker's own final report from its first successful run.

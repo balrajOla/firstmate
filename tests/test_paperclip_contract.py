@@ -250,21 +250,35 @@ def test_unbound_project_work_does_not_need_isolation(app, configured):
 
 
 def test_dependents_start_from_the_predecessor_branch(app, project, configured):
+    from assistant_workbench.engine import task_branch
+
     request, api, engine, implement, verify = delivered_code_request(app, project, configured)
-    engine.observe()
-    assert api.issue(verify)["executionWorkspaceSettings"] == {"mode": "isolated_workspace"}
-    # The implementer's worktree appears once its run starts.
-    api.issue(implement)["status"] = "in_progress"
-    api.issue(implement)["currentExecutionWorkspace"] = {
-        "id": "ws-implement", "mode": "isolated_workspace", "branchName": "ASS-1-implement"}
-    engine.observe()
+    # Branches are fixed at creation, so the reviewer starts from the
+    # implementer's commits even if Paperclip wakes it the moment the
+    # implementer records done, before the Workbench observes anything.
+    branch = task_branch(request, 1, "implement")
+    assert api.issue(implement)["executionWorkspaceSettings"] == {
+        "mode": "isolated_workspace",
+        "workspaceStrategy": {"type": "git_worktree", "branchTemplate": branch},
+    }
     assert api.issue(verify)["executionWorkspaceSettings"] == {
         "mode": "isolated_workspace",
-        "workspaceStrategy": {"type": "git_worktree", "baseRef": "ASS-1-implement"},
+        "workspaceStrategy": {
+            "type": "git_worktree",
+            "branchTemplate": task_branch(request, 1, "verify"),
+            "baseRef": branch,
+        },
     }
-    api.issue(verify)["executionWorkspaceSettings"] = {"mode": "changed-by-operator"}
-    engine.observe()
-    assert api.issue(verify)["executionWorkspaceSettings"] == {"mode": "changed-by-operator"}
+    assert "inheritExecutionWorkspaceFromIssueId" not in api.issue(verify)
+
+
+def test_task_branches_are_valid_and_distinct_per_revision():
+    from assistant_workbench.engine import task_branch
+
+    first = task_branch("r_0a1b", 1, "research a")
+    assert first == "awb/r_0a1b-r1-research-a"
+    assert task_branch("r_0a1b", 2, "research a") != first
+    assert len(task_branch("r_" + "x" * 200, 1, "implement")) <= 120
 
 
 def test_multi_dependency_nodes_keep_their_own_workspace(app, project, configured):
@@ -273,10 +287,8 @@ def test_multi_dependency_nodes_keep_their_own_workspace(app, project, configure
     engine = Engine(app.store, api)
     assert engine.tick()["status"] == "delivered"
     issues = remote_issues(app, request)
-    for node in ("research-a", "research-b"):
-        api.issue(issues["1:" + node])["currentExecutionWorkspace"] = {"id": "ws-" + node, "branchName": node}
-    engine.observe()
-    assert api.issue(issues["1:synthesize"])["executionWorkspaceSettings"] == {"mode": "isolated_workspace"}
+    strategy = api.issue(issues["1:synthesize"])["executionWorkspaceSettings"]["workspaceStrategy"]
+    assert "baseRef" not in strategy and strategy["branchTemplate"].endswith("-synthesize")
 
 
 def test_changed_worker_definition_is_not_served_by_an_old_agent(
