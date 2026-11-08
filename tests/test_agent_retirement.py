@@ -94,3 +94,35 @@ def test_unconfirmed_termination_is_uncertain(app, project, configured):
         engine.retire_agents(agent_ids=[api.agents_[0]["id"]])
     assert caught.value.uncertain
     assert len(app.store.rows("SELECT key FROM meta WHERE key LIKE 'agent:%'")) == 2
+
+
+def changed_definition(app, configured, max_agents):
+    """A profile flag change gives every role a new agent identity."""
+    configured["limits"]["max_agents"] = max_agents
+    for model in configured["models"]:
+        model.setdefault("adapter_config", {})["extraArgs"] = ["--allowedTools", "Bash(make test:*)"]
+    (app.home / "config.json").write_text(json.dumps(configured))
+
+
+def test_a_full_pool_reclaims_idle_agents_of_superseded_definitions(app, project, configured):
+    request, api, engine = delivered(app, project)
+    finish_all(api)
+    old = sorted(a["id"] for a in api.agents_)
+    changed_definition(app, configured, max_agents=len(old))
+    app.store.submit("Fix the logout bug", "b", project["id"])
+    assert Engine(app.store, api).tick()["status"] == "delivered"
+    assert sorted(a["id"] for a in api.agents_ if a["status"] == "terminated") == old
+    assert len([a for a in api.agents() if a["status"] != "terminated"]) == len(old)
+    retired = app.store.rows("SELECT payload FROM events WHERE kind='coordinator.agent_retired'")
+    assert {json.loads(r["payload"])["reason"] for r in retired} == {"superseded by a changed definition"}
+
+
+def test_a_superseded_agent_with_open_work_is_kept_and_the_pool_stays_full(app, project, configured):
+    request, api, engine = delivered(app, project)
+    changed_definition(app, configured, max_agents=len(api.agents_))
+    app.store.submit("Fix the logout bug", "b", project["id"])
+    result = Engine(app.store, api).tick()
+    assert result["status"] != "delivered"
+    assert all(a["status"] != "terminated" for a in api.agents_)
+    blocked = app.store.rows("SELECT payload FROM events WHERE kind='delivery.blocked'")
+    assert "pool is full" in json.loads(blocked[-1]["payload"])["error"]
