@@ -22,8 +22,10 @@ def test_parallel_team_has_distinct_peers_and_review_dependencies(
     assert len(issues[2]["blockedByIssueIds"]) == 2 and issues[3][
         "blockedByIssueIds"
     ] == [issues[2]["id"]]
+    # Pinned Paperclip resolves the run workspace from executionWorkspaceSettings;
+    # executionWorkspacePreference alone left live runs in the shared checkout.
     assert all(
-        i["executionWorkspacePreference"] == "isolated_workspace" for i in issues
+        i["executionWorkspaceSettings"] == {"mode": "isolated_workspace"} for i in issues
     )
 
 

@@ -330,6 +330,16 @@ class Engine:
             return "superseded"
         project = self.store.project(req["project_id"])
         plan, ordered, packets = self._preflight(req, project)
+        # Paperclip silently runs "isolated" tasks in the project's own
+        # checkout unless its isolated-workspace setting is enabled.
+        if project["repository"] and not (
+            self.api.experimental_settings() or {}
+        ).get("enableIsolatedWorkspaces"):
+            raise WorkbenchError(
+                "Paperclip isolated workspaces are disabled; enable them "
+                "(Instance settings > Experimental) so agents do not edit the "
+                "registered repository directly"
+            )
         self._check_current(req["id"], req["revision"])
         with self.store.transaction() as db:
             changed = db.execute(
@@ -383,7 +393,9 @@ class Engine:
                 "allowDuplicate": True,
             }
             if project["repository"]:
-                body["executionWorkspacePreference"] = "isolated_workspace"
+                # Paperclip resolves the run workspace from these settings; the
+                # older executionWorkspacePreference field does not isolate.
+                body["executionWorkspaceSettings"] = {"mode": "isolated_workspace"}
                 if len(node["depends_on"]) == 1:
                     body["inheritExecutionWorkspaceFromIssueId"] = created[
                         node["depends_on"][0]
@@ -397,6 +409,14 @@ class Engine:
                     "Paperclip returned an existing issue that belongs to different work ("
                     + str(remote.get("deduplicationReason") or "content differs")
                     + "); reconcile it before dispatch"
+                )
+            if project["repository"] and (
+                remote.get("executionWorkspaceSettings") or {}
+            ).get("mode") != "isolated_workspace":
+                self.api.update_issue(remote["id"], {"status": "cancelled"})
+                raise WorkbenchError(
+                    "Paperclip did not keep the isolated workspace for this task; "
+                    "it was cancelled before it could edit the repository"
                 )
             created[node["id"]] = remote["id"]
             issue_map[node_key] = remote["id"]

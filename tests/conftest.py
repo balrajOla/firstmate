@@ -53,6 +53,9 @@ class FakePaperclip:
     def agents(self):
         return self.agents_[:]
 
+    def experimental_settings(self):
+        return {"enableIsolatedWorkspaces": True}
+
     def create_agent(self, body):
         item = {"id": "agent-" + str(len(self.agents_)), **body}
         self.agents_.append(item)
@@ -109,10 +112,15 @@ class PinnedPaperclip(FakePaperclip):
     legacy, and that runner rejects bypass keys even when false
     (agent_runner_config_incompatible). Issue creation reuses a recent open issue
     with the same normalized title unless allowDuplicate is true, binding the
-    new idempotency key to it (server/src/services/issues.ts). Not
+    new idempotency key to it (server/src/services/issues.ts). With isolated
+    workspaces disabled it keeps isolated issues in the shared workspace. Not
     evidence of live Paperclip or model execution."""
 
     RUNNER_INCOMPATIBLE = ("dangerouslySkipPermissions", "dangerouslyBypassApprovalsAndSandbox")
+    isolated_workspaces = True
+
+    def experimental_settings(self):
+        return {"enableIsolatedWorkspaces": self.isolated_workspaces}
 
     def create_agent(self, body):
         from assistant_workbench.paperclip import CoordinatorError
@@ -139,5 +147,8 @@ class PinnedPaperclip(FakePaperclip):
                     self.issues_[key] = existing
                     return {**existing, "deduplicated": True, "deduplicationReason": "recent_open_title"}
         item = {"id": "issue-" + str(len({i["id"] for i in self.issues_.values()})), **body}
+        if not self.isolated_workspaces and "executionWorkspaceSettings" in item:
+            # Disabled isolation is silently downgraded to the shared workspace.
+            item["executionWorkspaceSettings"] = {"mode": "shared_workspace"}
         self.issues_[key] = item
         return item

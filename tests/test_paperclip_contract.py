@@ -138,6 +138,45 @@ def test_worker_reuse_requires_explicitly_disabled_bypass(app, project, configur
     assert first
 
 
+def test_repository_work_requires_isolated_workspaces(app, project, configured):
+    # Paperclip downgrades isolated_workspace to the project's own checkout
+    # when its experimental setting is off; workers would edit the repository.
+    request = app.store.submit("Fix the login bug", "a", project["id"])["request_id"]
+    api = PinnedPaperclip()
+    api.isolated_workspaces = False
+    result = Engine(app.store, api).tick()
+    assert result["status"] == "blocked" and "isolated workspaces" in result["error"]
+    assert not api.issues_ and not api.agents_ and not api.projects_
+    assert app.store.one("SELECT status FROM requests WHERE id=?", (request,))["status"] == "queued"
+
+
+def test_downgraded_workspace_issue_is_cancelled(app, project, configured):
+    request = app.store.submit("Fix the login bug", "a", project["id"])["request_id"]
+    api = PinnedPaperclip()
+    original = api.create_issue
+
+    def downgrades(body):
+        api.isolated_workspaces = False
+        try:
+            return original(body)
+        finally:
+            api.isolated_workspaces = True
+
+    api.create_issue = downgrades
+    result = Engine(app.store, api).tick()
+    assert result["status"] == "blocked" and "isolated workspace" in result["error"]
+    assert [i["status"] for i in {i["id"]: i for i in api.issues_.values()}.values()] == ["cancelled"]
+    assert remote_issues(app, request) == {}
+
+
+def test_unbound_project_work_does_not_need_isolation(app, configured):
+    unbound = app.store.add_project("Notes")
+    app.store.submit("Summarize the notes", "a", unbound["id"])
+    api = PinnedPaperclip()
+    api.isolated_workspaces = False
+    assert Engine(app.store, api).tick()["status"] == "delivered"
+
+
 def test_changed_worker_definition_is_not_served_by_an_old_agent(
     app, project, configured, monkeypatch
 ):

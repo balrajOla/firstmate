@@ -118,6 +118,9 @@ class Paperclip:
             {},
         )
 
+    def experimental_settings(self):
+        return self.request("GET", "/instance/settings/experimental")
+
     def run(self, identity):
         return self.request(
             "GET", "/heartbeat-runs/" + urllib.parse.quote(identity, safe="")
