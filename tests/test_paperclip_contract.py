@@ -217,12 +217,33 @@ def test_worker_reports_become_one_unverified_outcome(app, project, configured):
     assert outcome["author"] == "paperclip-agent:agent-0,agent-1"
     assert "Changed login.py; tests pass." in outcome["body"]
     assert "Verified: 3 tests pass." in outcome["body"]
+    # Lists show the first line: the final reviewer's result, not a header.
+    assert outcome["body"].splitlines()[0] == "Verified: 3 tests pass."
     assert "Could not record disposition" not in outcome["body"]
     assert app.store.one("SELECT status FROM requests WHERE id=?", (request,))["status"] == "needs_review"
     engine.observe()
     assert len(app.store.rows("SELECT id FROM outcomes WHERE request_id=?", (request,))) == 1
     reported = app.store.rows("SELECT payload FROM events WHERE kind='execution.node_reported'")
     assert len(reported) == 2
+
+
+def test_outcome_headline_skips_headers_and_markup(app, project, configured):
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    api.finish(implement, "done", [("succeeded", "Changed login.py.")], by_worker=True)
+    api.finish(verify, "done", [("succeeded", "## QA report\n\n**All 3 login tests pass** on the branch.")],
+               agent="agent-1", by_worker=True)
+    engine.observe()
+    outcome = app.store.one("SELECT body FROM outcomes WHERE request_id=?", (request,))
+    assert outcome["body"].splitlines()[0] == "All 3 login tests pass on the branch."
+
+
+def test_worker_instructions_ask_for_a_leading_result_sentence(app, project, configured):
+    official_cli_profile(app, configured)
+    app.store.submit("Fix bug", "a", project["id"])
+    api = PinnedPaperclip()
+    Engine(app.store, api).tick()
+    text = api.agents_[0]["instructionsBundle"]["files"]["AGENTS.md"]
+    assert "Begin it with one sentence that states the result" in text
 
 
 def test_partial_reports_unblock_dependents_without_an_outcome(app, project, configured):

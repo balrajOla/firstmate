@@ -183,7 +183,8 @@ class Engine:
             "Work only in the task's workspace; do not touch other projects or unrelated files. "
             "Commit your changes to the task branch (git add, git commit; never push) before reporting, "
             "so dependent tasks start from your work. "
-            "Your final message is your report: what you changed, the commands you ran and their results, "
+            "Your final message is your report. Begin it with one sentence that states the result, then give "
+            "what you changed, the commands you ran and their results, "
             "open problems and missing evidence. The Workbench records that report for independent review, "
             "so never call the work verified or accepted. "
             + (
@@ -808,9 +809,21 @@ class Engine:
                 + report["text"]
                 + ("\n\n[Report truncated at 20,000 characters.]" if report["truncated"] else "")
             )
+        # Outcome lists show the first line. Lead with the opening sentence of
+        # the final step, which reviews the team's work, not a section header.
+        depended = {d for n in plan["nodes"] for d in n.get("depends_on", [])}
+        final = ([n for n in nodes if n not in depended] or nodes)[-1]
+        lead = self._cache("report:" + req["id"] + ":" + str(req["revision"]) + ":" + final)["text"]
+        headline = next(
+            (line for line in (
+                re.sub(r"[*_`]+", "", raw).strip(" >-") for raw in lead.splitlines()
+                if not raw.lstrip().startswith("#")
+            ) if line),
+            req["title"],
+        )[:200]
         outcome = Outcomes(self.store).propose(
             req["id"],
-            "\n\n".join(sections),
+            headline + "\n\n" + "\n\n".join(sections),
             [],
             "paperclip-agent:" + ",".join(dict.fromkeys(agents)),
             req["revision"],
