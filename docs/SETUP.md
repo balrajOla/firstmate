@@ -101,6 +101,8 @@ Register a project, then register the worker's actual absolute workspace path us
 {"action":"fleet.register","args":{"host_id":"local","name":"Local workstation","task_queue":"awb-local","capacity":4,"interactive_reserve":1,"capabilities":["codex"],"workspaces":{"PROJECT_ID":"/absolute/path/to/project"}}}
 ```
 
+Temporal Claude workers run with the same isolation as Paperclip workers: `--bare`, `--permission-mode acceptEdits`, read-only `git status` and `git diff`, and the profile's own `adapter_config.extraArgs` grants. A profile that would bypass permissions is refused before a process starts. A Temporal worker edits the registered workspace directly and does not commit. Register a dedicated checkout per host, not a working copy that holds your own uncommitted work. Nodes of one request share that checkout in dependency order.
+
 Registration returns a host token once. Save it in a private regular file with mode `0600`. Do not copy it into command arguments, logs or screenshots. Start a local worker:
 
 ```sh
