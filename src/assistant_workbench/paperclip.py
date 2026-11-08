@@ -100,6 +100,17 @@ class Paperclip:
     def create_agent(self, body):
         return self.request("POST", self.company_path("/agents"), body)
 
+    def terminate_agent(self, identity):
+        return self.request(
+            "POST", "/agents/" + urllib.parse.quote(identity, safe="") + "/terminate", {}
+        )
+
+    def agent_issues(self, identity):
+        return self.request(
+            "GET",
+            self.company_path("/issues?assigneeAgentId=" + urllib.parse.quote(identity, safe="")),
+        )
+
     def create_issue(self, body):
         return self.request("POST", self.company_path("/issues"), body)
 

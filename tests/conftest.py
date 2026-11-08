@@ -57,7 +57,7 @@ class FakePaperclip:
         return {"enableIsolatedWorkspaces": True}
 
     def create_agent(self, body):
-        item = {"id": "agent-" + str(len(self.agents_)), **body}
+        item = {"id": "agent-" + str(len(self.agents_)), "status": "idle", **body}
         self.agents_.append(item)
         return item
 
@@ -94,6 +94,15 @@ class FakePaperclip:
     def run(self, identity):
         return self.runs[identity]
 
+    def terminate_agent(self, identity):
+        agent = next(a for a in self.agents_ if a["id"] == identity)
+        agent["status"] = "terminated"
+        return agent
+
+    def agent_issues(self, identity):
+        return [i for i in {i["id"]: i for i in self.issues_.values()}.values()
+                if i.get("assigneeAgentId") == identity]
+
     def issue_runs(self, identity):
         return [r for r in self.runs.values() if r.get("issueId") == identity]
 
@@ -129,10 +138,15 @@ class PinnedPaperclip(FakePaperclip):
     (agent_runner_config_incompatible). Issue creation reuses a recent open issue
     with the same normalized title unless allowDuplicate is true, binding the
     new idempotency key to it (server/src/services/issues.ts). With isolated
-    workspaces disabled it keeps isolated issues in the shared workspace. Not
-    evidence of live Paperclip or model execution."""
+    workspaces disabled it keeps isolated issues in the shared workspace. Its
+    company agent list omits terminated agents (server/src/services/agents.ts).
+    Not evidence of live Paperclip or model execution."""
 
     RUNNER_INCOMPATIBLE = ("dangerouslySkipPermissions", "dangerouslyBypassApprovalsAndSandbox")
+
+    def agents(self):
+        # The company agent list omits terminated agents by default.
+        return [a for a in self.agents_ if a.get("status") != "terminated"]
     isolated_workspaces = True
 
     def experimental_settings(self):

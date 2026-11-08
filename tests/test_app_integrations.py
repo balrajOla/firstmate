@@ -231,6 +231,9 @@ def test_temporal_dispatch_routes_health_tick_and_observation_reconciliation(
     ]
     assert app.dispatch("coordinator.health")["kind"] == "temporal"
     assert calls == ["tick", ("observe", "request-1"), "reconcile", "health"]
+    # Paperclip agent retirement never runs against the Temporal backend.
+    with pytest.raises(WorkbenchError, match="Paperclip coordinator"):
+        app.dispatch("coordinator.retire_agents", {"idle": True})
     assert any(
         c["component"] == "temporal" and c["reachable"] for c in app.doctor()["checks"]
     )

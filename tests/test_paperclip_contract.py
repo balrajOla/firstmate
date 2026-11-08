@@ -2,7 +2,7 @@
 
 import pytest
 from assistant_workbench.engine import Engine
-from conftest import PinnedPaperclip
+from conftest import FakePaperclip, PinnedPaperclip
 
 
 def remote_issues(app, request_id):
@@ -302,7 +302,8 @@ def test_changed_worker_definition_is_not_served_by_an_old_agent(
 def test_terminated_agents_do_not_hold_pool_capacity(app, project, configured):
     configured["limits"]["max_agents"] = 2
     (app.home / "config.json").write_text(__import__("json").dumps(configured))
-    api = PinnedPaperclip()
+    # Some coordinators still list terminated agents.
+    api = FakePaperclip()
     for i in range(2):
         api.agents_.append({"id": "old-" + str(i), "status": "terminated",
                             "metadata": {"workbenchKey": "awb:retired-" + str(i)},
