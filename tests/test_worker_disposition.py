@@ -21,9 +21,14 @@ def paperclip():
         def do_PATCH(self):
             body = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
             seen.append({"path": self.path, "headers": dict(self.headers), "body": body})
-            # Pinned Paperclip refuses blocked without an unblock path (HTTP 422).
-            refused = body.get("status") == "blocked" and not body.get("unblockDescriptor")
-            status = 422 if refused else server.status
+            # Pinned Paperclip refuses blocked without an unblock path (HTTP 422)
+            # and an agent naming any owner but itself (HTTP 403).
+            descriptor = body.get("unblockDescriptor")
+            status = (
+                422 if body.get("status") == "blocked" and not descriptor
+                else 403 if descriptor and descriptor["owner"] != {"agentId": "agent-1"}
+                else server.status
+            )
             self.send_response(status)
             self.send_header("Content-Type", "application/json")
             self.end_headers()
@@ -51,6 +56,7 @@ def run_env(server, **overrides):
         "PAPERCLIP_API_KEY": "tok-secret",
         "PAPERCLIP_RUN_ID": "run-1",
         "PAPERCLIP_TASK_ID": "task-1",
+        "PAPERCLIP_AGENT_ID": "agent-1",
     }
     env.update(overrides)
     return env
@@ -66,13 +72,13 @@ def test_done_records_only_its_own_task_with_the_run_identity(paperclip, capsys)
     assert "tok-secret" not in capsys.readouterr().out
 
 
-def test_blocked_names_what_would_unblock_it_for_the_board(paperclip):
+def test_blocked_names_itself_and_what_would_unblock_it(paperclip):
     assert main(["blocked", "  Supply vendor/legacy_lib.py  "], run_env(paperclip)) == 0
     assert main(["blocked"], run_env(paperclip)) == 0
     first, second = (call["body"] for call in paperclip.seen)
     assert first == {"status": "blocked", "unblockDescriptor": {
-        "owner": "board", "action": "Supply vendor/legacy_lib.py"}}
-    # Without a reason the board is pointed at the worker's report.
+        "owner": {"agentId": "agent-1"}, "action": "Supply vendor/legacy_lib.py"}}
+    # Without a reason the descriptor points at the worker's report.
     assert second["unblockDescriptor"]["action"].endswith("see its final report.")
 
 
@@ -91,6 +97,8 @@ def test_rejects_other_statuses_and_missing_settings(paperclip, capsys):
     assert main(["blocked", "reason", "extra"], run_env(paperclip)) == 2
     assert main(["done"], run_env(paperclip, PAPERCLIP_TASK_ID="")) == 1
     assert "PAPERCLIP_TASK_ID" in capsys.readouterr().err
+    assert main(["blocked", "why"], run_env(paperclip, PAPERCLIP_AGENT_ID="")) == 1
+    assert "PAPERCLIP_AGENT_ID" in capsys.readouterr().err
     assert not paperclip.seen
 
 
