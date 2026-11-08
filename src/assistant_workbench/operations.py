@@ -327,42 +327,58 @@ def install(source, prefix, python=None):
                 "Incomplete release exists; inspect it and use a new prefix or remove only that incomplete release"
             )
         release.mkdir(parents=True)
-        package = release / "source"
-        package.mkdir()
-        shutil.copy2(source / "pyproject.toml", package / "pyproject.toml")
-        shutil.copy2(source / "LICENSE", package / "LICENSE")
-        shutil.copy2(
-            source / "requirements-runtime.lock", package / "requirements-runtime.lock"
-        )
-        shutil.copytree(
-            source / "src",
-            package / "src",
-            ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.egg-info"),
-        )
-        run_process(
-            [python or sys.executable, "-m", "venv", str(release / "venv")], timeout=90
-        )
-        interpreter = release / "venv/bin/python"
-        run_process(
-            [
-                str(interpreter),
-                "-m",
-                "pip",
-                "install",
-                "--constraint",
-                str(package / "requirements-runtime.lock"),
-                str(package) + "[tui]",
-            ],
-            timeout=600,
-        )
-        run_process(
-            [str(interpreter), "-m", "assistant_workbench", "--version"], timeout=20
-        )
-        atomic(
-            release / "ready.json",
-            canonical({"schema": 1, "content_revision": version, "created": now()}),
-        )
+        try:
+            _build_release(source, release, python)
+        except Exception as exc:
+            # Keep the failed attempt for inspection, out of the way of a retry.
+            failed = release.with_name(release.name + uid(".failed-"))
+            release.rename(failed)
+            log = failed / "install.log"
+            raise WorkbenchError(
+                str(exc) + ("\nBuild log: " + str(log) if log.is_file() else "")
+            ) from exc
     return _activate(prefix, release, old)
+
+
+def _build_release(source, release, python=None):
+    """Copy the distribution into the release and build its environment."""
+    log = release / "install.log"
+    package = release / "source"
+    package.mkdir()
+    shutil.copy2(source / "pyproject.toml", package / "pyproject.toml")
+    shutil.copy2(source / "LICENSE", package / "LICENSE")
+    shutil.copy2(
+        source / "requirements-runtime.lock", package / "requirements-runtime.lock"
+    )
+    shutil.copytree(
+        source / "src",
+        package / "src",
+        ignore=shutil.ignore_patterns("__pycache__", "*.pyc", "*.egg-info"),
+    )
+    _logged_step(
+        log, [python or sys.executable, "-m", "venv", str(release / "venv")], timeout=90
+    )
+    interpreter = release / "venv/bin/python"
+    _logged_step(
+        log,
+        [
+            str(interpreter),
+            "-m",
+            "pip",
+            "install",
+            "--constraint",
+            str(package / "requirements-runtime.lock"),
+            str(package) + "[tui]",
+        ],
+        timeout=600,
+    )
+    _logged_step(
+        log, [str(interpreter), "-m", "assistant_workbench", "--version"], timeout=20
+    )
+    atomic(
+        release / "ready.json",
+        canonical({"schema": 1, "content_revision": release.name, "created": now()}),
+    )
 
 
 def rollback(prefix):
