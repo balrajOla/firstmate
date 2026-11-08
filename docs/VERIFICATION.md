@@ -39,6 +39,8 @@ A local full Paperclip startup was blocked by its embedded PostgreSQL root restr
 | quality | Human-calibrated judges, source-grounded reports, numeric/negation/uncertainty editing traps and inspected visuals |
 | soak | 72-hour sustained mixed workload, capacity/backpressure, failures, restarts, storage limits and retained outcomes |
 
+For the soak gate, `scripts/soak_live.py` drives an installed Workbench whose bridge and coordinator already run as services. Each cycle submits one small real request to a live project, a burst of synthetic intake to a paused project (checked for lost prompts, then cancelled), and samples service health, queue depth, storage and request latency. It writes one JSON line per cycle plus a state file, so a restarted runner continues the same run. Time it was not running is reported as gaps, not soaked time, and its summary says RUNNING until the real elapsed target is reached. `scripts/soak.py` remains a short durable-intake check without workers.
+
 `awb qualify` returns exit code 3 while required evidence is missing. It does not create passed evidence. Operator attestations must retain artifacts, identify the observer and match this machine; hashes and age are checked. The target GitHub workflow validates that evidence on an explicitly configured private Mac runner. It does not simulate the GUI or mark a skipped check green.
 
 The CI matrix runs core tests and an independently installed wheel on Linux/macOS. A successful CI macOS shell job is still not a logged-in WezTerm desktop test. Publication of source and tests does not satisfy the open live-release gates.
