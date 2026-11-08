@@ -140,6 +140,16 @@ def make_server(home, port=0, background=False):
             while not stopped.is_set():
                 try:
                     app.scheduled()
+                    try:
+                        # One unresolved request per pass, when semantic
+                        # routing is configured; a no-op otherwise. A routing
+                        # failure must not stop dispatch of routed work.
+                        app.dispatch("routing.pending")
+                    except Exception as exc:
+                        atomic(
+                            home / "routing-health.json",
+                            canonical({"status": "blocked", "reason": str(exc), "at": now()}),
+                        )
                     app.dispatch("coordinator.tick")
                     atomic(
                         home / "bridge-health.json",

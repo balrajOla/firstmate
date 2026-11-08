@@ -161,7 +161,7 @@ def skill_packets(config, names):
     return packets
 
 
-def compile_plan(request, config, kind=None, model_override=None):
+def compile_plan(request, config, kind=None, model_override=None, routing=None):
     kind = kind or classify(request["body"])
     if kind not in TEMPLATES:
         raise WorkbenchError("Unknown workflow")
@@ -192,7 +192,7 @@ def compile_plan(request, config, kind=None, model_override=None):
         "request_id": request["id"],
         "revision": request["revision"],
         "workflow": kind,
-        "routing": classification(request["body"]),
+        "routing": routing or classification(request["body"]),
         "nodes": nodes,
         "model": model,
         "selection": decision,

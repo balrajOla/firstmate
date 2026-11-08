@@ -35,7 +35,7 @@ flowchart TD
 
 ## Requests and execution
 
-Ingress commits a client-key receipt before dispatch. Different keys remain distinct prompts. Explicit project/reply links take precedence over exact project-name matching. Task classification and grouping suggestions are lexical policies, not semantic understanding. Grouping requires an explicit compatibility decision and preserves the original requests and their acceptance criteria.
+Ingress commits a client-key receipt before dispatch. Different keys remain distinct prompts. Explicit project/reply links take precedence over exact project-name matching. Task classification and grouping suggestions are lexical policies by default. An optional semantic router asks a qualified official CLI profile to resolve unrouted projects and choose workflows. Each decision is recorded per revision with its explanation, and only confident decisions act. Grouping stays lexical. Grouping requires an explicit compatibility decision and preserves the original requests and their acceptance criteria.
 
 Amendments advance the revision and carry deliverable criteria forward as pending. A grouped child's amendment updates its parent in the same transaction; it does not create duplicate independent work. Withdrawing a member preserves surviving demands and parent-specific amendments. Reopening creates new work with copied criteria and historical lineage. Nested request groups are rejected. Ambiguous ownership in old group records blocks a scope rewrite instead of guessing which requirement to remove.
 

@@ -14,6 +14,8 @@ Use `awb request '{"action":"NAME","args":{...}}'`, or pass `-` and send JSON on
 | `workflow.obligations`, `workflow.fulfill` | Add explicit acceptance criteria and link their submitted outcomes |
 | `workflow.project_policy` | Priority and pause of new dispatch; running work remains coordinator-owned |
 | `coordinator.tick`, `coordinator.observe`, `coordinator.health` | Dispatch, observe or check the **selected** backend; health is not model qualification |
+| `request.route`, `routing.pending` | With `routing.semantic` configured: record (or, with `force`, redo) one request's semantic routing decision, or route the oldest unresolved request; only confident decisions assign a project |
+| `evaluation.semantic_routing` | Run the configured semantic router over a held-out suite in a throwaway store; records expected and actual workflow and project, confidence, latency and misses beside the lexical policy |
 | `coordinator.retire_agents` | Paperclip only: terminate named (`agent_ids`) or all `idle` Workbench-managed agents that are not running and hold no open task, and forget cached identities of agents that are no longer active |
 | `context.inventory`, `context.ingest`, `context.mark`, `context.coverage` | Account for declared corpus processing |
 | `context.search`, `context.source`, `context.packet`, `context.history` | Retrieve evidence and permitted saved prompts |

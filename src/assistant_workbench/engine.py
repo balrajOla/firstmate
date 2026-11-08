@@ -370,7 +370,15 @@ class Engine:
     def _preflight(self, req, project):
         """Validate the entire saved team and every packet before remote writes."""
         try:
-            plan = json.loads(req["plan"]) if req.get("plan") else compile_plan(req, self.settings)
+            if req.get("plan"):
+                plan = json.loads(req["plan"])
+            else:
+                from .routing import workflow_choice
+
+                # A confident semantic decision chooses the workflow; otherwise
+                # the lexical policy does, as before.
+                kind, routing = workflow_choice(self.store, self.settings, req) or (None, None)
+                plan = compile_plan(req, self.settings, kind, routing=routing)
             if (
                 plan.get("schema") != 1
                 or plan.get("request_id") != req["id"]

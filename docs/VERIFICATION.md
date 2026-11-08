@@ -21,7 +21,7 @@ The initial local integration probe was blocked by automatic approval review bec
 
 ## Measured limitations
 
-The small routing demonstration scores 9/10: “Report the architecture review” is classified as design by the current keyword policy. This is a known selection weakness, not a hidden pass. Explicit workflow selection and plan review remain necessary for ambiguous requests. This is not a held-out quality benchmark.
+The small lexical routing demonstration (`evals/routing.json`) now scores 10/10. “Report the architecture review” was classified as design in the earlier report; the lexical policy has since given the leading requested action precedence over subject nouns. The demonstration is not a held-out benchmark. On the 25 held-out cases in `evals/routing-heldout.json`, the optional semantic router (Claude Sonnet 5.5 at low effort, through the official CLI) chose the expected workflow and project in 25 of 25, with no errors and no confident wrong project, where the lexical policy managed 14/25 and 5/25. Mean latency was 15.8 seconds (2026-11-08, isolated Mac run). The same author wrote the labels and the router prompt, the suite is small, and it is not human-calibrated, so this shows the fix on these cases only.
 
 A local full Paperclip startup was blocked by its embedded PostgreSQL root restriction; this container also refused a non-root ownership setup. The bridge has been tested against contract fixtures and inspected pinned source, not a running full coordinator here. Genuine signed-in CLI agents, effective model/effort confirmation and native cancellation remain required.
 

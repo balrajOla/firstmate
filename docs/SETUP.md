@@ -48,6 +48,24 @@ A worker's final message is its report. Before that, a Claude worker records its
 
 Temporal workers invoke the same official CLIs using their own locally qualified profiles.
 
+## Optional semantic routing
+
+The lexical routing policy is the default. To let a model resolve projects and workflows, qualify a Claude profile (see above) and name it in the Workbench `config.json`:
+
+```json
+{"routing": {"semantic": {"profile": "my-claude-router", "min_confidence": 0.7}}}
+```
+
+Each request revision then gets one tool-less `claude -p` call. The call sees the saved prompt, the registered projects with their aliases and five most recent request titles, and the workflow options. Its answer is validated and recorded in the `request.route_decided` event: project, workflow, confidence, one-sentence explanation, the CLI-reported model and the latency. Behavior by case:
+
+- **Unresolved request.** The service assigns it when the decision names a project with at least the configured confidence. Otherwise the request stays in *Choose project* with the suggestion visible.
+- **Delivery.** It uses the semantic workflow when no reviewed plan is saved and the decision is confident.
+- **Invalid answer, failed call or low confidence.** The router never routes. Delivery falls back to the lexical policy.
+- **Explicit choices.** An explicit project, a reply link or a saved plan always takes precedence.
+- **Correction.** Run `request.route` with `force: true` to ask again, or `request.assign` and a saved plan to correct the decision.
+
+Each decision costs one model call (about 21k context tokens on the test machine, mostly cacheable) and took about 16 seconds. `evaluation.semantic_routing` runs the router over a suite such as `evals/routing-heldout.json` in a throwaway store and records misses beside the lexical policy.
+
 ## Optional Temporal backend and fleet
 
 Install the optional SDK in the Workbench environment:
