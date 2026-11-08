@@ -1699,6 +1699,8 @@ Build from a recorded commit and install independently on Linux and macOS.
 Mapped pytest evidence:
 
 - `tests/test_installed.py::test_installed_prompt_outcome_backup_restore`
+- `tests/test_dependency_install.py::test_failed_build_reports_its_output_and_allows_a_clean_retry`
+- `tests/test_dependency_install.py::test_retry_after_failure_at_same_revision_runs_again`
 
 ### PF57
 
