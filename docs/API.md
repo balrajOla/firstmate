@@ -14,6 +14,7 @@ Use `awb request '{"action":"NAME","args":{...}}'`, or pass `-` and send JSON on
 | `workflow.obligations`, `workflow.fulfill` | Add explicit acceptance criteria and link their submitted outcomes |
 | `workflow.project_policy` | Priority and pause of new dispatch; running work remains coordinator-owned |
 | `coordinator.tick`, `coordinator.observe`, `coordinator.health` | Dispatch, observe or check the **selected** backend; health is not model qualification |
+| `coordinator.retire_agents` | Paperclip only: terminate named (`agent_ids`) or all `idle` Workbench-managed agents that are not running and hold no open task, and forget cached identities of agents that are no longer active |
 | `context.inventory`, `context.ingest`, `context.mark`, `context.coverage` | Account for declared corpus processing |
 | `context.search`, `context.source`, `context.packet`, `context.history` | Retrieve evidence and permitted saved prompts |
 | `context.assertion`, `context.revoke`, `context.purge` | Retain contradictions and withdraw active source access |

@@ -551,6 +551,12 @@ Mapped pytest evidence:
 - `tests/test_paperclip_contract.py::test_terminated_agents_do_not_hold_pool_capacity`
 - `tests/test_paperclip_contract.py::test_converted_worker_agent_is_refused[claude]`
 - `tests/test_paperclip_contract.py::test_converted_worker_agent_is_refused[codex]`
+- `tests/test_agent_retirement.py::test_idle_agents_are_retired_and_a_later_dispatch_creates_fresh_ones`
+- `tests/test_agent_retirement.py::test_agents_with_open_tasks_or_a_running_invocation_are_kept`
+- `tests/test_agent_retirement.py::test_only_named_agents_are_retired_and_unknown_ones_are_reported`
+- `tests/test_agent_retirement.py::test_retirement_needs_an_explicit_scope`
+- `tests/test_agent_retirement.py::test_uncertain_creation_stays_for_inspection`
+- `tests/test_agent_retirement.py::test_unconfirmed_termination_is_uncertain`
 
 ### PF14
 
