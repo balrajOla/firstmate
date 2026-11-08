@@ -53,6 +53,166 @@ TOOLS = {
     ),
 }
 
+# Keep common actions typed. Administrative credentials, installation and
+# automatic outcome acceptance are deliberately absent from this local surface.
+TOOLS.update(
+    {
+        "awb_usage": (
+            "Read provider-reported token usage and reserved capacity; unavailable costs stay unknown",
+            "fleet.usage",
+            {
+                "project": {"type": "string"},
+                "request_id": {"type": "string"},
+                "revision": {"type": "integer"},
+            },
+            [],
+        ),
+        "awb_projects": (
+            "List project identities before routing",
+            "project.list",
+            {},
+            [],
+        ),
+        "awb_request": (
+            "Read current requirements and revision",
+            "request.get",
+            {"request_id": {"type": "string"}},
+            ["request_id"],
+        ),
+        "awb_plan": (
+            "Compile a bounded team plan using qualified profiles; does not dispatch it",
+            "request.plan",
+            {
+                "request_id": {"type": "string"},
+                "kind": {
+                    "type": "string",
+                    "enum": ["simple", "code", "design", "report", "research"],
+                },
+                "model_override": {"type": "string"},
+            },
+            ["request_id"],
+        ),
+        "awb_capabilities": (
+            "Inspect installed and enabled integrations without implying qualification",
+            "capabilities.list",
+            {},
+            [],
+        ),
+        "awb_backend_recall": (
+            "Search an explicitly configured project memory backend; derived memories remain unverified",
+            "backend.recall",
+            {
+                "backend": {"type": "string", "enum": ["hindsight", "openviking"]},
+                "project": {"type": "string"},
+                "query": {"type": "string"},
+                "limit": {"type": "integer"},
+            },
+            ["backend", "project", "query"],
+        ),
+        "awb_backend_read": (
+            "Read an original through a managed backend source binding",
+            "backend.read",
+            {
+                "backend": {"type": "string", "enum": ["hindsight", "openviking"]},
+                "project": {"type": "string"},
+                "source_id": {"type": "string"},
+            },
+            ["backend", "project", "source_id"],
+        ),
+        "awb_backend_ingest": (
+            "Ingest an archived project source into an explicitly write-enabled backend",
+            "backend.ingest",
+            {
+                "backend": {"type": "string", "enum": ["hindsight", "openviking"]},
+                "project": {"type": "string"},
+                "source_id": {"type": "string"},
+            },
+            ["backend", "project", "source_id"],
+        ),
+        "awb_execution_workspace": (
+            "Create an owned project workspace for code and tests",
+            "execution.create_workspace",
+            {"project": {"type": "string"}},
+            ["project"],
+        ),
+        "awb_execution_plan": (
+            "Prepare exact compiler/test commands and their hash for review",
+            "execution.plan",
+            {
+                "workspace_id": {"type": "string"},
+                "language": {"type": "string"},
+                "goal": {"type": "string"},
+                "allow_package_scripts": {"type": "boolean"},
+            },
+            ["workspace_id"],
+        ),
+        "awb_execution_run": (
+            "Run a reviewed command plan only when its expected hash still matches",
+            "execution.run",
+            {
+                "plan_id": {"type": "string"},
+                "expected_sha256": {"type": "string"},
+                "timeout": {"type": "integer"},
+                "max_output_bytes": {"type": "integer"},
+                "memory_mb": {"type": "integer"},
+            },
+            ["plan_id", "expected_sha256"],
+        ),
+        "awb_execution_status": (
+            "Read actual execution receipts and bounded logs",
+            "execution.get_run",
+            {"run_id": {"type": "string"}},
+            ["run_id"],
+        ),
+        "awb_artifact_verify": (
+            "Recheck artifact paths and hashes; does not certify behavior",
+            "execution.verify_artifacts",
+            {"manifest_id": {"type": "string"}},
+            ["manifest_id"],
+        ),
+        "awb_recover": (
+            "Recover a checkpoint against current requirements and artifact hashes",
+            "continuation.recover",
+            {"request_id": {"type": "string"}},
+            ["request_id"],
+        ),
+        "awb_rollover": (
+            "Request a bounded fresh session after checkpointing; successor waits for stop confirmation",
+            "lifecycle.request",
+            {"request_id": {"type": "string"}, "node": {"type": "string"}},
+            ["request_id", "node"],
+        ),
+        "awb_writing_check": (
+            "Check length and vague wording without claiming factual correctness",
+            "writing.lint",
+            {"text": {"type": "string"}, "max_words": {"type": "integer"}},
+            ["text"],
+        ),
+    }
+)
+
+
+def validate_arguments(args, properties, required):
+    if (
+        not isinstance(args, dict)
+        or set(args) - set(properties)
+        or set(required) - set(args)
+    ):
+        raise WorkbenchError("Invalid tool arguments")
+    types = {
+        "string": str,
+        "integer": int,
+        "boolean": bool,
+        "array": list,
+        "object": dict,
+    }
+    for key, value in args.items():
+        rule = properties[key]
+        if type(value) is not types[rule["type"]]:
+            raise WorkbenchError("Invalid argument type: " + key)
+        if "enum" in rule and value not in rule["enum"]:
+            raise WorkbenchError("Unsupported argument value: " + key)
+
 
 def serve_stdio(home, source=sys.stdin, sink=sys.stdout):
     app = Application(home)
@@ -100,8 +260,7 @@ def serve_stdio(home, source=sys.stdin, sink=sys.stdout):
                 name = request["params"]["name"]
                 args = request["params"].get("arguments", {})
                 spec = TOOLS[name]
-                if set(args) - set(spec[2]) or set(spec[3]) - set(args):
-                    raise WorkbenchError("Invalid tool arguments")
+                validate_arguments(args, spec[2], spec[3])
                 value = app.dispatch(spec[1], args)
                 result = {
                     "content": [{"type": "text", "text": json.dumps(value)}],

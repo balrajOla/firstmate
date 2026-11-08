@@ -14,7 +14,7 @@ from .util import WorkbenchError, canonical, uid
 def parser():
     p = argparse.ArgumentParser(
         prog="awb",
-        description="Assistant Workbench: persistent context and outcomes for Paperclip agents",
+        description="Assistant Workbench: persistent context, agents and outcomes",
     )
     p.add_argument("--version", action="version", version=__version__)
     p.add_argument("--home")
@@ -26,6 +26,10 @@ def parser():
     commands.add_parser("mcp")
     serve = commands.add_parser("serve")
     serve.add_argument("--port", type=int, default=8765)
+    worker = commands.add_parser("temporal-worker")
+    worker.add_argument("--host-id", required=True)
+    worker.add_argument("--token-file", required=True)
+    worker.add_argument("--control-endpoint")
     project = commands.add_parser("project")
     ps = project.add_subparsers(dest="operation", required=True)
     ps.add_parser("list")
@@ -110,10 +114,12 @@ def main(argv=None):
         else:
             app = Application(home)
             if args.command == "init":
+                from .config import config
+
                 result = {
                     "home": str(home),
-                    "coordinator": "paperclip",
-                    "next": "Configure Paperclip company and qualified model profiles in config.json; run awb doctor",
+                    "coordinator": config(home)["coordinator"]["kind"],
+                    "next": "Configure one coordinator and qualified model profiles in config.json; run awb doctor",
                 }
             elif args.command in {"doctor", "snapshot"}:
                 result = app.dispatch(args.command)
@@ -146,6 +152,35 @@ def main(argv=None):
                 result = app.dispatch(value["action"], value.get("args", {}))
             elif args.command == "tick":
                 result = app.dispatch("coordinator.tick")
+            elif args.command == "temporal-worker":
+                import asyncio
+                import stat
+                from .config import config
+                from .temporal_runtime import serve_worker
+
+                token_path = Path(args.token_file)
+                if token_path.is_symlink() or not token_path.is_file():
+                    raise WorkbenchError("Host token must be a private regular file")
+                if stat.S_IMODE(token_path.stat().st_mode) & 0o077:
+                    raise WorkbenchError(
+                        "Host token file must not be accessible to other users"
+                    )
+                token = token_path.read_text().strip()
+                if len(token) < 32:
+                    raise WorkbenchError("Host token is invalid")
+                try:
+                    asyncio.run(
+                        serve_worker(
+                            app.store,
+                            config(home),
+                            args.host_id,
+                            token,
+                            control_endpoint=args.control_endpoint,
+                        )
+                    )
+                except KeyboardInterrupt:
+                    pass
+                return 0
             elif args.command == "serve":
                 from .server import make_server
 

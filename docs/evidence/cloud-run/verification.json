@@ -1,0 +1,41 @@
+{
+  "date": "2026-11-08",
+  "source_fingerprint": "4241940de05160dc483611c4075a55b33a8c9db50e006fef88d93b5015d5b0ee",
+  "tests": {
+    "passed": 465,
+    "failed": 0,
+    "skipped": 0,
+    "seconds": 155.85
+  },
+  "features": {
+    "catalog": 71,
+    "counts": {
+      "passed": 0,
+      "failed": 0,
+      "blocked": 71,
+      "not_implemented": 0
+    },
+    "local_counts": {
+      "passed": 71
+    },
+    "qualified": false
+  },
+  "native_wezterm": {
+    "screenshots": 37,
+    "scenario_checkpoints": 30,
+    "bookkeeping_passed": 30,
+    "durable_prompts": 22,
+    "capture_failures": 0,
+    "shortcut": "observed additional real Workbench tab"
+  },
+  "live_model": {
+    "successful_responses": 0,
+    "status": "blocked"
+  },
+  "artifacts": {
+    "assistant_workbench-0.1.0.tar.gz": "7323e45b4b179b6a10e25edeaac88704070d5881db915ddfc2c6a8f95d693eb1",
+    "assistant_workbench-0.1.0-py3-none-any.whl": "5629325cacbc270d05d4e2f55b50d9fefd7f2edcad4790577dffaa18772028ed",
+    "scenario-traces.zip": "988dec89f005033c335f4d6c0cf6059be2b8a6c056a60edf92ed655d5a786040"
+  },
+  "scope": "Local tests and native GUI controls passed. Real model team delivery, production multi-host, user desktop, long recovery and calibrated semantic quality remain separate open qualifications."
+}

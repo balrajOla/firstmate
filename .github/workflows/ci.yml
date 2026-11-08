@@ -22,7 +22,15 @@ jobs:
       - run: python -m pip install -r requirements-dev.lock
       - run: python -m pip install -e .
       - run: python scripts/build_feature_register.py
+      - run: python scripts/evaluate_feature_coverage.py --write-run-metadata run-metadata.json
       - run: python -m pytest -q --junitxml=test-results.xml
+      - name: Record feature gaps without claiming live qualification
+        run: |
+          set +e
+          python scripts/evaluate_feature_coverage.py --junit test-results.xml --run-metadata run-metadata.json --output feature-coverage.json
+          result=$?
+          set -e
+          test "$result" -eq 3
       - run: python -m build
       - name: Install the release independently
         run: |
@@ -36,7 +44,30 @@ jobs:
           path: |
             test-results.xml
             installed-results.xml
+            feature-coverage.json
+            run-metadata.json
             dist/
+  temporal-runtime:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -r requirements-dev.lock -r requirements-temporal.lock
+      - run: python -m pip install -e .
+      - name: Prepare real development service
+        run: python scripts/prepare_temporal.py "$RUNNER_TEMP/awb-temporal" > temporal-server.json
+      - name: Exercise real queues, cancellation, recovery and HTTP workers
+        run: |
+          AWB_TEMPORAL_SERVER_BINARY="$(python -c 'import json; print(json.load(open("temporal-server.json"))["binary"])')" python -m pytest -q tests/test_runtime_backends.py tests/test_server_workers.py tests/test_runtime_observations.py --junitxml=temporal-results.xml
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: real-temporal-service-fixture-activities
+          path: |
+            temporal-server.json
+            temporal-results.xml
   release-boundary:
     runs-on: ubuntu-latest
     steps:

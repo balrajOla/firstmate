@@ -1,0 +1,1242 @@
+{
+  "schema": 1,
+  "run_id": "native-verified-04",
+  "started_at": "2026-11-08T08:03:55.714435+00:00",
+  "capture_kind": "native WezTerm on authenticated Xvfb",
+  "notice": "Actual native terminal pixels. Scenario bookkeeping and blocked-state observations do not certify generated products, model execution or a user desktop.",
+  "home": "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04",
+  "tools": {
+    "wezterm": "TEST_CHECKOUT/.local-evidence/tools/gui/squashfs-root/usr/bin/wezterm-gui",
+    "awb": "TEST_CHECKOUT/.venv/bin/awb",
+    "xvfb": "TEST_CHECKOUT/.local-evidence/tools/gui/root/usr/bin/Xvfb",
+    "image_import": "/usr/bin/import",
+    "xtst": "TEST_CHECKOUT/.local-evidence/tools/gui/root/usr/lib/x86_64-linux-gnu/libXtst.so.6.1.0"
+  },
+  "captures": [
+    {
+      "file": "../../assets/cloud-run/00-start.png",
+      "sha256": "4c61b3623abb302e80bb3190fb910e038c3fc86839a7899933c62dba80eb3c02",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:03:58.992107+00:00",
+      "view": "inbox",
+      "notice": "Real application before scenario prompts"
+    },
+    {
+      "file": "../../assets/cloud-run/00-plugin-shortcut.png",
+      "sha256": "e9e5410bba2ef36d8732f759e2960a968d059f6eb0f332455776b7ae100fdd15",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:01.247066+00:00",
+      "view": "inbox",
+      "plugin_shortcut": {
+        "status": "passed",
+        "keys": "CTRL+SHIFT+A",
+        "launches_before": [
+          {
+            "pid": 28,
+            "at": 1794125036.2430751,
+            "args": [
+              "--home",
+              "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04",
+              "tui"
+            ],
+            "executable": "TEST_CHECKOUT/.venv/bin/awb"
+          }
+        ],
+        "launches_after": [
+          {
+            "pid": 28,
+            "at": 1794125036.2430751,
+            "args": [
+              "--home",
+              "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04",
+              "tui"
+            ],
+            "executable": "TEST_CHECKOUT/.venv/bin/awb"
+          },
+          {
+            "pid": 71,
+            "at": 1794125039.036137,
+            "args": [
+              "--home",
+              "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04",
+              "tui"
+            ],
+            "executable": "TEST_CHECKOUT/.venv/bin/awb"
+          }
+        ],
+        "notice": "The real plugin must launch another real CLI; inspect the paired native image for the second rendered tab."
+      }
+    },
+    {
+      "file": "../../assets/cloud-run/S01.png",
+      "sha256": "fd3d9c15e32fd6394a5e6d79a9df364c817978faf8012a18632c7ea3c1dadafb",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:03.383566+00:00",
+      "step_id": "S01",
+      "action": "submit",
+      "instruction": "Create HarborWeb, a repair-cafe website with an accessible event list, booking form and volunteer signup. Keep tracking disabled and do not send personal data to third parties. Supply working source, tests and a short handover.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_a115d62126cb4af59dd5b073184b1db4",
+      "state_snapshot": "./native-snapshots/S01.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S01.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_d1ae1b9b6d1443189339cbc3fa38b149",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S02.png",
+      "sha256": "bcbd3499ff830c42d4c32c3e8a05949612a9622561d0165948a90c484026b348",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:05.460407+00:00",
+      "step_id": "S02",
+      "action": "submit",
+      "instruction": "Create PocketTasks, an offline-first mobile task app with local task storage, due dates and accessible controls. No account should be required. Provide source, tests and an installable app only after a real mobile build.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_bcd85e4a7ec54d30b3a40c4582352306",
+      "state_snapshot": "./native-snapshots/S02.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S02.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_3c650c3f99514b64a8b94111799160ea",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S03.png",
+      "sha256": "d31c96363978b885b26d34ac53eadef1c790f3bdcd1207b9caf91a91bab54262",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:07.491091+00:00",
+      "step_id": "S03",
+      "action": "submit",
+      "instruction": "Research long-context prompting versus retrieval-augmented generation for a daily assistant. Start with Lost in the Middle (https://arxiv.org/abs/2307.03172), RULER (https://arxiv.org/abs/2404.06654), and the comparative study (https://arxiv.org/abs/2407.16833). Use primary sources, compare methods and limits, and include citations and a concise recommendation without promising perfect recall.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_14712011dc9c451da93e5c10e5bfbd70",
+      "state_snapshot": "./native-snapshots/S03.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S03.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_294f70da9ca040c5a0dbba20908e2ee3",
+            "status": "blocked",
+            "error": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S04.png",
+      "sha256": "c4ba11e0e2672b2ca75e9ce3ee9f851d0282078bcbfd0f555614c9e7752067d7",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:09.492506+00:00",
+      "step_id": "S04",
+      "action": "amend",
+      "instruction": "Add booking confirmation, keyboard navigation and clear error messages to HarborWeb. Preserve the event list and volunteer signup.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_a115d62126cb4af59dd5b073184b1db4",
+      "state_snapshot": "./native-snapshots/S04.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S04.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_d94e7d2bd634476f94bc776443982025",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S05.png",
+      "sha256": "18279c29ab1f7343b0d135b9bad9a33422317370ac249ec5c02b1cce9ed91507",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:11.482967+00:00",
+      "step_id": "S05",
+      "action": "amend",
+      "instruction": "Add recurring tasks and dark mode to PocketTasks. Keep local data usable without a network and cover recurrence boundaries in tests.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_bcd85e4a7ec54d30b3a40c4582352306",
+      "state_snapshot": "./native-snapshots/S05.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S05.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_7f5fabbb82a0437b95e7585b2cf8d753",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S06.png",
+      "sha256": "5399870134af01f507bb2f29ce332d68fdc169afbe9ad66210aa171b9300d902",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:13.542477+00:00",
+      "step_id": "S06",
+      "action": "amend",
+      "instruction": "Expand EvidenceReview with evidence that challenges using long context by default. Include cases where retrieval or a hybrid approach helps, and distinguish experimental findings from your inference.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_14712011dc9c451da93e5c10e5bfbd70",
+      "state_snapshot": "./native-snapshots/S06.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S06.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_6a00ef6082c34e8eb0fb35a833d1f86d",
+            "status": "blocked",
+            "error": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S07.png",
+      "sha256": "bb7734b4e4cdc407feb24b8884cfc5caa8ea4aaf999f58a294e2b88d140bbfc3",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:15.591731+00:00",
+      "step_id": "S07",
+      "action": "amend",
+      "instruction": "Change the analytics requirement: allow an optional aggregate usage report, but leave tracking off by default. Explain how this changes my original no-third-party-data constraint before implementing anything that sends data.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_a115d62126cb4af59dd5b073184b1db4",
+      "state_snapshot": "./native-snapshots/S07.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S07.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_120636934e58466f875047ae9d9e8a06",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S08.png",
+      "sha256": "927e1644ff30e28f1bef87ad3f2f09c9af9f5d29522b6ea3f842cc7187327877",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:17.624375+00:00",
+      "step_id": "S08",
+      "action": "amend",
+      "instruction": "Consider optional encrypted cloud sync for PocketTasks. Flag the tension with my earlier no-account requirement, and preserve a fully offline mode even if sync is added later.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_bcd85e4a7ec54d30b3a40c4582352306",
+      "state_snapshot": "./native-snapshots/S08.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S08.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_52fb0f572b894378b9cee3a2f04d7e61",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S09.png",
+      "sha256": "b9df40ceb7f8ad965e0ba78817b4e26e8ef210b26d90adc382f1eae0a4f02d6c",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:19.657588+00:00",
+      "step_id": "S09",
+      "action": "amend",
+      "instruction": "Extend EvidenceReview to separate advertised context size from demonstrated retrieval and reasoning performance. Add a small architecture diagram, a comparison table and a short executive summary.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_14712011dc9c451da93e5c10e5bfbd70",
+      "state_snapshot": "./native-snapshots/S09.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S09.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_f85607605f7d441abff7084cf978712b",
+            "status": "blocked",
+            "error": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S10.png",
+      "sha256": "ee9aa32a44413e4c9b7e4c098e5a422a65dfd9b8e8aca9cdfe5ac0a14360f277",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:21.807182+00:00",
+      "step_id": "S10",
+      "action": "submit",
+      "instruction": "As a separate HarborWeb change, add event search with keyboard-friendly results and a useful empty state.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_dce4f8ed026a4a8c9e88327d00e06187",
+      "state_snapshot": "./native-snapshots/S10.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S10.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_6c51de3807c84b959a60c70f1c6cc212",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S11.png",
+      "sha256": "f523afc95f1155cca528f94c8b9747d4c037ae20f27723da8e63be5f91effa3c",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:23.861554+00:00",
+      "step_id": "S11",
+      "action": "submit",
+      "instruction": "As another HarborWeb change, add date and category filters that preserve selections in the URL.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_2b68ce841a414b7796e62feb42c0091b",
+      "state_snapshot": "./native-snapshots/S11.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S11.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_281ef7f01b1e4a0688b6daabf65ec3e5",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S12.png",
+      "sha256": "fef9216fe0fef294d94c8f188cfab7790f2861764a9af6491ec2ce7f40165933",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:25.884654+00:00",
+      "step_id": "S12",
+      "action": "group",
+      "instruction": "Combine the HarborWeb search and filter changes into one execution plan while keeping both original requests and each acceptance criterion visible.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_054ccd6afdf944889d5a47ec7c5474ac",
+      "state_snapshot": "./native-snapshots/S12.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S12.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_df506d672a364c12a9cc86a3c97dd6a3",
+            "status": "blocked",
+            "error": "No qualified model profile for simple; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for simple; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S13.png",
+      "sha256": "d62f23de218e78945398cad80aa6db6af1c45c39efaba1947ca0c6e21ccf8d9a",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:27.858766+00:00",
+      "step_id": "S13",
+      "action": "amend",
+      "instruction": "For the grouped HarborWeb search request, also ensure an empty search does not hide all events and that keyboard focus survives filtering.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_dce4f8ed026a4a8c9e88327d00e06187",
+      "state_snapshot": "./native-snapshots/S13.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S13.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_77ce9bdb70474710a04f4fd191e272cd",
+            "status": "blocked",
+            "error": "No qualified model profile for simple; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for simple; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S14.png",
+      "sha256": "1c3d7f8a3a5c0afe959bf2b3de4da69f802efeede423b071ca135d3622773645",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:29.847215+00:00",
+      "step_id": "S14",
+      "action": "cancel",
+      "instruction": "Withdraw the date/category filters for now. Keep event search, its accessibility criteria and the main HarborWeb website work active.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_2b68ce841a414b7796e62feb42c0091b",
+      "state_snapshot": "./native-snapshots/S14.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S14.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "observed",
+          "result": {
+            "id": "ob_04a67ecf7653443fb85e18895fca0cd5",
+            "status": "delivered",
+            "error": null,
+            "result": {
+              "request_id": "r_2b68ce841a414b7796e62feb42c0091b",
+              "cancel_requested": [],
+              "stopped": false,
+              "notice": "Cancellation is a request; observe terminal workflow and process-stop receipts before replacement work."
+            }
+          }
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S15.png",
+      "sha256": "fbb05e5cde4e0638d81a1986e41e0ac53ef56ea8f524661f721ff22314a62208",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:31.841801+00:00",
+      "step_id": "S15",
+      "action": "reopen",
+      "instruction": "Reopen the withdrawn HarborWeb filters as a new request linked to the old one; restore its original filter acceptance criteria.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_f13564ac0cc04209a086188df8e63e43",
+      "state_snapshot": "./native-snapshots/S15.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S15.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_4e73cf8452a4417baff41fba6a8acb3f",
+            "status": "blocked",
+            "error": "No qualified model profile for simple; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for simple; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S16.png",
+      "sha256": "caa52aef13648a1b4d1b28325fe3f1a0ad411c6a02541b513429f4723ba459bf",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:33.786082+00:00",
+      "step_id": "S16",
+      "action": "submit",
+      "instruction": "Create a separate PocketTasks export feature: export tasks as JSON and import them back without losing completed status or due dates.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_067151dd9b5645a9b71512f4d169a698",
+      "state_snapshot": "./native-snapshots/S16.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S16.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_635a3b738ad54e57b347b455d6d16c93",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S17.png",
+      "sha256": "022896fba50984c43d44f86632548ca0b17d4e4c7e77f028ae47794fd1e7dd34",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:35.811973+00:00",
+      "step_id": "S17",
+      "action": "submit",
+      "instruction": "Create a separate PocketTasks reminder feature using local notifications; handle denied notification permission without breaking task editing.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_70c9bc590c43468cb6e909cfb479582b",
+      "state_snapshot": "./native-snapshots/S17.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S17.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_6b9bb28566f546f7bf1e4e2a3f3423ef",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S18.png",
+      "sha256": "8f6c8c22cd4b0b30cc59d88f348dad3a5e1f23ac2b686284eb421a72df2b4f16",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:37.855736+00:00",
+      "step_id": "S18",
+      "action": "group",
+      "instruction": "Group PocketTasks export/import and local reminders into one release plan, preserving each original request and acceptance criterion.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_020b5755384c41c4bbea09a77e8e703c",
+      "state_snapshot": "./native-snapshots/S18.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S18.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_9321b7bf954d44228a6e2e3daf6c3cd7",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S19.png",
+      "sha256": "17106410242629ce060fbb3a7f9d00706d0e4fc94590caac3e0f444f9814c9bd",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:39.889196+00:00",
+      "step_id": "S19",
+      "action": "amend",
+      "instruction": "Change the grouped reminder requirement: reminders must remain local and must not require cloud sync. Keep this requirement visible alongside the earlier optional-sync discussion.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_70c9bc590c43468cb6e909cfb479582b",
+      "state_snapshot": "./native-snapshots/S19.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S19.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_69e8110f0d5f4cd0ac8ea2c11bd1d315",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S20.png",
+      "sha256": "ce4942caccecb7068f233e0dec13a557d370ea3ad36cc4e8307d5deaa3456a2b",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:41.836417+00:00",
+      "step_id": "S20",
+      "action": "retry",
+      "instruction": "Retry my PocketTasks export/import submission after a lost acknowledgement, using exactly its original client key and payload.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_067151dd9b5645a9b71512f4d169a698",
+      "state_snapshot": "./native-snapshots/S20.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S20.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "observed",
+          "result": null
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S21.png",
+      "sha256": "8b46b647ea5afff2cf8ae2321f785937a982ee44ebb62e1893b62b2c59e8f32a",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:43.830168+00:00",
+      "step_id": "S21",
+      "action": "stale_amend",
+      "instruction": "Try to add a paid booking option using the website revision I saw before the latest amendments. If it is stale, keep the newer requirements and tell me to refresh.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": null,
+      "state_snapshot": "./native-snapshots/S21.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S21.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "observed",
+          "result": null
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S22.png",
+      "sha256": "23ff298d19a34ec633663f51303cdc719ff7ce77d09266fd15e58e38d1c2ce2a",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:45.759750+00:00",
+      "step_id": "S22",
+      "action": "submit",
+      "instruction": "Compare HarborWeb and PocketTasks and create a shared rollout checklist. I have not decided which project should own this work.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_c8bab609b5cb4139bfba5a979e5972e3",
+      "state_snapshot": "./native-snapshots/S22.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S22.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "observed",
+          "result": null
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S23.png",
+      "sha256": "a7a4a6e6e307f059f6e0c83c80ce3c64b452390896c91c5f31451d5a9a00d42b",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:47.715601+00:00",
+      "step_id": "S23",
+      "action": "assign",
+      "instruction": "Put the ambiguous HarborWeb/PocketTasks rollout comparison in EvidenceReview. This assignment does not grant it permission to read private project sources.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_c8bab609b5cb4139bfba5a979e5972e3",
+      "state_snapshot": "./native-snapshots/S23.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S23.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_519e3d163eab48d996eb09ecba40ea13",
+            "status": "blocked",
+            "error": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S24.png",
+      "sha256": "64178aed79db57b77dec2199cb160fb37429248f04db8e2ca05cefb832cf35fe",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:49.858493+00:00",
+      "step_id": "S24",
+      "action": "pause",
+      "instruction": "Pause new EvidenceReview work while the website and mobile projects remain available.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": null,
+      "state_snapshot": "./native-snapshots/S24.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S24.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "observed",
+          "result": null
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S25.png",
+      "sha256": "0c23c58689b2948dd4d31a40c3f36116598964c69c24c74c13d9441eb5996028",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:51.951509+00:00",
+      "step_id": "S25",
+      "action": "submit",
+      "instruction": "While EvidenceReview is paused, queue a counterargument memo defending direct long-context prompting where the evidence supports it. Include costs, latency and cases where retrieval can fail.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": "r_1a63a8c19d35449094f3333615589e47",
+      "state_snapshot": "./native-snapshots/S25.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S25.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "observed",
+          "result": null
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S26.png",
+      "sha256": "c22aaa1045192db5c71f68d8b7c8f2949778037564102dcf998939ea5a074e72",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:54.046983+00:00",
+      "step_id": "S26",
+      "action": "resume",
+      "instruction": "Resume EvidenceReview and retain the original queue order and all pending research requests.",
+      "control_status": "passed",
+      "view": "requests",
+      "request_id": null,
+      "state_snapshot": "./native-snapshots/S26.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S26.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_b530caae1ee4475eb8f775d1fdd32ff1",
+            "status": "blocked",
+            "error": "No qualified model profile for report; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for report; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S27.png",
+      "sha256": "5490796b854c0bdbfefa968b660b51493add631f8b9e886b649035e972322718",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:55.721238+00:00",
+      "step_id": "S27",
+      "action": "context_scope",
+      "instruction": "Use only EvidenceReview sources when comparing context strategies. Keep HarborWeb and PocketTasks private notes out unless I explicitly grant access, and show any omissions rather than inventing coverage.",
+      "control_status": "passed",
+      "view": "context",
+      "request_id": "r_7934546016dc4c47b4c25c7de5dda9ab",
+      "state_snapshot": "./native-snapshots/S27.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S27.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_6cf3b81707c847d8997bc188f95ba69d",
+            "status": "blocked",
+            "error": "No qualified model profile for simple; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for simple; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S28.png",
+      "sha256": "6f1479fefab655a0e076f8adfbd16dfa2c2a03f36112506aabeb860440d14b39",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:57.405516+00:00",
+      "step_id": "S28",
+      "action": "oversized",
+      "instruction": "Add the attached large acceptance checklist to HarborWeb. Preserve every original line, but block execution if the compiled packet exceeds the configured context budget instead of silently truncating it.",
+      "control_status": "passed",
+      "view": "context",
+      "request_id": "r_e815f8c4418a4019a0c610fd56cdb878",
+      "state_snapshot": "./native-snapshots/S28.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S28.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_e55567857be94a78a6330dd52eb6dcfb",
+            "status": "blocked",
+            "error": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for code; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S29.png",
+      "sha256": "2a73d1607c49054ddccde74a9005162dd571d49bc8bede983856e6a8d8a9492a",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:04:59.026108+00:00",
+      "step_id": "S29",
+      "action": "restart",
+      "instruction": "After restarting the controller, prepare a concise EvidenceReview progress brief: what was requested, what is still queued or blocked, and which research claims have actually been checked. Keep the pending website and mobile work visible.",
+      "control_status": "passed",
+      "view": "health",
+      "request_id": "r_880bf1e1fa1d4419802efd56fb489c68",
+      "state_snapshot": "./native-snapshots/S29.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S29.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_c2dabf0943134daab1c81597a9ec9667",
+            "status": "blocked",
+            "error": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/S30.png",
+      "sha256": "605e2c846ccaa0b55842fa75944018ee84a787bb7409bbf486b7e666f1619c4c",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:05:01.428006+00:00",
+      "step_id": "S30",
+      "action": "outcomes",
+      "instruction": "Show me the saved outcomes for HarborWeb, PocketTasks and EvidenceReview separately from diagnostic logs. Identify missing website builds, mobile binaries, research citations and independent reviews instead of calling unfinished work complete.",
+      "control_status": "passed",
+      "view": "outcomes",
+      "request_id": "r_f429898d4b204e8aa9698f50d2ce5c6c",
+      "state_snapshot": "./native-snapshots/S30.json",
+      "assertion_snapshot": "./scenario-results-snapshots/S30.json",
+      "coordinator_probes": [
+        {
+          "action": "coordinator.tick",
+          "status": "blocked",
+          "result": {
+            "id": "ob_8b32eb48244c43e18080b6ee8845c5a0",
+            "status": "blocked",
+            "error": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination",
+            "result": null
+          },
+          "reason": "No qualified model profile for research; configure and qualify an explicit harness/model/effort/auth combination"
+        },
+        {
+          "action": "coordinator.observe",
+          "status": "observed",
+          "result": {}
+        }
+      ]
+    },
+    {
+      "file": "../../assets/cloud-run/31-final-requests.png",
+      "sha256": "6ec08b01a8a302f930d33d1245d0c2fbae70fa906de7c4f5edc0c2a80a9c9d3c",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:05:02.736114+00:00",
+      "view": "requests",
+      "notice": "Final native application state; absent outcomes or agents are not synthesized"
+    },
+    {
+      "file": "../../assets/cloud-run/31-final-inbox.png",
+      "sha256": "852d191c26cf13a8d079c1869790f1ccb8bacb4d91d40030b4ddd98d31904ace",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:05:03.609905+00:00",
+      "view": "inbox",
+      "notice": "Final native application state; absent outcomes or agents are not synthesized"
+    },
+    {
+      "file": "../../assets/cloud-run/31-final-teams.png",
+      "sha256": "ee7b14e7586590c9332361434f2348f273a006daecf1974399f7000a3a1daa24",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:05:05.256569+00:00",
+      "view": "teams",
+      "notice": "Final native application state; absent outcomes or agents are not synthesized"
+    },
+    {
+      "file": "../../assets/cloud-run/31-final-outcomes.png",
+      "sha256": "0f124d31717db46957e7fcc73e209226f49b3a4100f951e41ef4fb8f9be63d0c",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:05:06.919679+00:00",
+      "view": "outcomes",
+      "notice": "Final native application state; absent outcomes or agents are not synthesized"
+    },
+    {
+      "file": "../../assets/cloud-run/31-final-health.png",
+      "sha256": "880c9268ad2b702d925c8b65c6737db39ba425301762bb3b38c3a56a51f9f716",
+      "width": 1260,
+      "height": 774,
+      "window_id": 4194307,
+      "captured_at": "2026-11-08T08:05:07.774138+00:00",
+      "view": "health",
+      "notice": "Final native application state; absent outcomes or agents are not synthesized"
+    }
+  ],
+  "plugin_shortcut": {
+    "status": "passed",
+    "keys": "CTRL+SHIFT+A",
+    "launches_before": [
+      {
+        "pid": 28,
+        "at": 1794125036.2430751,
+        "args": [
+          "--home",
+          "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04",
+          "tui"
+        ],
+        "executable": "TEST_CHECKOUT/.venv/bin/awb"
+      }
+    ],
+    "launches_after": [
+      {
+        "pid": 28,
+        "at": 1794125036.2430751,
+        "args": [
+          "--home",
+          "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04",
+          "tui"
+        ],
+        "executable": "TEST_CHECKOUT/.venv/bin/awb"
+      },
+      {
+        "pid": 71,
+        "at": 1794125039.036137,
+        "args": [
+          "--home",
+          "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04",
+          "tui"
+        ],
+        "executable": "TEST_CHECKOUT/.venv/bin/awb"
+      }
+    ],
+    "notice": "The real plugin must launch another real CLI; inspect the paired native image for the second rendered tab."
+  },
+  "temporal": {
+    "binary": "TEST_CHECKOUT/.local-evidence/temporal-bin/temporal-sdk-python-1.35.0",
+    "target": "127.0.0.1:54885",
+    "status": "running development server",
+    "no_worker_or_model_implied": true
+  },
+  "terminal_install": {
+    "config_file": "./wezterm-native.lua",
+    "config_before": "3cf6ce524c9dd2fe44d76672cfdb08b21ca1cb2f25e91eb7d5fe6a3a6ea82d20",
+    "config_after": "bd5752788aa3ba9c34a5045133a7718982572ade143518470a11807db8a09d0d",
+    "backup": "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04/terminal/wezterm-before-1794125036.lua",
+    "block": "-- BEGIN ASSISTANT WORKBENCH MANAGED INCLUDE\nlocal awb = dofile(\"TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04/terminal/wezterm.lua\")\nawb.apply_to_config(config, {home=\"TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04\", executable=\"./capture-awb\", status=true})\n-- END ASSISTANT WORKBENCH MANAGED INCLUDE\n",
+    "plugin": "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04/terminal/wezterm.lua",
+    "created": 1794125036.0302072,
+    "gui_qualification": "not_run"
+  },
+  "launcher": {
+    "path": "./capture-awb",
+    "launch_log": "./tui-launches.jsonl",
+    "sha256": "e618fa4a4c44d07d1d550603809a04adda622b52777d6317809e0ed7d105bcca",
+    "notice": "Test-only logger immediately execs the real awb executable with unchanged arguments."
+  },
+  "bookkeeping_status": "passed",
+  "control_counts": {
+    "passed": 30
+  },
+  "delivery": {
+    "status": "blocked",
+    "qualified": false,
+    "projects": {
+      "website": {
+        "status": "blocked",
+        "request_id": "r_a115d62126cb4af59dd5b073184b1db4",
+        "revision": 3,
+        "request_status": "queued",
+        "execution_candidate_outcomes": [],
+        "review_candidate_outcomes": [],
+        "missing": [
+          "No current outcome with an actual coordinator run receipt",
+          "No current outcome with a distinct accepting reviewer",
+          "Current-revision artifact, build/device/browser and source correctness still require independent verification"
+        ]
+      },
+      "mobile": {
+        "status": "blocked",
+        "request_id": "r_bcd85e4a7ec54d30b3a40c4582352306",
+        "revision": 3,
+        "request_status": "queued",
+        "execution_candidate_outcomes": [],
+        "review_candidate_outcomes": [],
+        "missing": [
+          "No current outcome with an actual coordinator run receipt",
+          "No current outcome with a distinct accepting reviewer",
+          "Current-revision artifact, build/device/browser and source correctness still require independent verification"
+        ]
+      },
+      "research": {
+        "status": "blocked",
+        "request_id": "r_14712011dc9c451da93e5c10e5bfbd70",
+        "revision": 3,
+        "request_status": "queued",
+        "execution_candidate_outcomes": [],
+        "review_candidate_outcomes": [],
+        "missing": [
+          "No current outcome with an actual coordinator run receipt",
+          "No current outcome with a distinct accepting reviewer",
+          "Current-revision artifact, build/device/browser and source correctness still require independent verification"
+        ]
+      }
+    },
+    "notice": "This runner does not infer usable websites, mobile binaries or verified research from status strings or fixture text. Use the separate feature evidence gates."
+  },
+  "capture_failures": [],
+  "durable_prompts": 22,
+  "native_step_captures": 30,
+  "finished_at": "2026-11-08T08:05:07.778489+00:00",
+  "status": "passed",
+  "publication_note": "Native PNG bytes are unchanged and hash-verified; local test paths in JSON are normalized. No authentication files, databases or raw provider logs are published.",
+  "trace_archive": {
+    "path": "scenario-traces.zip",
+    "sha256": "988dec89f005033c335f4d6c0cf6059be2b8a6c056a60edf92ed655d5a786040",
+    "entries": 122,
+    "notice": "state_snapshot and assertion_snapshot paths resolve inside this archive; PNG paths resolve relative to this manifest."
+  }
+}

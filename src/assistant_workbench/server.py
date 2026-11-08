@@ -7,7 +7,6 @@ import threading
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from .app import Application
-from .engine import Engine
 from .util import WorkbenchError, atomic, canonical, now
 
 
@@ -62,12 +61,15 @@ def make_server(home, port=0, background=False):
             return self.reply(404, {"error": "Unknown route"})
 
         def do_POST(self):
-            if not self.authorized():
+            worker = self.path == "/worker"
+            if self.headers.get("Origin") is not None or (
+                not worker and not self.authorized()
+            ):
                 return self.reply(
                     401,
                     {"error": "Operator token required; browser origins are rejected"},
                 )
-            if self.path != "/request":
+            if self.path not in {"/request", "/worker"}:
                 return self.reply(404, {"error": "Unknown route"})
             try:
                 length = int(self.headers.get("Content-Length", "0"))
@@ -76,9 +78,27 @@ def make_server(home, port=0, background=False):
                         413, {"error": "Request body too large or missing"}
                     )
                 body = json.loads(self.rfile.read(length))
-                if set(body) - {"action", "args"}:
+                if not isinstance(body, dict):
+                    raise WorkbenchError("Request body must be an object")
+                allowed = (
+                    {"action", "args", "host_id"} if worker else {"action", "args"}
+                )
+                if set(body) - allowed:
                     raise WorkbenchError("Unknown request fields")
-                result = app.dispatch(body["action"], body.get("args", {}))
+                if worker:
+                    from .runtime_backends import Fleet
+
+                    authorization = self.headers.get("Authorization", "")
+                    if not authorization.startswith("Bearer ") or not authorization[7:]:
+                        return self.reply(401, {"error": "Host token required"})
+                    result = Fleet(app.store).worker_request(
+                        body["host_id"],
+                        authorization[7:],
+                        body["action"],
+                        body.get("args", {}),
+                    )
+                else:
+                    result = app.dispatch(body["action"], body.get("args", {}))
                 return self.reply(200, {"result": result})
             except (ValueError, KeyError, TypeError, WorkbenchError) as exc:
                 return self.reply(400, {"error": str(exc)})
@@ -120,7 +140,7 @@ def make_server(home, port=0, background=False):
             while not stopped.is_set():
                 try:
                     app.scheduled()
-                    Engine(app.store).tick()
+                    app.dispatch("coordinator.tick")
                     atomic(
                         home / "bridge-health.json",
                         canonical({"status": "running", "at": now()}),
@@ -148,8 +168,18 @@ def make_server(home, port=0, background=False):
         def observations():
             while not stopped.is_set():
                 try:
-                    Engine(app.store).observe()
-                except WorkbenchError as exc:
+                    result = app.dispatch("coordinator.observe")
+                    atomic(
+                        home / "observation-health.json",
+                        canonical(
+                            {
+                                "status": "observed",
+                                "at": now(),
+                                "records": len(result or {}),
+                            }
+                        ),
+                    )
+                except Exception as exc:
                     atomic(
                         home / "observation-health.json",
                         canonical(

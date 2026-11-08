@@ -1,0 +1,584 @@
+{
+  "schema": 1,
+  "name": "Three-project 30-instruction controlled journey",
+  "scope": "Sequential/interleaved public Application API scenarios. Intake/control mode verifies real durable bookkeeping only; it does not create website/mobile/research completion evidence. Live mode additionally attempts the configured coordinator within a bounded deadline.",
+  "projects": [
+    {
+      "name": "HarborWeb",
+      "description": "Repair-cafe website"
+    },
+    {
+      "name": "PocketTasks",
+      "description": "Offline-first mobile task app"
+    },
+    {
+      "name": "EvidenceReview",
+      "description": "Long-context versus retrieval research"
+    }
+  ],
+  "primary_research_sources": [
+    {
+      "title": "Lost in the Middle: How Language Models Use Long Contexts",
+      "url": "https://arxiv.org/abs/2307.03172"
+    },
+    {
+      "title": "RULER: What's the Real Context Size of Your Long-Context Language Models?",
+      "url": "https://arxiv.org/abs/2404.06654"
+    },
+    {
+      "title": "Retrieval Augmented Generation or Long-Context LLMs? A Comprehensive Study and Hybrid Approach",
+      "url": "https://arxiv.org/abs/2407.16833"
+    }
+  ],
+  "scenarios": [
+    {
+      "id": "S01",
+      "action": "submit",
+      "project": "HarborWeb",
+      "instruction": "Create HarborWeb, a repair-cafe website with an accessible event list, booking form and volunteer signup. Keep tracking disabled and do not send personal data to third parties. Supply working source, tests and a short handover.",
+      "feature_ids": [
+        "PF01",
+        "PF02",
+        "PF05",
+        "PF14",
+        "PF51",
+        "PF68"
+      ],
+      "expectations": [
+        "Save the original prompt and project receipt.",
+        "Register website, accessibility tests and handover as separate pending deliverables.",
+        "Do not claim a working website from intake alone."
+      ],
+      "ref": "website",
+      "deliverables": [
+        "Repair-cafe website",
+        "Accessible booking tests",
+        "Website handover"
+      ]
+    },
+    {
+      "id": "S02",
+      "action": "submit",
+      "project": "PocketTasks",
+      "instruction": "Create PocketTasks, an offline-first mobile task app with local task storage, due dates and accessible controls. No account should be required. Provide source, tests and an installable app only after a real mobile build.",
+      "feature_ids": [
+        "PF01",
+        "PF02",
+        "PF05",
+        "PF51",
+        "PF68"
+      ],
+      "expectations": [
+        "Use a separate mobile project and request identity.",
+        "Keep source, tests and actual device/build checks distinguishable."
+      ],
+      "ref": "mobile",
+      "deliverables": [
+        "Offline mobile source",
+        "Offline persistence tests",
+        "Verified mobile build"
+      ]
+    },
+    {
+      "id": "S03",
+      "action": "submit",
+      "project": "EvidenceReview",
+      "instruction": "Research long-context prompting versus retrieval-augmented generation for a daily assistant. Start with Lost in the Middle (https://arxiv.org/abs/2307.03172), RULER (https://arxiv.org/abs/2404.06654), and the comparative study (https://arxiv.org/abs/2407.16833). Use primary sources, compare methods and limits, and include citations and a concise recommendation without promising perfect recall.",
+      "feature_ids": [
+        "PF01",
+        "PF02",
+        "PF23",
+        "PF45",
+        "PF49",
+        "PF67"
+      ],
+      "expectations": [
+        "Queue a research project separately from code work.",
+        "Retain official primary-source URLs and an explicit limits requirement.",
+        "A saved research instruction is not a completed literature review."
+      ],
+      "ref": "research",
+      "deliverables": [
+        "Source-linked research report",
+        "Evidence comparison table",
+        "Limitations and counterevidence"
+      ]
+    },
+    {
+      "id": "S04",
+      "action": "amend",
+      "project": "HarborWeb",
+      "instruction": "Add booking confirmation, keyboard navigation and clear error messages to HarborWeb. Preserve the event list and volunteer signup.",
+      "feature_ids": [
+        "PF05",
+        "PF08",
+        "PF11"
+      ],
+      "expectations": [
+        "Increment only the current website revision.",
+        "Preserve all earlier website requirements and pending deliverables."
+      ],
+      "target": "website"
+    },
+    {
+      "id": "S05",
+      "action": "amend",
+      "project": "PocketTasks",
+      "instruction": "Add recurring tasks and dark mode to PocketTasks. Keep local data usable without a network and cover recurrence boundaries in tests.",
+      "feature_ids": [
+        "PF05",
+        "PF08",
+        "PF11"
+      ],
+      "expectations": [
+        "Amend only the mobile request.",
+        "Preserve the original offline and no-account constraints."
+      ],
+      "target": "mobile"
+    },
+    {
+      "id": "S06",
+      "action": "amend",
+      "project": "EvidenceReview",
+      "instruction": "Expand EvidenceReview with evidence that challenges using long context by default. Include cases where retrieval or a hybrid approach helps, and distinguish experimental findings from your inference.",
+      "feature_ids": [
+        "PF08",
+        "PF24",
+        "PF46",
+        "PF67"
+      ],
+      "expectations": [
+        "Preserve the original research question and add the contradictory-evidence requirement.",
+        "Do not resolve disagreement merely by choosing the newest statement."
+      ],
+      "target": "research"
+    },
+    {
+      "id": "S07",
+      "action": "amend",
+      "project": "HarborWeb",
+      "instruction": "Change the analytics requirement: allow an optional aggregate usage report, but leave tracking off by default. Explain how this changes my original no-third-party-data constraint before implementing anything that sends data.",
+      "feature_ids": [
+        "PF08",
+        "PF11",
+        "PF24"
+      ],
+      "expectations": [
+        "Retain both the original constraint and this proposed change in prompt history.",
+        "Do not silently rewrite the first prompt to erase the conflict."
+      ],
+      "target": "website"
+    },
+    {
+      "id": "S08",
+      "action": "amend",
+      "project": "PocketTasks",
+      "instruction": "Consider optional encrypted cloud sync for PocketTasks. Flag the tension with my earlier no-account requirement, and preserve a fully offline mode even if sync is added later.",
+      "feature_ids": [
+        "PF08",
+        "PF11",
+        "PF24"
+      ],
+      "expectations": [
+        "Save the proposed sync change without deleting the earlier no-account instruction.",
+        "Leave semantic conflict resolution for an explicit reviewed plan."
+      ],
+      "target": "mobile"
+    },
+    {
+      "id": "S09",
+      "action": "amend",
+      "project": "EvidenceReview",
+      "instruction": "Extend EvidenceReview to separate advertised context size from demonstrated retrieval and reasoning performance. Add a small architecture diagram, a comparison table and a short executive summary.",
+      "feature_ids": [
+        "PF08",
+        "PF43",
+        "PF46",
+        "PF48",
+        "PF50"
+      ],
+      "expectations": [
+        "Keep the earlier contradictory-evidence requirement.",
+        "Record the requested visual and audience formats without fabricating them."
+      ],
+      "target": "research"
+    },
+    {
+      "id": "S10",
+      "action": "submit",
+      "project": "HarborWeb",
+      "instruction": "As a separate HarborWeb change, add event search with keyboard-friendly results and a useful empty state.",
+      "feature_ids": [
+        "PF03",
+        "PF05",
+        "PF09"
+      ],
+      "expectations": [
+        "Create a new website request rather than an implicit amendment.",
+        "Retain explicit search acceptance criteria."
+      ],
+      "ref": "web_search",
+      "deliverables": [
+        "Event search with keyboard support"
+      ]
+    },
+    {
+      "id": "S11",
+      "action": "submit",
+      "project": "HarborWeb",
+      "instruction": "As another HarborWeb change, add date and category filters that preserve selections in the URL.",
+      "feature_ids": [
+        "PF03",
+        "PF05",
+        "PF09"
+      ],
+      "expectations": [
+        "Create a distinct filter request in the same project.",
+        "Retain filter-specific acceptance criteria."
+      ],
+      "ref": "web_filters",
+      "deliverables": [
+        "Shareable event filters"
+      ]
+    },
+    {
+      "id": "S12",
+      "action": "group",
+      "project": "HarborWeb",
+      "instruction": "Combine the HarborWeb search and filter changes into one execution plan while keeping both original requests and each acceptance criterion visible.",
+      "feature_ids": [
+        "PF04",
+        "PF05",
+        "PF11"
+      ],
+      "expectations": [
+        "Group only the two same-project requests.",
+        "Keep both identities, prompts and explicit deliverables under one parent."
+      ],
+      "targets": [
+        "web_search",
+        "web_filters"
+      ],
+      "ref": "web_group"
+    },
+    {
+      "id": "S13",
+      "action": "amend",
+      "project": "HarborWeb",
+      "instruction": "For the grouped HarborWeb search request, also ensure an empty search does not hide all events and that keyboard focus survives filtering.",
+      "feature_ids": [
+        "PF04",
+        "PF08",
+        "PF11"
+      ],
+      "expectations": [
+        "Amend the original grouped child and advance its parent once.",
+        "Do not create a second independent dispatch for the child."
+      ],
+      "target": "web_search"
+    },
+    {
+      "id": "S14",
+      "action": "cancel",
+      "project": "HarborWeb",
+      "instruction": "Withdraw the date/category filters for now. Keep event search, its accessibility criteria and the main HarborWeb website work active.",
+      "feature_ids": [
+        "PF04",
+        "PF05",
+        "PF33"
+      ],
+      "expectations": [
+        "Cancel only the filter demand.",
+        "Preserve search and unrelated website scope."
+      ],
+      "target": "web_filters"
+    },
+    {
+      "id": "S15",
+      "action": "reopen",
+      "project": "HarborWeb",
+      "instruction": "Reopen the withdrawn HarborWeb filters as a new request linked to the old one; restore its original filter acceptance criteria.",
+      "feature_ids": [
+        "PF02",
+        "PF06",
+        "PF39"
+      ],
+      "expectations": [
+        "Create a fresh request identity with an explicit historical link.",
+        "Recover the original filter requirement and pending deliverable."
+      ],
+      "target": "web_filters",
+      "ref": "web_filters_reopened"
+    },
+    {
+      "id": "S16",
+      "action": "submit",
+      "project": "PocketTasks",
+      "instruction": "Create a separate PocketTasks export feature: export tasks as JSON and import them back without losing completed status or due dates.",
+      "feature_ids": [
+        "PF02",
+        "PF05",
+        "PF09"
+      ],
+      "expectations": [
+        "Create a distinct mobile export request with round-trip acceptance criteria."
+      ],
+      "ref": "mobile_export",
+      "deliverables": [
+        "Lossless JSON export and import"
+      ]
+    },
+    {
+      "id": "S17",
+      "action": "submit",
+      "project": "PocketTasks",
+      "instruction": "Create a separate PocketTasks reminder feature using local notifications; handle denied notification permission without breaking task editing.",
+      "feature_ids": [
+        "PF02",
+        "PF05",
+        "PF09"
+      ],
+      "expectations": [
+        "Keep local reminder work distinct from the main mobile request."
+      ],
+      "ref": "mobile_reminders",
+      "deliverables": [
+        "Local reminders with permission-denial handling"
+      ]
+    },
+    {
+      "id": "S18",
+      "action": "group",
+      "project": "PocketTasks",
+      "instruction": "Group PocketTasks export/import and local reminders into one release plan, preserving each original request and acceptance criterion.",
+      "feature_ids": [
+        "PF04",
+        "PF05",
+        "PF11"
+      ],
+      "expectations": [
+        "Group only mobile demands.",
+        "Preserve both deliverables and keep the website group separate."
+      ],
+      "targets": [
+        "mobile_export",
+        "mobile_reminders"
+      ],
+      "ref": "mobile_group"
+    },
+    {
+      "id": "S19",
+      "action": "amend",
+      "project": "PocketTasks",
+      "instruction": "Change the grouped reminder requirement: reminders must remain local and must not require cloud sync. Keep this requirement visible alongside the earlier optional-sync discussion.",
+      "feature_ids": [
+        "PF04",
+        "PF08",
+        "PF11",
+        "PF24"
+      ],
+      "expectations": [
+        "Amend the grouped reminder child and its parent.",
+        "Retain both local-only reminders and the separate original optional-sync history."
+      ],
+      "target": "mobile_reminders"
+    },
+    {
+      "id": "S20",
+      "action": "retry",
+      "project": "PocketTasks",
+      "instruction": "Retry my PocketTasks export/import submission after a lost acknowledgement, using exactly its original client key and payload.",
+      "feature_ids": [
+        "PF02",
+        "PF08",
+        "PF32"
+      ],
+      "expectations": [
+        "Return the original receipt and request identity.",
+        "Do not append a duplicate prompt, obligation or revision."
+      ],
+      "target": "mobile_export"
+    },
+    {
+      "id": "S21",
+      "action": "stale_amend",
+      "project": "HarborWeb",
+      "instruction": "Try to add a paid booking option using the website revision I saw before the latest amendments. If it is stale, keep the newer requirements and tell me to refresh.",
+      "feature_ids": [
+        "PF08",
+        "PF11",
+        "PF44"
+      ],
+      "expectations": [
+        "Reject the explicitly stale revision.",
+        "Do not change the current request, original history or deliverables."
+      ],
+      "target": "website",
+      "expected_revision": 1
+    },
+    {
+      "id": "S22",
+      "action": "submit",
+      "project": null,
+      "instruction": "Compare HarborWeb and PocketTasks and create a shared rollout checklist. I have not decided which project should own this work.",
+      "feature_ids": [
+        "PF03",
+        "PF07",
+        "PF10"
+      ],
+      "expectations": [
+        "Keep the ambiguous request saved as needing a project.",
+        "Do not guess ownership or silently grant cross-project access."
+      ],
+      "ref": "ambiguous"
+    },
+    {
+      "id": "S23",
+      "action": "assign",
+      "project": "EvidenceReview",
+      "instruction": "Put the ambiguous HarborWeb/PocketTasks rollout comparison in EvidenceReview. This assignment does not grant it permission to read private project sources.",
+      "feature_ids": [
+        "PF07",
+        "PF10"
+      ],
+      "expectations": [
+        "Assign the existing request explicitly to EvidenceReview.",
+        "Do not create a cross-project source grant as a side effect."
+      ],
+      "target": "ambiguous"
+    },
+    {
+      "id": "S24",
+      "action": "pause",
+      "project": "EvidenceReview",
+      "instruction": "Pause new EvidenceReview work while the website and mobile projects remain available.",
+      "feature_ids": [
+        "PF09",
+        "PF12",
+        "PF33",
+        "PF42"
+      ],
+      "expectations": [
+        "Persist a project-scoped pause.",
+        "Keep other projects unpaused and intake available."
+      ]
+    },
+    {
+      "id": "S25",
+      "action": "submit",
+      "project": "EvidenceReview",
+      "instruction": "While EvidenceReview is paused, queue a counterargument memo defending direct long-context prompting where the evidence supports it. Include costs, latency and cases where retrieval can fail.",
+      "feature_ids": [
+        "PF01",
+        "PF09",
+        "PF24",
+        "PF67"
+      ],
+      "expectations": [
+        "Save the new research prompt during the pause.",
+        "Keep it pending without claiming execution."
+      ],
+      "ref": "counterargument",
+      "deliverables": [
+        "Evidence-backed counterargument memo"
+      ]
+    },
+    {
+      "id": "S26",
+      "action": "resume",
+      "project": "EvidenceReview",
+      "instruction": "Resume EvidenceReview and retain the original queue order and all pending research requests.",
+      "feature_ids": [
+        "PF09",
+        "PF12",
+        "PF33"
+      ],
+      "expectations": [
+        "Clear only the EvidenceReview pause.",
+        "Do not lose or duplicate queued research demands."
+      ]
+    },
+    {
+      "id": "S27",
+      "action": "context_scope",
+      "project": "EvidenceReview",
+      "instruction": "Use only EvidenceReview sources when comparing context strategies. Keep HarborWeb and PocketTasks private notes out unless I explicitly grant access, and show any omissions rather than inventing coverage.",
+      "feature_ids": [
+        "PF10",
+        "PF20",
+        "PF23",
+        "PF25",
+        "PF59"
+      ],
+      "expectations": [
+        "Save this research instruction.",
+        "Ingest clearly labelled scenario-control notes, not invented paper findings.",
+        "Retrieve the research note, deny a foreign private note and expose corpus coverage honestly."
+      ],
+      "ref": "scoped_research"
+    },
+    {
+      "id": "S28",
+      "action": "oversized",
+      "project": "HarborWeb",
+      "instruction": "Add the attached large acceptance checklist to HarborWeb. Preserve every original line, but block execution if the compiled packet exceeds the configured context budget instead of silently truncating it.",
+      "feature_ids": [
+        "PF02",
+        "PF25",
+        "PF30",
+        "PF70"
+      ],
+      "expectations": [
+        "Save the full below-intake-limit prompt.",
+        "Expose bounded context assembly and an explicit omitted source; record compiled execution preflight as unobserved unless a qualified worker path actually runs.",
+        "Do not count this as a real model context rollover."
+      ],
+      "ref": "oversized",
+      "payload": {
+        "repeat_line": "Acceptance item: retain keyboard access, labelled inputs, offline drafts and the original privacy boundary.",
+        "target_characters": 64000
+      }
+    },
+    {
+      "id": "S29",
+      "action": "restart",
+      "project": "EvidenceReview",
+      "instruction": "After restarting the controller, prepare a concise EvidenceReview progress brief: what was requested, what is still queued or blocked, and which research claims have actually been checked. Keep the pending website and mobile work visible.",
+      "feature_ids": [
+        "PF02",
+        "PF09",
+        "PF29",
+        "PF36",
+        "PF46",
+        "PF48"
+      ],
+      "expectations": [
+        "Recover the same project/request identities through a fresh Application instance.",
+        "Save the progress-brief request without claiming that a report or app was generated."
+      ],
+      "ref": "progress_brief"
+    },
+    {
+      "id": "S30",
+      "action": "outcomes",
+      "project": "EvidenceReview",
+      "instruction": "Show me the saved outcomes for HarborWeb, PocketTasks and EvidenceReview separately from diagnostic logs. Identify missing website builds, mobile binaries, research citations and independent reviews instead of calling unfinished work complete.",
+      "feature_ids": [
+        "PF17",
+        "PF36",
+        "PF37",
+        "PF38",
+        "PF39",
+        "PF40",
+        "PF50",
+        "PF54"
+      ],
+      "expectations": [
+        "Save the outcome-inspection request and inspect public outcome/snapshot interfaces.",
+        "Retain a final status and per-step snapshots.",
+        "Intake/control success must remain distinct from verified artifacts and genuine agent execution."
+      ],
+      "ref": "outcome_check"
+    }
+  ]
+}

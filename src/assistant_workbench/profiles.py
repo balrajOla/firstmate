@@ -45,6 +45,39 @@ def probe(home, identity):
     model = next((m for m in settings["models"] if m["id"] == identity), None)
     if not model:
         raise WorkbenchError("Unknown profile")
+    if Path(identity).name != identity or identity in {".", ".."}:
+        raise WorkbenchError("Profile ID must be a plain filename component")
+    # A failed re-probe must not leave last week's successful login active.
+    model["verified"] = False
+    atomic(home / "config.json", canonical(settings) + "\n")
+    try:
+        return _probe(home, identity)
+    except (WorkbenchError, OSError, ValueError) as exc:
+        atomic(
+            home / "profiles" / (identity + ".json"),
+            canonical(
+                {
+                    "schema": 1,
+                    "result": "failed",
+                    "created": now(),
+                    "profile": {
+                        k: model[k]
+                        for k in ("id", "harness", "model", "effort", "auth")
+                    },
+                    "reason": str(exc),
+                    "scope": "No successful official CLI canary; model remains unqualified.",
+                }
+            )
+            + "\n",
+        )
+        raise
+
+
+def _probe(home, identity):
+    settings = config(home)
+    model = next((m for m in settings["models"] if m["id"] == identity), None)
+    if not model:
+        raise WorkbenchError("Unknown profile")
     executable = shutil.which(model["harness"])
     if not executable:
         raise WorkbenchError(
@@ -106,15 +139,20 @@ def probe(home, identity):
         valid = any(
             e.get("type") == "result"
             and not e.get("is_error")
-            and marker in str(e.get("result", ""))
+            and str(e.get("result", "")).strip() == marker
             for e in events
         )
     else:
         valid = any(
             e.get("type") == "item.completed"
             and (e.get("item") or {}).get("type") == "agent_message"
-            and marker in (e["item"].get("text") or "")
+            and (e["item"].get("text") or "").strip() == marker
             for e in events
+        )
+        valid = (
+            valid
+            and any(e.get("type") == "turn.completed" for e in events)
+            and not any(e.get("type") in {"turn.failed", "error"} for e in events)
         )
     if not valid:
         raise WorkbenchError(

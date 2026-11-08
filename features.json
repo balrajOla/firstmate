@@ -5,9 +5,10 @@
     "status": "local-tested",
     "files": [
       "src/assistant_workbench/store.py",
-      "tests/test_intake.py"
+      "tests/test_intake.py",
+      "tests/test_requirement_scenarios.py"
     ],
-    "remaining": "Live worker interaction remains a separate gate."
+    "remaining": "Concurrent intake and retry persistence are tested locally; signed-in workers and sustained live load remain separate gates."
   },
   {
     "id": "PF02",
@@ -15,9 +16,10 @@
     "status": "local-tested",
     "files": [
       "src/assistant_workbench/store.py",
-      "tests/test_intake.py"
+      "tests/test_intake.py",
+      "tests/test_requirement_scenarios.py"
     ],
-    "remaining": "Live worker interaction remains a separate gate."
+    "remaining": "Original prompt/client-key records survive grouping, amendments and reopen; target-host recovery and live workload evidence remain."
   },
   {
     "id": "PF03",
@@ -27,7 +29,7 @@
       "src/assistant_workbench/store.py",
       "tests/test_intake.py"
     ],
-    "remaining": "Routing uses explicit links and exact names; semantic/historical disambiguation needs evaluated planning."
+    "remaining": "Explicit links and exact project names route requests; evaluated semantic/history-based disambiguation is not implemented."
   },
   {
     "id": "PF04",
@@ -35,9 +37,10 @@
     "status": "local-tested",
     "files": [
       "src/assistant_workbench/workflow.py",
-      "tests/test_intake.py"
+      "tests/test_intake.py",
+      "tests/test_requirement_scenarios.py"
     ],
-    "remaining": "Grouping is explicitly reviewed; arbitrary prompts are not automatically decomposed."
+    "remaining": "One-level grouping preserves child criteria and parent amendments; ambiguous legacy ownership blocks changes. Automatic semantic grouping remains out of scope."
   },
   {
     "id": "PF05",
@@ -45,9 +48,12 @@
     "status": "local-tested",
     "files": [
       "src/assistant_workbench/workflow.py",
-      "tests/test_intake.py"
+      "tests/test_intake.py",
+      "src/assistant_workbench/quality.py",
+      "tests/test_requirement_scenarios.py",
+      "tests/test_report_deliverables.py"
     ],
-    "remaining": "Grouping is explicitly reviewed; arbitrary prompts are not automatically decomposed."
+    "remaining": "Separate deliverables can be reviewed and exported without premature request completion; interpretation and semantic acceptance still require review."
   },
   {
     "id": "PF06",
@@ -55,9 +61,10 @@
     "status": "local-tested",
     "files": [
       "src/assistant_workbench/store.py",
-      "tests/test_intake.py"
+      "tests/test_intake.py",
+      "tests/test_requirement_scenarios.py"
     ],
-    "remaining": "Live worker interaction remains a separate gate."
+    "remaining": "Reopen preserves criteria and historical lineage; actual customized-user data migration remains target-qualified separately."
   },
   {
     "id": "PF07",
@@ -67,7 +74,7 @@
       "src/assistant_workbench/store.py",
       "tests/test_intake.py"
     ],
-    "remaining": "Live worker interaction remains a separate gate."
+    "remaining": "Explicit choices and unresolved-project states are inspectable/correctable; richer clarification and semantic routing remain unevaluated."
   },
   {
     "id": "PF08",
@@ -75,9 +82,10 @@
     "status": "local-tested",
     "files": [
       "src/assistant_workbench/store.py",
-      "tests/test_intake.py"
+      "tests/test_intake.py",
+      "tests/test_requirement_scenarios.py"
     ],
-    "remaining": "Live worker interaction remains a separate gate."
+    "remaining": "Revision checks, idempotent retries and concurrent grouped amendments are covered; live worker response to changes remains separate."
   },
   {
     "id": "PF09",
@@ -85,9 +93,10 @@
     "status": "local-tested",
     "files": [
       "src/assistant_workbench/workflow.py",
-      "tests/test_intake.py"
+      "tests/test_intake.py",
+      "tests/test_tui_scenarios.py"
     ],
-    "remaining": "Grouping is explicitly reviewed; arbitrary prompts are not automatically decomposed."
+    "remaining": "Project priorities, pauses and filtered views exist; live portfolio load and fairness qualification remain."
   },
   {
     "id": "PF10",
@@ -95,9 +104,10 @@
     "status": "partial",
     "files": [
       "src/assistant_workbench/store.py",
-      "src/assistant_workbench/context.py"
+      "src/assistant_workbench/context.py",
+      "src/assistant_workbench/runtime_backends.py"
     ],
-    "remaining": "Read grants exist; cross-project execution and hostile-worker isolation need stronger enforcement."
+    "remaining": "Read grants and host workspace mappings exist; cross-project execution dependencies and hostile-worker isolation require stronger boundaries."
   },
   {
     "id": "PF11",
@@ -105,18 +115,23 @@
     "status": "local-tested",
     "files": [
       "src/assistant_workbench/store.py",
-      "tests/test_intake.py"
+      "tests/test_intake.py",
+      "src/assistant_workbench/workflow.py",
+      "tests/test_engine_preflight.py",
+      "tests/test_requirement_scenarios.py"
     ],
-    "remaining": "Live worker interaction remains a separate gate."
+    "remaining": "Saved criteria/plans survive revisions and preflight rejects stale or malformed scope; semantic completeness of plans remains a review task."
   },
   {
     "id": "PF12",
     "name": "Fair scheduling and interactive capacity",
     "status": "partial",
     "files": [
-      "src/assistant_workbench/engine.py"
+      "src/assistant_workbench/engine.py",
+      "src/assistant_workbench/runtime_backends.py",
+      "tests/test_runtime_backends.py"
     ],
-    "remaining": "Priority aging/pause implemented; reserved interactive capacity and fleet load qualification remain."
+    "remaining": "Priority aging/pause and Temporal host interactive reserves are implemented; cross-backend fairness, live contention and large-fleet load remain."
   },
   {
     "id": "PF13",
@@ -125,9 +140,11 @@
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/temporal_runtime.py",
+      "tests/test_engine_preflight.py"
     ],
-    "remaining": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain."
+    "remaining": "Managed Paperclip identities and Temporal workflow/process receipts preserve ownership; authenticated agent restart/reconciliation needs live qualification."
   },
   {
     "id": "PF14",
@@ -136,9 +153,10 @@
     "files": [
       "src/assistant_workbench/policy.py",
       "src/assistant_workbench/profiles.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "tests/test_policy_scenarios.py"
     ],
-    "remaining": "Templates and official CLI probes implemented; actual model/profile qualification must run on target."
+    "remaining": "Bounded templates and qualified profile selection are wired; live task quality and role suitability are not established by fixtures."
   },
   {
     "id": "PF15",
@@ -147,9 +165,11 @@
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/temporal_runtime.py",
+      "tests/test_runtime_backends.py"
     ],
-    "remaining": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain."
+    "remaining": "Parent/dependency validation and child-depth limits exist; distinct native child-versus-peer semantics need coordinator/harness conformance evidence."
   },
   {
     "id": "PF16",
@@ -159,7 +179,7 @@
       "src/assistant_workbench/store.py",
       "tests/test_boundaries.py"
     ],
-    "remaining": "Actual peer-agent exchange and backpressure qualification remain."
+    "remaining": "Durable messages and ordered receipts are tested; actual peer conversation, backpressure and useful collaboration remain live gates."
   },
   {
     "id": "PF17",
@@ -168,9 +188,11 @@
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/quality.py",
+      "tests/test_requirement_scenarios.py"
     ],
-    "remaining": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain."
+    "remaining": "Independent outcome labels, separate deliverable acceptance and competing-review protection exist; authenticated independence and useful repair loops remain."
   },
   {
     "id": "PF18",
@@ -179,9 +201,10 @@
     "files": [
       "src/assistant_workbench/policy.py",
       "src/assistant_workbench/profiles.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "tests/test_harness_surfaces.py"
     ],
-    "remaining": "Templates and official CLI probes implemented; actual model/profile qualification must run on target."
+    "remaining": "Exact assistant canary/completion and failed-reprobe invalidation are tested; actual provider/model/effort and both auth modes need target evidence."
   },
   {
     "id": "PF19",
@@ -189,9 +212,11 @@
     "status": "adapter-tested",
     "files": [
       "src/assistant_workbench/integrations.py",
-      "scripts/probe_lcm.py"
+      "scripts/probe_lcm.py",
+      "tests/test_memory_integration_contracts.py",
+      "docs/MEMORY_INTEGRATION_LIMITS.md"
     ],
-    "remaining": "Real capture/recall passed with summarization disabled; host hooks and summary quality remain."
+    "remaining": "Actual LCM capture, scoped recall and project-local Codex hook-file merge passed with synthetic messages. Live harness hook activation and complete permitted cross-session capture remain unqualified."
   },
   {
     "id": "PF20",
@@ -201,7 +226,7 @@
       "src/assistant_workbench/context.py",
       "tests/test_context_quality.py"
     ],
-    "remaining": "Broader binary extraction and source-anchor fidelity need corpus-specific checks."
+    "remaining": "Original and extracted-text hashes are checked; broader formats, source anchors and corpus-specific extraction fidelity remain."
   },
   {
     "id": "PF21",
@@ -209,9 +234,11 @@
     "status": "adapter-tested",
     "files": [
       "src/assistant_workbench/integrations.py",
-      "scripts/probe_lcm.py"
+      "scripts/probe_lcm.py",
+      "tests/test_memory_integration_contracts.py",
+      "docs/MEMORY_INTEGRATION_LIMITS.md"
     ],
-    "remaining": "Real capture/recall passed with summarization disabled; host hooks and summary quality remain."
+    "remaining": "Explicit LCM summary/expansion calls validate provider, project and original links; disabled/no-work responses stay not_generated. Provider-generated summary fidelity and repeated real context windows remain unqualified."
   },
   {
     "id": "PF22",
@@ -219,9 +246,11 @@
     "status": "adapter-tested",
     "files": [
       "src/assistant_workbench/integrations.py",
-      "scripts/probe_local_integrations.py"
+      "scripts/probe_local_integrations.py",
+      "tests/test_memory_integration_contracts.py",
+      "docs/MEMORY_INTEGRATION_LIMITS.md"
     ],
-    "remaining": "Exact QMD retrieval passed; semantic mode and release lock resolution remain."
+    "remaining": "Actual QMD 2.8.3 CPU embedding/vector retrieval and project isolation passed on a small synthetic corpus. Hybrid reranking and production retrieval quality remain unqualified; the pinned source-build lock mismatch still requires manual review."
   },
   {
     "id": "PF23",
@@ -232,7 +261,7 @@
       "tests/test_context_quality.py",
       "tests/test_boundaries.py"
     ],
-    "remaining": "Very large corpus orchestration, tokenizer-specific budgets and automatic contradiction discovery remain."
+    "remaining": "Inventory/extraction/review accounting is explicit; very large corpus orchestration and proof of complete understanding remain open."
   },
   {
     "id": "PF24",
@@ -243,7 +272,7 @@
       "tests/test_context_quality.py",
       "tests/test_boundaries.py"
     ],
-    "remaining": "Very large corpus orchestration, tokenizer-specific budgets and automatic contradiction discovery remain."
+    "remaining": "Dated assertions, contradictions and supersession remain inspectable; automatic contradiction discovery and truth assessment remain open."
   },
   {
     "id": "PF25",
@@ -252,9 +281,10 @@
     "files": [
       "src/assistant_workbench/context.py",
       "tests/test_context_quality.py",
-      "tests/test_boundaries.py"
+      "tests/test_boundaries.py",
+      "tests/test_engine_preflight.py"
     ],
-    "remaining": "Very large corpus orchestration, tokenizer-specific budgets and automatic contradiction discovery remain."
+    "remaining": "Bounded source packets expose omissions; tokenizer-specific limits and evaluated relevance over large contexts remain."
   },
   {
     "id": "PF26",
@@ -262,20 +292,26 @@
     "status": "partial",
     "files": [
       "src/assistant_workbench/context.py",
-      "src/assistant_workbench/operations.py"
+      "src/assistant_workbench/operations.py",
+      "src/assistant_workbench/context_backends.py",
+      "tests/test_context_backends.py"
     ],
-    "remaining": "Active archive purge/invalidation exists; external-index deletion and automated backup expiry remain."
+    "remaining": "Local invalidation/purge and managed Hindsight/OpenViking deletion/reconciliation are implemented; other external indices, backups and automatic retention remain."
   },
   {
     "id": "PF27",
     "name": "One replaceable runtime backend",
-    "status": "partial",
+    "status": "integrated-not-qualified",
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/runtime_backends.py",
+      "src/assistant_workbench/temporal_runtime.py",
+      "tests/test_engine_preflight.py",
+      "tests/test_app_integrations.py"
     ],
-    "remaining": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain."
+    "remaining": "Paperclip default and optional Temporal are exclusively selected and fenced; live backend conformance and production cutover remain."
   },
   {
     "id": "PF28",
@@ -284,9 +320,12 @@
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/app.py",
+      "src/assistant_workbench/runtime_observations.py",
+      "tests/test_app_integrations.py"
     ],
-    "remaining": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain."
+    "remaining": "Doctor, coordinator health, worker pollers, profile probes and observations are distinct; no single check certifies full readiness."
   },
   {
     "id": "PF29",
@@ -295,9 +334,11 @@
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/temporal_runtime.py",
+      "tests/test_runtime_backends.py"
     ],
-    "remaining": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain."
+    "remaining": "Paperclip issue DAGs and Temporal parallel activities are wired; authenticated detached model runs and production restarts remain."
   },
   {
     "id": "PF30",
@@ -306,9 +347,11 @@
     "files": [
       "src/assistant_workbench/continuation.py",
       "src/assistant_workbench/lifecycle.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/temporal_runtime.py",
+      "tests/test_runtime_backends.py"
     ],
-    "remaining": "Protocol/failure tests pass; five genuine fresh-model sessions and hard-context-limit recovery remain."
+    "remaining": "Both backends implement explicit checkpoint/stop/fresh-generation handoff; five genuine fresh-model sessions and hard context-limit recovery remain unqualified."
   },
   {
     "id": "PF31",
@@ -317,9 +360,10 @@
     "files": [
       "src/assistant_workbench/continuation.py",
       "src/assistant_workbench/lifecycle.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "tests/test_runtime_backends.py"
     ],
-    "remaining": "Protocol/failure tests pass; five genuine fresh-model sessions and hard-context-limit recovery remain."
+    "remaining": "Iteration/time and repeated-artifact checks are enforced; semantic no-progress detection and real-model budget behavior remain separate."
   },
   {
     "id": "PF32",
@@ -328,9 +372,12 @@
     "files": [
       "src/assistant_workbench/continuation.py",
       "src/assistant_workbench/lifecycle.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/runtime_backends.py",
+      "src/assistant_workbench/temporal_runtime.py",
+      "tests/test_runtime_backends.py"
     ],
-    "remaining": "Protocol/failure tests pass; five genuine fresh-model sessions and hard-context-limit recovery remain."
+    "remaining": "Durable receipts and uncertain leases block blind replay; OS crash, network partitions and external-effect reconciliation need target/soak evidence."
   },
   {
     "id": "PF33",
@@ -339,9 +386,12 @@
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/runtime_backends.py",
+      "tests/test_requirement_scenarios.py",
+      "tests/test_runtime_backends.py"
     ],
-    "remaining": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain."
+    "remaining": "Grouped withdrawal, new-dispatch pause and scoped cancellation are wired; cancellation status alone does not prove every process stopped."
   },
   {
     "id": "PF34",
@@ -350,9 +400,12 @@
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/execution_packs.py",
+      "src/assistant_workbench/runtime_backends.py",
+      "tests/test_execution_packs.py"
     ],
-    "remaining": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain."
+    "remaining": "Private execution copies, local writer locks, fleet leases and bounded processes exist; distributed workspaces, OS isolation and global resource quotas remain."
   },
   {
     "id": "PF35",
@@ -361,9 +414,11 @@
     "files": [
       "src/assistant_workbench/assets/wezterm.lua",
       "src/assistant_workbench/terminal.py",
-      "tests/test_operations.py"
+      "tests/test_operations.py",
+      "tests/test_tui_scenarios.py",
+      "docs/TERMINAL_SCENARIOS.md"
     ],
-    "remaining": "Install and inspect the actual Mac WezTerm plugin, conflicts, reconnect and service behavior."
+    "remaining": "Native WezTerm has run in the cloud; the user desktop, configuration conflicts, shortcuts, reconnect, sleep and reboot still need qualification."
   },
   {
     "id": "PF36",
@@ -372,9 +427,11 @@
     "files": [
       "src/assistant_workbench/tui.py",
       "src/assistant_workbench/reports.py",
-      "tests/test_surfaces.py"
+      "tests/test_surfaces.py",
+      "tests/test_tui_scenarios.py",
+      "tests/test_requirement_scenarios.py"
     ],
-    "remaining": "Headless views and safe exports exist; real WezTerm GUI, preview routing, usage/reservation display and broader visual inspection remain."
+    "remaining": "Current-revision accepted/total criteria, scoped filters and amendments are tested; target desktop and live workload usability remain."
   },
   {
     "id": "PF37",
@@ -383,9 +440,10 @@
     "files": [
       "src/assistant_workbench/tui.py",
       "src/assistant_workbench/reports.py",
-      "tests/test_surfaces.py"
+      "tests/test_surfaces.py",
+      "tests/test_tui_scenarios.py"
     ],
-    "remaining": "Headless views and safe exports exist; real WezTerm GUI, preview routing, usage/reservation display and broader visual inspection remain."
+    "remaining": "Persistent outcomes remain separate from logs and selected details survive refresh/log floods; user-desktop outcome-finding evaluation remains."
   },
   {
     "id": "PF38",
@@ -394,9 +452,11 @@
     "files": [
       "src/assistant_workbench/tui.py",
       "src/assistant_workbench/reports.py",
-      "tests/test_surfaces.py"
+      "tests/test_surfaces.py",
+      "tests/test_tui_scenarios.py",
+      "tests/test_report_deliverables.py"
     ],
-    "remaining": "Headless views and safe exports exist; real WezTerm GUI, preview routing, usage/reservation display and broader visual inspection remain."
+    "remaining": "Versioned cards distinguish planned/fixture/observed state, partial acceptance and evidence checks; semantic result quality remains reviewed."
   },
   {
     "id": "PF39",
@@ -405,9 +465,11 @@
     "files": [
       "src/assistant_workbench/tui.py",
       "src/assistant_workbench/reports.py",
-      "tests/test_surfaces.py"
+      "tests/test_surfaces.py",
+      "tests/test_tui_scenarios.py",
+      "tests/test_report_deliverables.py"
     ],
-    "remaining": "Headless views and safe exports exist; real WezTerm GUI, preview routing, usage/reservation display and broader visual inspection remain."
+    "remaining": "Search before display limits, pin/read/reopen and immutable multi-deliverable exports are tested; target desktop acceptance remains."
   },
   {
     "id": "PF40",
@@ -416,9 +478,12 @@
     "files": [
       "src/assistant_workbench/tui.py",
       "src/assistant_workbench/reports.py",
-      "tests/test_surfaces.py"
+      "tests/test_surfaces.py",
+      "src/assistant_workbench/runtime_observations.py",
+      "tests/test_runtime_observations.py",
+      "tests/test_tui_scenarios.py"
     ],
-    "remaining": "Headless views and safe exports exist; real WezTerm GUI, preview routing, usage/reservation display and broader visual inspection remain."
+    "remaining": "Team nodes and coordinator observations are shown without claiming plans are live agents; native child semantics and live collaboration usefulness remain."
   },
   {
     "id": "PF41",
@@ -427,9 +492,13 @@
     "files": [
       "src/assistant_workbench/tui.py",
       "src/assistant_workbench/reports.py",
-      "tests/test_surfaces.py"
+      "tests/test_surfaces.py",
+      "src/assistant_workbench/runtime_backends.py",
+      "tests/test_tui_scenarios.py",
+      "src/assistant_workbench/temporal_runtime.py",
+      "tests/test_runtime_backends.py"
     ],
-    "remaining": "Headless views and safe exports exist; real WezTerm GUI, preview routing, usage/reservation display and broader visual inspection remain."
+    "remaining": "Dependency graphs, capacity/reserves and reported CLI token counters are visible; unknown/conflicting usage stays unknown. Live provider costs, subscription balance and CPU/memory telemetry remain."
   },
   {
     "id": "PF42",
@@ -438,9 +507,10 @@
     "files": [
       "src/assistant_workbench/tui.py",
       "src/assistant_workbench/reports.py",
-      "tests/test_surfaces.py"
+      "tests/test_surfaces.py",
+      "tests/test_tui_scenarios.py"
     ],
-    "remaining": "Headless views and safe exports exist; real WezTerm GUI, preview routing, usage/reservation display and broader visual inspection remain."
+    "remaining": "Context coverage, health/attention and stale diagnostics are visible; evaluated retrieval health and model context-pressure detection remain."
   },
   {
     "id": "PF43",
@@ -449,9 +519,11 @@
     "files": [
       "src/assistant_workbench/tui.py",
       "src/assistant_workbench/reports.py",
-      "tests/test_surfaces.py"
+      "tests/test_surfaces.py",
+      "src/assistant_workbench/execution_packs.py",
+      "tests/test_report_deliverables.py"
     ],
-    "remaining": "Headless views and safe exports exist; real WezTerm GUI, preview routing, usage/reservation display and broader visual inspection remain."
+    "remaining": "Plan DAG diagrams and safe HTML/Markdown/JSON exports exist; richer chart generation, artifact preview routing and broad visual inspection remain."
   },
   {
     "id": "PF44",
@@ -460,9 +532,11 @@
     "files": [
       "src/assistant_workbench/tui.py",
       "src/assistant_workbench/reports.py",
-      "tests/test_surfaces.py"
+      "tests/test_surfaces.py",
+      "tests/test_tui_scenarios.py",
+      "tests/test_server_workers.py"
     ],
-    "remaining": "Headless views and safe exports exist; real WezTerm GUI, preview routing, usage/reservation display and broader visual inspection remain."
+    "remaining": "Escaped diagnostics, malformed-state recovery, narrow layouts and log-flood selection are tested; native target-desktop conformance remains."
   },
   {
     "id": "PF45",
@@ -471,9 +545,10 @@
     "files": [
       "src/assistant_workbench/capabilities.py",
       "src/assistant_workbench/policy.py",
-      "src/assistant_workbench/assets/dependencies.json"
+      "src/assistant_workbench/assets/dependencies.json",
+      "tests/test_policy_scenarios.py"
     ],
-    "remaining": "Pinned Superpowers activation is implemented; real brainstorming artifact/quality qualification remains."
+    "remaining": "Pinned Superpowers activation and missing-procedure blocking are wired; live brainstorming coverage, useful alternatives and artifact quality remain."
   },
   {
     "id": "PF46",
@@ -482,9 +557,11 @@
     "files": [
       "src/assistant_workbench/policy.py",
       "src/assistant_workbench/capabilities.py",
-      "src/assistant_workbench/assets/test-and-review.md"
+      "src/assistant_workbench/assets/test-and-review.md",
+      "tests/test_engine_preflight.py",
+      "tests/test_report_deliverables.py"
     ],
-    "remaining": "Versioned procedures and language guidance exist; full real execution packs and editorial meaning-preservation evaluation remain."
+    "remaining": "Versioned plans feed bounded coordinator packets and human exports; evaluated plan completeness and human/agent understanding remain."
   },
   {
     "id": "PF47",
@@ -493,9 +570,11 @@
     "files": [
       "src/assistant_workbench/policy.py",
       "src/assistant_workbench/capabilities.py",
-      "src/assistant_workbench/assets/test-and-review.md"
+      "src/assistant_workbench/assets/test-and-review.md",
+      "tests/test_engine_preflight.py",
+      "tests/test_runtime_backends.py"
     ],
-    "remaining": "Versioned procedures and language guidance exist; full real execution packs and editorial meaning-preservation evaluation remain."
+    "remaining": "Procedure paths/hashes, preflight integrity and resume requirement checks exist; live adherence and companion-file portability remain."
   },
   {
     "id": "PF48",
@@ -504,9 +583,11 @@
     "files": [
       "src/assistant_workbench/policy.py",
       "src/assistant_workbench/capabilities.py",
-      "src/assistant_workbench/assets/test-and-review.md"
+      "src/assistant_workbench/assets/test-and-review.md",
+      "src/assistant_workbench/quality.py",
+      "tests/test_requirement_scenarios.py"
     ],
-    "remaining": "Versioned procedures and language guidance exist; full real execution packs and editorial meaning-preservation evaluation remain."
+    "remaining": "Configured audience and word budgets reach plans/outcome lint; approved writing preference retention and meaning-preserving editorial quality remain."
   },
   {
     "id": "PF49",
@@ -517,7 +598,7 @@
       "src/assistant_workbench/capabilities.py",
       "src/assistant_workbench/assets/test-and-review.md"
     ],
-    "remaining": "Versioned procedures and language guidance exist; full real execution packs and editorial meaning-preservation evaluation remain."
+    "remaining": "Named writing/Humanizer procedures and Vale execution are available; concision without lost meaning, factual quality and reader calibration remain."
   },
   {
     "id": "PF50",
@@ -526,20 +607,25 @@
     "files": [
       "src/assistant_workbench/tui.py",
       "src/assistant_workbench/reports.py",
-      "tests/test_surfaces.py"
+      "tests/test_surfaces.py",
+      "tests/test_report_deliverables.py"
     ],
-    "remaining": "Headless views and safe exports exist; real WezTerm GUI, preview routing, usage/reservation display and broader visual inspection remain."
+    "remaining": "Safe rendered exports and terminal captures exist; broader document formats, diagram/chart quality and human visual acceptance remain."
   },
   {
     "id": "PF51",
     "name": "Python, TypeScript/JavaScript and Rust execution packs",
-    "status": "partial",
+    "status": "local-tested",
     "files": [
       "src/assistant_workbench/policy.py",
       "src/assistant_workbench/capabilities.py",
-      "src/assistant_workbench/assets/test-and-review.md"
+      "src/assistant_workbench/assets/test-and-review.md",
+      "src/assistant_workbench/execution_packs.py",
+      "tests/test_execution_packs.py",
+      "tests/test_app_integrations.py",
+      "docs/EXECUTION_PACKS.md"
     ],
-    "remaining": "Versioned procedures and language guidance exist; full real execution packs and editorial meaning-preservation evaluation remain."
+    "remaining": "Real Python, JavaScript, TypeScript and Rust process checks and failures are tested; target toolchains/dependencies and end-product behavior remain."
   },
   {
     "id": "PF52",
@@ -548,9 +634,11 @@
     "files": [
       "src/assistant_workbench/evaluation.py",
       "tests/test_evaluation.py",
-      "evals/routing.json"
+      "evals/routing.json",
+      "scripts/evaluate_feature_coverage.py",
+      "tests/test_feature_coverage.py"
     ],
-    "remaining": "Calibration/policy mechanisms exist; held-out live model judges, task-quality/cost benchmarks and human calibration remain."
+    "remaining": "Per-feature evidence, source binding and calibration mechanisms exist; held-out live judges, semantic quality and human calibration remain."
   },
   {
     "id": "PF53",
@@ -559,9 +647,11 @@
     "files": [
       "src/assistant_workbench/evaluation.py",
       "tests/test_evaluation.py",
-      "evals/routing.json"
+      "evals/routing.json",
+      "tests/test_policy_scenarios.py",
+      "tests/test_tui_scenarios.py"
     ],
-    "remaining": "Calibration/policy mechanisms exist; held-out live model judges, task-quality/cost benchmarks and human calibration remain."
+    "remaining": "Lexical routing, plan selection and result-finding cases are tested; held-out semantic routing and model quality/cost comparisons remain."
   },
   {
     "id": "PF54",
@@ -570,9 +660,12 @@
     "files": [
       "tests/test_intake.py",
       "tests/test_execution.py",
-      "tests/test_operations.py"
+      "tests/test_operations.py",
+      "tests/test_execution_packs.py",
+      "tests/test_runtime_backends.py",
+      "tests/test_server_workers.py"
     ],
-    "remaining": "Selected concurrency/fault cases tested; disk-full, host sleep/reboot, sustained load and 72-hour soak remain."
+    "remaining": "Selected concurrency, cancellation, expiry, output/memory bounds and HTTP faults are tested; disk-full, host reboot, physical fleets and 72-hour soak remain."
   },
   {
     "id": "PF55",
@@ -581,9 +674,10 @@
     "files": [
       "src/assistant_workbench/evaluation.py",
       "tests/test_evaluation.py",
-      "evals/routing.json"
+      "evals/routing.json",
+      "tests/test_feature_coverage.py"
     ],
-    "remaining": "Calibration/policy mechanisms exist; held-out live model judges, task-quality/cost benchmarks and human calibration remain."
+    "remaining": "Reviewed policy proposals, evidence checks and rollback mechanisms exist; reliable autonomous improvement and held-out regression outcomes remain."
   },
   {
     "id": "PF56",
@@ -592,9 +686,10 @@
     "files": [
       "pyproject.toml",
       "requirements-runtime.lock",
-      ".github/workflows/ci.yml"
+      ".github/workflows/ci.yml",
+      "requirements-temporal.lock"
     ],
-    "remaining": "Repository packages and CI included; all-upstream hash locking and cross-platform reproducibility remain."
+    "remaining": "Core/TUI/Temporal packaging and CI are included; all-upstream hash locks and cross-platform reproducibility remain."
   },
   {
     "id": "PF57",
@@ -603,9 +698,11 @@
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/mcp.py",
+      "tests/test_harness_surfaces.py"
     ],
-    "remaining": "Generic CLI/MCP/project contracts exist; the referenced shared conversation was unavailable and its specific project compatibility is not certified."
+    "remaining": "CLI/HTTP and typed MCP planning/context/execution tools are wired; actual harness setup and the unavailable linked-project conversation remain uncertified."
   },
   {
     "id": "PF58",
@@ -614,9 +711,10 @@
     "files": [
       "src/assistant_workbench/migration.py",
       "src/assistant_workbench/operations.py",
-      "tests/test_operations.py"
+      "tests/test_operations.py",
+      "tests/test_workspace_backup.py"
     ],
-    "remaining": "Actual customized Mac cutover and service lifecycle still require target-machine evidence."
+    "remaining": "Installation, private workspace/state backup and fixture migration are tested; actual customized-user cutover, recovery and service lifecycle remain."
   },
   {
     "id": "PF59",
@@ -625,9 +723,11 @@
     "files": [
       "src/assistant_workbench/server.py",
       "src/assistant_workbench/continuation.py",
-      "SECURITY.md"
+      "SECURITY.md",
+      "src/assistant_workbench/runtime_backends.py",
+      "tests/test_server_workers.py"
     ],
-    "remaining": "Local operator controls and effect audit exist; hostile agents require OS/container and scoped credential boundaries."
+    "remaining": "Operator/host-scoped tokens, credential handling and effect receipts are tested; hostile agents still need OS/container isolation and scoped provider credentials."
   },
   {
     "id": "PF60",
@@ -637,43 +737,60 @@
       "src/assistant_workbench/app.py",
       "tests/test_intake.py"
     ],
-    "remaining": "UTC interval schedules only; calendar/DST/overlap policies and external destinations remain."
+    "remaining": "Explicit UTC interval schedules coalesce missed ticks; calendar/DST/overlap policies and external destinations remain."
   },
   {
     "id": "PF61",
     "name": "Optional OpenViking replacement context backend",
-    "status": "not-implemented (optional)",
+    "status": "contract-tested",
     "files": [
-      "docs/ARCHITECTURE.md"
+      "docs/ARCHITECTURE.md",
+      "src/assistant_workbench/context_backends.py",
+      "tests/test_context_backends.py",
+      "tests/test_app_integrations.py",
+      "docs/CONTEXT_BACKENDS.md"
     ],
-    "remaining": "Explicitly deferred; not installed, activated or advertised as present."
+    "remaining": "OpenViking managed ingest/recall/read/delete/reconcile is wired; the local archive remains authoritative. Upstream service/model and replacement-backend qualification remain."
   },
   {
     "id": "PF62",
     "name": "Optional Hindsight experience memory",
-    "status": "not-implemented (optional)",
+    "status": "contract-tested",
     "files": [
-      "docs/ARCHITECTURE.md"
+      "docs/ARCHITECTURE.md",
+      "src/assistant_workbench/context_backends.py",
+      "tests/test_context_backends.py",
+      "tests/test_app_integrations.py",
+      "docs/CONTEXT_BACKENDS.md"
     ],
-    "remaining": "Explicitly deferred; not installed, activated or advertised as present."
+    "remaining": "Hindsight managed source copies and derived recall are wired with scope/readback/deletion receipts; actual service/provider and semantic experience-memory quality remain."
   },
   {
     "id": "PF63",
     "name": "Optional Temporal execution backend",
-    "status": "not-implemented (optional)",
+    "status": "integrated-not-qualified",
     "files": [
-      "docs/ARCHITECTURE.md"
+      "docs/ARCHITECTURE.md",
+      "src/assistant_workbench/temporal_runtime.py",
+      "src/assistant_workbench/runtime_backends.py",
+      "tests/test_runtime_backends.py",
+      "docs/RUNTIME_BACKENDS.md"
     ],
-    "remaining": "Explicitly deferred; not installed, activated or advertised as present."
+    "remaining": "Optional real-SDK Temporal workflows, queues, cancellation and explicit rollover are integrated; fixture activities do not qualify real models or production operation."
   },
   {
     "id": "PF64",
     "name": "Optional multi-host and larger fleets",
-    "status": "not-implemented (optional)",
+    "status": "integrated-not-qualified",
     "files": [
-      "docs/ARCHITECTURE.md"
+      "docs/ARCHITECTURE.md",
+      "src/assistant_workbench/runtime_backends.py",
+      "src/assistant_workbench/temporal_runtime.py",
+      "tests/test_runtime_backends.py",
+      "tests/test_server_workers.py",
+      "docs/RUNTIME_BACKENDS.md"
     ],
-    "remaining": "Explicitly deferred; not installed, activated or advertised as present."
+    "remaining": "Named hosts, queue/workspace mappings, reserves, scoped remote control and fenced leases are implemented; physical multi-machine models, fault recovery and large-fleet scale remain."
   },
   {
     "id": "PF65",
@@ -681,9 +798,11 @@
     "status": "adapter-tested",
     "files": [
       "src/assistant_workbench/integrations.py",
-      "scripts/probe_local_integrations.py"
+      "scripts/probe_local_integrations.py",
+      "tests/test_memory_integration_contracts.py",
+      "docs/MEMORY_INTEGRATION_LIMITS.md"
     ],
-    "remaining": "Actual local write/recall passed; wider concurrent-edit and retention qualification remain."
+    "remaining": "Actual Basic Memory 1.0.0 create/read/search and competing checksum-guarded edits passed. Arbitrary direct filesystem writers, wider retention and user-machine integration remain outside this qualification."
   },
   {
     "id": "PF66",
@@ -693,7 +812,7 @@
       "src/assistant_workbench/integrations.py",
       "docs/COMPATIBILITY.md"
     ],
-    "remaining": "Real service/generation run remains; no qualified subscription-only inference bridge."
+    "remaining": "Configured source-workspace/ask adapter exists; actual service generation and a qualified subscription-only inference setup remain."
   },
   {
     "id": "PF67",
@@ -703,7 +822,7 @@
       "src/assistant_workbench/integrations.py",
       "docs/COMPATIBILITY.md"
     ],
-    "remaining": "Real service/generation run remains; no qualified subscription-only inference bridge."
+    "remaining": "Configured bounded research adapter exists; actual sourced investigation, provider setup and a qualified subscription-only inference setup remain."
   },
   {
     "id": "PF68",
@@ -712,9 +831,11 @@
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "tests/test_policy_scenarios.py",
+      "tests/test_engine_preflight.py"
     ],
-    "remaining": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain."
+    "remaining": "Explainable lexical workflow templates create bounded DAGs; semantic task decomposition, role selection and company-scale autonomous planning remain unevaluated."
   },
   {
     "id": "PF69",
@@ -723,9 +844,11 @@
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "src/assistant_workbench/profiles.py",
+      "tests/test_harness_surfaces.py"
     ],
-    "remaining": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain."
+    "remaining": "Explicit override or configured priority selects qualified profiles; this is not benchmark-based best-model/effort selection. Live quality/cost comparison remains."
   },
   {
     "id": "PF70",
@@ -734,19 +857,25 @@
     "files": [
       "src/assistant_workbench/engine.py",
       "src/assistant_workbench/policy.py",
-      "tests/test_execution.py"
+      "tests/test_execution.py",
+      "tests/test_engine_preflight.py",
+      "tests/test_harness_surfaces.py"
     ],
-    "remaining": "Real coordinator/harness conformance, native child ownership and broad selection evaluation remain."
+    "remaining": "Pinned capability activation and validated execution packets are wired; useful automatic skill choice and live procedure adherence still require evaluation."
   },
   {
     "id": "PF71",
     "name": "Subscription, API and tested local/hybrid installation profiles",
-    "status": "partial",
+    "status": "integrated-not-qualified",
     "files": [
       "src/assistant_workbench/profiles.py",
       "src/assistant_workbench/integrations.py",
-      "docs/COMPATIBILITY.md"
+      "docs/COMPATIBILITY.md",
+      "src/assistant_workbench/temporal_runtime.py",
+      "src/assistant_workbench/context_backends.py",
+      "tests/test_harness_surfaces.py",
+      "tests/test_app_integrations.py"
     ],
-    "remaining": "Official CLI no-key path implemented; live subscription/API/local full-profile certification remains."
+    "remaining": "Official CLI subscription/API/local declarations, probes and optional service auth modes are integrated; real full-profile certification, remote worker auth and external-provider bridges remain."
   }
 ]

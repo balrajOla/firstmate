@@ -25,8 +25,60 @@ class Application:
         Workflow(self.store)
 
     def dispatch(self, action, args=None):
-        args = args or {}
+        if not isinstance(action, str) or not action:
+            raise WorkbenchError("Action must be a nonempty string")
+        if args is not None and not isinstance(args, dict):
+            raise WorkbenchError("Action arguments must be an object")
+        args = dict(args or {})
         s = self.store
+        if action.startswith("backend."):
+            from .context_backends import ContextBackends
+
+            method = action.removeprefix("backend.")
+            if method not in {
+                "ingest",
+                "recall",
+                "read",
+                "delete",
+                "reconcile",
+                "status",
+            }:
+                raise WorkbenchError("Unknown context backend action")
+            return getattr(ContextBackends(s), method)(**args)
+        if action.startswith("execution."):
+            from .execution_packs import ExecutionPacks
+
+            method = action.removeprefix("execution.")
+            if method not in {
+                "create_workspace",
+                "inspect",
+                "list_workspaces",
+                "list_runs",
+                "get_run",
+                "plan",
+                "run",
+                "cancel",
+                "artifacts",
+                "verify_artifacts",
+            }:
+                raise WorkbenchError("Unknown execution action")
+            return getattr(ExecutionPacks(s), method)(**args)
+        if action.startswith("fleet."):
+            from .runtime_backends import Fleet
+
+            method = action.removeprefix("fleet.")
+            if method not in {
+                "register",
+                "status",
+                "disable",
+                "expire",
+                "cancel",
+                "usage",
+            }:
+                raise WorkbenchError("Unknown fleet operator action")
+            # Registration returns a new token only to its caller. Status and
+            # persisted events never include credentials. Workers use /worker.
+            return getattr(Fleet(s), method)(**args)
         if action.startswith("workflow."):
             method = action.split(".")[1]
             if method not in {
@@ -62,14 +114,36 @@ class Application:
                 **args,
             )
         if action == "request.retry":
-            return Engine(s).retry(**args)
+            from .runtime_backends import select_runtime
+
+            select_runtime(s, config(self.home))
+            # Retry only resets blocked outbox rows; no coordinator or SDK is
+            # constructed, and uncertain work remains fenced.
+            return Engine.retry(self, **args)
         if action == "coordinator.tick":
-            return Engine(s).tick()
+            return self._coordinator().tick(**args)
         if action == "coordinator.observe":
-            return Engine(s).observe()
+            runtime = self._coordinator()
+            observed = runtime.observe(**args)
+            if config(self.home)["coordinator"]["kind"] == "temporal":
+                from .runtime_observations import reconcile_observations
+
+                return reconcile_observations(s, observed)
+            return observed
+        if action == "coordinator.health":
+            runtime = self._coordinator()
+            return (
+                runtime.api.health()
+                if isinstance(runtime, Engine)
+                else runtime.health()
+            )
         if action == "lifecycle.request":
             from .lifecycle import Lifecycle
+            from .runtime_backends import select_runtime
 
+            selected = select_runtime(s, config(self.home))
+            if selected == "temporal":
+                return self._coordinator().rollover(**args)
             return Lifecycle(s).request(**args)
         if action == "snapshot":
             return s.snapshot()
@@ -226,6 +300,17 @@ class Application:
             return s.rows("SELECT * FROM evidence ORDER BY created DESC")
         raise WorkbenchError("Unknown action: " + action)
 
+    def _coordinator(self):
+        from .runtime_backends import select_runtime
+
+        settings = config(self.home)
+        kind = select_runtime(self.store, settings)
+        if kind == "temporal":
+            from .temporal_runtime import TemporalRuntime
+
+            return TemporalRuntime(self.store, settings)
+        return Engine(self.store)
+
     def scheduled(self):
         # UTC epochs avoid DST ambiguity. Catch-up coalesces missed runs; no catch-up flood.
         for schedule in self.store.rows(
@@ -259,13 +344,21 @@ class Application:
                 }
             )
         try:
-            health = Engine(self.store).api.health()
+            health = self.dispatch("coordinator.health")
             checks.append(
-                {"component": "paperclip", "reachable": True, "health": health}
+                {
+                    "component": settings["coordinator"]["kind"],
+                    "reachable": True,
+                    "health": health,
+                }
             )
         except WorkbenchError as exc:
             checks.append(
-                {"component": "paperclip", "reachable": False, "reason": str(exc)}
+                {
+                    "component": settings["coordinator"]["kind"],
+                    "reachable": False,
+                    "reason": str(exc),
+                }
             )
         for name, item in settings.get("integrations", {}).items():
             cmd = item.get("command", [])

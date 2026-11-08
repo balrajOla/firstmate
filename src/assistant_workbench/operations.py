@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from contextlib import closing
 import json
+import hashlib
 import os
 import plistlib
+import re
 import shutil
 import sqlite3
+import stat
 import sys
 from pathlib import Path
 from .config import config
@@ -12,65 +16,280 @@ from .integrations import run_process
 from .util import WorkbenchError, atomic, canonical, digest, now, read_json
 
 
+_STATE_ROOTS = {"archive", "knowledge", "config.json", "snapshots", "workspaces"}
+
+
+def _plain_path(value):
+    """Do not hide a supplied symlink by resolving it before validation."""
+    path = Path(os.path.abspath(Path(value).expanduser()))
+    for part in (path, *path.parents):
+        if part.is_symlink():
+            raise WorkbenchError("Snapshot paths must not contain symlinks")
+    return path
+
+
+def _snapshot_name(name):
+    if not isinstance(name, str) or not name or "\\" in name:
+        raise WorkbenchError("Snapshot inventory contains an invalid relative path")
+    path = Path(name)
+    if (
+        path.is_absolute()
+        or any(part in {".", ".."} for part in name.split("/"))
+        or path.as_posix() != name
+    ):
+        raise WorkbenchError("Snapshot inventory contains an invalid relative path")
+    return path
+
+
+def _snapshot_hash(path):
+    _plain_path(path)
+    descriptor = os.open(path, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+    with os.fdopen(descriptor, "rb") as stream:
+        if not stat.S_ISREG(os.fstat(stream.fileno()).st_mode):
+            raise WorkbenchError("Snapshot contains a non-regular file")
+        result = hashlib.sha256()
+        for chunk in iter(lambda: stream.read(1024 * 1024), b""):
+            result.update(chunk)
+        return result.hexdigest()
+
+
+def _snapshot_inventory(root, selected=None):
+    """Inventory every entry, including empty directories; never follow links."""
+    root = _plain_path(root)
+    files, directories = {}, []
+
+    def visit(path):
+        mode = path.lstat().st_mode
+        name = path.relative_to(root).as_posix()
+        if stat.S_ISLNK(mode):
+            raise WorkbenchError("Snapshots reject file and directory symlinks")
+        if stat.S_ISDIR(mode):
+            directories.append(name)
+            for child in sorted(path.iterdir()):
+                visit(child)
+        elif stat.S_ISREG(mode):
+            files[name] = _snapshot_hash(path)
+        else:
+            raise WorkbenchError("Snapshots reject sockets, devices and special files")
+
+    for child in sorted(root.iterdir()):
+        if selected is None or child.name in selected:
+            visit(child)
+    return {"files": files, "directories": sorted(directories)}
+
+
+def _copy_snapshot_files(source, destination, inventory):
+    for name in inventory["directories"]:
+        (destination / _snapshot_name(name)).mkdir(
+            parents=True, exist_ok=True, mode=0o700
+        )
+    for name, expected in inventory["files"].items():
+        relative = _snapshot_name(name)
+        original, copied = source / relative, destination / relative
+        if _snapshot_hash(original) != expected:
+            raise WorkbenchError("Snapshot source changed during copying")
+        copied.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        descriptor = os.open(original, os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0))
+        with os.fdopen(descriptor, "rb") as reader, copied.open("xb") as writer:
+            if not stat.S_ISREG(os.fstat(reader.fileno()).st_mode):
+                raise WorkbenchError("Snapshot source is not a regular file")
+            shutil.copyfileobj(reader, writer, 1024 * 1024)
+        copied.chmod(0o700 if original.stat().st_mode & 0o111 else 0o600)
+        if _snapshot_hash(copied) != expected:
+            raise WorkbenchError("Snapshot copy failed its content integrity check")
+
+
+def _portable_workspaces(db, state_root, rewrite=False):
+    exists = db.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='execution_workspaces'"
+    ).fetchone()
+    if not exists:
+        return set()
+    identities = set()
+    for identity, location in db.execute(
+        "SELECT id,path FROM execution_workspaces"
+    ).fetchall():
+        if not re.fullmatch(r"ws_[A-Za-z0-9_-]+", identity):
+            raise WorkbenchError("Invalid owned workspace identity")
+        relative = Path("workspaces") / identity
+        if Path(location) not in {relative, state_root / relative}:
+            raise WorkbenchError(
+                "Workspace location is outside its owned state directory"
+            )
+        if rewrite:
+            db.execute(
+                "UPDATE execution_workspaces SET path=? WHERE id=?",
+                (relative.as_posix(), identity),
+            )
+        identities.add(identity)
+    return identities
+
+
+def _check_workspace_directories(home, identities):
+    workspace_root = home / "workspaces"
+    if workspace_root.is_symlink():
+        raise WorkbenchError("Owned workspace root must not be a symlink")
+    actual = (
+        {p.name for p in workspace_root.iterdir()} if workspace_root.exists() else set()
+    )
+    if actual != identities:
+        raise WorkbenchError(
+            "Owned workspace inventory has missing or unregistered directories"
+        )
+    if any(not (workspace_root / identity).is_dir() for identity in identities):
+        raise WorkbenchError("Owned workspace is not a directory")
+
+
 def backup_state(store, destination):
-    dest = Path(destination).resolve()
-    if dest.exists() or dest.is_relative_to(store.home):
+    home, dest = _plain_path(store.home), _plain_path(destination)
+    if dest.exists() or dest.is_relative_to(home) or home.is_relative_to(dest):
         raise WorkbenchError("Backup must be a new directory outside active state")
-    dest.mkdir(parents=True, mode=0o700)
     db = store.connect()
-    target = sqlite3.connect(dest / "workbench.sqlite")
     try:
-        db.backup(target)
+        version = db.execute("PRAGMA data_version").fetchone()[0]
+        if db.execute(
+            "SELECT name FROM sqlite_master WHERE name='execution_runs'"
+        ).fetchone():
+            if db.execute(
+                "SELECT 1 FROM execution_runs WHERE status='running' LIMIT 1"
+            ).fetchone():
+                raise WorkbenchError(
+                    "Stop or reconcile active execution runs before a filesystem backup"
+                )
+        identities = _portable_workspaces(db, home)
+        _check_workspace_directories(home, identities)
+        before = _snapshot_inventory(home, _STATE_ROOTS)
+        dest.mkdir(parents=True, mode=0o700)
+        try:
+            with closing(sqlite3.connect(dest / "workbench.sqlite")) as target:
+                db.backup(target)
+                _portable_workspaces(target, home, rewrite=True)
+                target.commit()
+            _copy_snapshot_files(home, dest, before)
+            if (
+                before != _snapshot_inventory(home, _STATE_ROOTS)
+                or version != db.execute("PRAGMA data_version").fetchone()[0]
+            ):
+                raise WorkbenchError(
+                    "State changed during backup; quiesce writers and retry"
+                )
+            manifest = _snapshot_inventory(dest)
+            atomic(
+                dest / "backup.json",
+                canonical({"schema": 2, "created": now(), **manifest}),
+            )
+        except Exception:
+            shutil.rmtree(dest)
+            raise
     finally:
         db.close()
-        target.close()
-    from .migration import file_manifest
-
-    for name in ["archive", "knowledge", "config.json", "snapshots"]:
-        src = store.home / name
-        before = file_manifest(src) if src.exists() else None
-        if src.is_dir():
-            shutil.copytree(src, dest / name, symlinks=True)
-        elif src.is_file():
-            shutil.copy2(src, dest / name)
-        if before is not None and (
-            file_manifest(src) != before or file_manifest(dest / name) != before
-        ):
-            raise WorkbenchError(
-                "State changed during backup; quiesce its writers and retry to a new destination"
-            )
-    manifest = {
-        str(p.relative_to(dest)): digest(p.read_bytes())
-        for p in dest.rglob("*")
-        if p.is_file() and not p.is_symlink()
+    return {
+        "path": str(dest),
+        "files": len(manifest["files"]),
+        "workspace_count": len(identities),
     }
-    atomic(
-        dest / "backup.json",
-        canonical({"schema": 1, "created": now(), "files": manifest}),
-    )
-    return {"path": str(dest), "files": len(manifest)}
 
 
 def restore_state(source, destination):
-    src = Path(source).resolve()
-    dest = Path(destination).resolve()
-    manifest = read_json(src / "backup.json")
-    if not manifest or dest.exists():
+    src, dest = _plain_path(source), _plain_path(destination)
+    if (
+        not src.is_dir()
+        or dest.exists()
+        or dest.is_relative_to(src)
+        or src.is_relative_to(dest)
+    ):
         raise WorkbenchError(
-            "Restore requires a verified snapshot and a new destination"
+            "Restore requires a verified snapshot and a new separate destination"
         )
-    for name, sha in manifest["files"].items():
-        file = (src / name).resolve()
+    inventory = _snapshot_inventory(src)
+    if "backup.json" not in inventory["files"]:
+        raise WorkbenchError("Snapshot manifest is missing")
+    try:
+        manifest = json.loads((src / "backup.json").read_text())
+    except (ValueError, UnicodeError) as exc:
+        raise WorkbenchError("Snapshot manifest is malformed") from exc
+    if (
+        not isinstance(manifest, dict)
+        or manifest.get("schema") not in {1, 2}
+        or not isinstance(manifest.get("files"), dict)
+    ):
+        raise WorkbenchError("Snapshot manifest schema is unsupported")
+    files = manifest["files"]
+    if "workbench.sqlite" not in files:
+        raise WorkbenchError("Snapshot database is missing")
+    for name, sha in files.items():
+        relative = _snapshot_name(name)
         if (
-            not file.is_relative_to(src)
-            or not file.is_file()
-            or digest(file.read_bytes()) != sha
+            relative.parts[0] not in _STATE_ROOTS | {"workbench.sqlite"}
+            or not isinstance(sha, str)
+            or not re.fullmatch(r"[0-9a-f]{64}", sha)
         ):
-            raise WorkbenchError("Backup integrity check failed")
-    shutil.copytree(src, dest, symlinks=True)
+            raise WorkbenchError("Snapshot inventory contains an unsupported entry")
+    if manifest["schema"] == 2:
+        directories = manifest.get("directories")
+        if (
+            not isinstance(directories, list)
+            or not all(isinstance(name, str) for name in directories)
+            or len(directories) != len(set(directories))
+        ):
+            raise WorkbenchError("Snapshot directory inventory is malformed")
+    else:
+        directories = sorted(
+            {
+                parent.as_posix()
+                for name in files
+                for parent in Path(name).parents
+                if parent != Path(".")
+            }
+        )
+    for name in directories:
+        if _snapshot_name(name).parts[0] not in _STATE_ROOTS:
+            raise WorkbenchError("Snapshot directory is outside owned state")
+    expected = {"files": files, "directories": sorted(directories)}
+    actual = {
+        "files": {
+            name: sha
+            for name, sha in inventory["files"].items()
+            if name != "backup.json"
+        },
+        "directories": inventory["directories"],
+    }
+    if actual != expected:
+        raise WorkbenchError(
+            "Backup integrity check failed: changed, missing or unlisted entries"
+        )
+    dest.mkdir(parents=True, mode=0o700)
+    try:
+        _copy_snapshot_files(src, dest, expected)
+        if _snapshot_inventory(dest) != expected:
+            raise WorkbenchError("Restored files failed their integrity check")
+        with closing(
+            sqlite3.connect((dest / "workbench.sqlite").as_uri() + "?mode=ro", uri=True)
+        ) as db:
+            if db.execute("PRAGMA quick_check").fetchone()[0] != "ok":
+                raise WorkbenchError("Restored database failed its integrity check")
+            tables = {
+                row[0]
+                for row in db.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'"
+                )
+            }
+            if not {"meta", "projects", "requests", "sources"}.issubset(tables):
+                raise WorkbenchError(
+                    "Restored database lacks the Workbench state schema"
+                )
+            _check_workspace_directories(dest, _portable_workspaces(db, dest))
+    except Exception as exc:
+        shutil.rmtree(dest)
+        if isinstance(exc, sqlite3.DatabaseError):
+            raise WorkbenchError(
+                "Restored database failed its integrity check"
+            ) from exc
+        raise
     return {
         "path": str(dest),
-        "notice": "Workers are not restarted automatically. Reconcile the coordinator before dispatch.",
+        "files": len(files),
+        "notice": "Workers are not restarted automatically. Reconcile the coordinator and re-plan runtime commands before dispatch.",
     }
 
 

@@ -1,0 +1,1220 @@
+{
+  "schema": 1,
+  "run_id": "native-verified-04",
+  "mode": "intake-control",
+  "home": "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04",
+  "started_at": "2026-11-08T08:04:01.259754+00:00",
+  "manifest_sha256": "75f07cce4db6198955892b676d9d2b0b8a61795e1ac379c5e852932a04159eb4",
+  "steps": [
+    {
+      "id": "S01",
+      "action": "submit",
+      "instruction": "Create HarborWeb, a repair-cafe website with an accessible event list, booking form and volunteer signup. Keep tracking disabled and do not send personal data to third parties. Supply working source, tests and a short handover.",
+      "feature_ids": [
+        "PF01",
+        "PF02",
+        "PF05",
+        "PF14",
+        "PF51",
+        "PF68"
+      ],
+      "expectations": [
+        "Save the original prompt and project receipt.",
+        "Register website, accessibility tests and handover as separate pending deliverables.",
+        "Do not claim a working website from intake alone."
+      ],
+      "started_at": "2026-11-08T08:04:01.261383+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_2cda876b2cd2477d99010e5e24ec24a2",
+          "request_id": "r_a115d62126cb4af59dd5b073184b1db4",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:01.269214+00:00",
+      "seconds": 0.0078,
+      "snapshot": "./scenario-results-snapshots/S01.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S01.png",
+        "sha256": "fd3d9c15e32fd6394a5e6d79a9df364c817978faf8012a18632c7ea3c1dadafb",
+        "state_snapshot": "./native-snapshots/S01.json"
+      }
+    },
+    {
+      "id": "S02",
+      "action": "submit",
+      "instruction": "Create PocketTasks, an offline-first mobile task app with local task storage, due dates and accessible controls. No account should be required. Provide source, tests and an installable app only after a real mobile build.",
+      "feature_ids": [
+        "PF01",
+        "PF02",
+        "PF05",
+        "PF51",
+        "PF68"
+      ],
+      "expectations": [
+        "Use a separate mobile project and request identity.",
+        "Keep source, tests and actual device/build checks distinguishable."
+      ],
+      "started_at": "2026-11-08T08:04:03.386478+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_dedda8ca8be1486e9c6af4e238415c75",
+          "request_id": "r_bcd85e4a7ec54d30b3a40c4582352306",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:03.392901+00:00",
+      "seconds": 0.0064,
+      "snapshot": "./scenario-results-snapshots/S02.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S02.png",
+        "sha256": "bcbd3499ff830c42d4c32c3e8a05949612a9622561d0165948a90c484026b348",
+        "state_snapshot": "./native-snapshots/S02.json"
+      }
+    },
+    {
+      "id": "S03",
+      "action": "submit",
+      "instruction": "Research long-context prompting versus retrieval-augmented generation for a daily assistant. Start with Lost in the Middle (https://arxiv.org/abs/2307.03172), RULER (https://arxiv.org/abs/2404.06654), and the comparative study (https://arxiv.org/abs/2407.16833). Use primary sources, compare methods and limits, and include citations and a concise recommendation without promising perfect recall.",
+      "feature_ids": [
+        "PF01",
+        "PF02",
+        "PF23",
+        "PF45",
+        "PF49",
+        "PF67"
+      ],
+      "expectations": [
+        "Queue a research project separately from code work.",
+        "Retain official primary-source URLs and an explicit limits requirement.",
+        "A saved research instruction is not a completed literature review."
+      ],
+      "started_at": "2026-11-08T08:04:05.463331+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_f4b7dd5f38e24558b62c69614933ba88",
+          "request_id": "r_14712011dc9c451da93e5c10e5bfbd70",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:05.472171+00:00",
+      "seconds": 0.0088,
+      "snapshot": "./scenario-results-snapshots/S03.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S03.png",
+        "sha256": "d31c96363978b885b26d34ac53eadef1c790f3bdcd1207b9caf91a91bab54262",
+        "state_snapshot": "./native-snapshots/S03.json"
+      }
+    },
+    {
+      "id": "S04",
+      "action": "amend",
+      "instruction": "Add booking confirmation, keyboard navigation and clear error messages to HarborWeb. Preserve the event list and volunteer signup.",
+      "feature_ids": [
+        "PF05",
+        "PF08",
+        "PF11"
+      ],
+      "expectations": [
+        "Increment only the current website revision.",
+        "Preserve all earlier website requirements and pending deliverables."
+      ],
+      "started_at": "2026-11-08T08:04:07.493839+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_b3f9706995804d4b9742a8d859b3346a",
+          "request_id": "r_a115d62126cb4af59dd5b073184b1db4",
+          "revision": 2,
+          "routing": "reply to saved request",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:07.500595+00:00",
+      "seconds": 0.0068,
+      "snapshot": "./scenario-results-snapshots/S04.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S04.png",
+        "sha256": "c4ba11e0e2672b2ca75e9ce3ee9f851d0282078bcbfd0f555614c9e7752067d7",
+        "state_snapshot": "./native-snapshots/S04.json"
+      }
+    },
+    {
+      "id": "S05",
+      "action": "amend",
+      "instruction": "Add recurring tasks and dark mode to PocketTasks. Keep local data usable without a network and cover recurrence boundaries in tests.",
+      "feature_ids": [
+        "PF05",
+        "PF08",
+        "PF11"
+      ],
+      "expectations": [
+        "Amend only the mobile request.",
+        "Preserve the original offline and no-account constraints."
+      ],
+      "started_at": "2026-11-08T08:04:09.497533+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_47db10e241154e4b84f296dcf1742427",
+          "request_id": "r_bcd85e4a7ec54d30b3a40c4582352306",
+          "revision": 2,
+          "routing": "reply to saved request",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:09.503929+00:00",
+      "seconds": 0.0064,
+      "snapshot": "./scenario-results-snapshots/S05.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S05.png",
+        "sha256": "18279c29ab1f7343b0d135b9bad9a33422317370ac249ec5c02b1cce9ed91507",
+        "state_snapshot": "./native-snapshots/S05.json"
+      }
+    },
+    {
+      "id": "S06",
+      "action": "amend",
+      "instruction": "Expand EvidenceReview with evidence that challenges using long context by default. Include cases where retrieval or a hybrid approach helps, and distinguish experimental findings from your inference.",
+      "feature_ids": [
+        "PF08",
+        "PF24",
+        "PF46",
+        "PF67"
+      ],
+      "expectations": [
+        "Preserve the original research question and add the contradictory-evidence requirement.",
+        "Do not resolve disagreement merely by choosing the newest statement."
+      ],
+      "started_at": "2026-11-08T08:04:11.489100+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_1aa6cb9467514ee38d4126adaf78da05",
+          "request_id": "r_14712011dc9c451da93e5c10e5bfbd70",
+          "revision": 2,
+          "routing": "reply to saved request",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:11.495589+00:00",
+      "seconds": 0.0065,
+      "snapshot": "./scenario-results-snapshots/S06.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S06.png",
+        "sha256": "5399870134af01f507bb2f29ce332d68fdc169afbe9ad66210aa171b9300d902",
+        "state_snapshot": "./native-snapshots/S06.json"
+      }
+    },
+    {
+      "id": "S07",
+      "action": "amend",
+      "instruction": "Change the analytics requirement: allow an optional aggregate usage report, but leave tracking off by default. Explain how this changes my original no-third-party-data constraint before implementing anything that sends data.",
+      "feature_ids": [
+        "PF08",
+        "PF11",
+        "PF24"
+      ],
+      "expectations": [
+        "Retain both the original constraint and this proposed change in prompt history.",
+        "Do not silently rewrite the first prompt to erase the conflict."
+      ],
+      "started_at": "2026-11-08T08:04:13.546394+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_28ef4631a09d4b43a8940d3dc7730830",
+          "request_id": "r_a115d62126cb4af59dd5b073184b1db4",
+          "revision": 3,
+          "routing": "reply to saved request",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:13.554134+00:00",
+      "seconds": 0.0077,
+      "snapshot": "./scenario-results-snapshots/S07.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S07.png",
+        "sha256": "bb7734b4e4cdc407feb24b8884cfc5caa8ea4aaf999f58a294e2b88d140bbfc3",
+        "state_snapshot": "./native-snapshots/S07.json"
+      }
+    },
+    {
+      "id": "S08",
+      "action": "amend",
+      "instruction": "Consider optional encrypted cloud sync for PocketTasks. Flag the tension with my earlier no-account requirement, and preserve a fully offline mode even if sync is added later.",
+      "feature_ids": [
+        "PF08",
+        "PF11",
+        "PF24"
+      ],
+      "expectations": [
+        "Save the proposed sync change without deleting the earlier no-account instruction.",
+        "Leave semantic conflict resolution for an explicit reviewed plan."
+      ],
+      "started_at": "2026-11-08T08:04:15.594565+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_c771b6912f19403d8f433e9ecda6ba5c",
+          "request_id": "r_bcd85e4a7ec54d30b3a40c4582352306",
+          "revision": 3,
+          "routing": "reply to saved request",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:15.601216+00:00",
+      "seconds": 0.0066,
+      "snapshot": "./scenario-results-snapshots/S08.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S08.png",
+        "sha256": "927e1644ff30e28f1bef87ad3f2f09c9af9f5d29522b6ea3f842cc7187327877",
+        "state_snapshot": "./native-snapshots/S08.json"
+      }
+    },
+    {
+      "id": "S09",
+      "action": "amend",
+      "instruction": "Extend EvidenceReview to separate advertised context size from demonstrated retrieval and reasoning performance. Add a small architecture diagram, a comparison table and a short executive summary.",
+      "feature_ids": [
+        "PF08",
+        "PF43",
+        "PF46",
+        "PF48",
+        "PF50"
+      ],
+      "expectations": [
+        "Keep the earlier contradictory-evidence requirement.",
+        "Record the requested visual and audience formats without fabricating them."
+      ],
+      "started_at": "2026-11-08T08:04:17.627295+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_1c1bd26468614fcb855d6c8482085b9d",
+          "request_id": "r_14712011dc9c451da93e5c10e5bfbd70",
+          "revision": 3,
+          "routing": "reply to saved request",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:17.633115+00:00",
+      "seconds": 0.0058,
+      "snapshot": "./scenario-results-snapshots/S09.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S09.png",
+        "sha256": "b9df40ceb7f8ad965e0ba78817b4e26e8ef210b26d90adc382f1eae0a4f02d6c",
+        "state_snapshot": "./native-snapshots/S09.json"
+      }
+    },
+    {
+      "id": "S10",
+      "action": "submit",
+      "instruction": "As a separate HarborWeb change, add event search with keyboard-friendly results and a useful empty state.",
+      "feature_ids": [
+        "PF03",
+        "PF05",
+        "PF09"
+      ],
+      "expectations": [
+        "Create a new website request rather than an implicit amendment.",
+        "Retain explicit search acceptance criteria."
+      ],
+      "started_at": "2026-11-08T08:04:19.660982+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_6308bf0c218a421b9c3cc391de849abe",
+          "request_id": "r_dce4f8ed026a4a8c9e88327d00e06187",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:19.667388+00:00",
+      "seconds": 0.0064,
+      "snapshot": "./scenario-results-snapshots/S10.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S10.png",
+        "sha256": "ee9aa32a44413e4c9b7e4c098e5a422a65dfd9b8e8aca9cdfe5ac0a14360f277",
+        "state_snapshot": "./native-snapshots/S10.json"
+      }
+    },
+    {
+      "id": "S11",
+      "action": "submit",
+      "instruction": "As another HarborWeb change, add date and category filters that preserve selections in the URL.",
+      "feature_ids": [
+        "PF03",
+        "PF05",
+        "PF09"
+      ],
+      "expectations": [
+        "Create a distinct filter request in the same project.",
+        "Retain filter-specific acceptance criteria."
+      ],
+      "started_at": "2026-11-08T08:04:21.811209+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_897cefc9d8da49068f8be43a90a997f6",
+          "request_id": "r_2b68ce841a414b7796e62feb42c0091b",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:21.823929+00:00",
+      "seconds": 0.0127,
+      "snapshot": "./scenario-results-snapshots/S11.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S11.png",
+        "sha256": "f523afc95f1155cca528f94c8b9747d4c037ae20f27723da8e63be5f91effa3c",
+        "state_snapshot": "./native-snapshots/S11.json"
+      }
+    },
+    {
+      "id": "S12",
+      "action": "group",
+      "instruction": "Combine the HarborWeb search and filter changes into one execution plan while keeping both original requests and each acceptance criterion visible.",
+      "feature_ids": [
+        "PF04",
+        "PF05",
+        "PF11"
+      ],
+      "expectations": [
+        "Group only the two same-project requests.",
+        "Keep both identities, prompts and explicit deliverables under one parent."
+      ],
+      "started_at": "2026-11-08T08:04:23.865097+00:00",
+      "details": {
+        "receipt": {
+          "request_id": "r_054ccd6afdf944889d5a47ec7c5474ac",
+          "original_requests": [
+            "r_dce4f8ed026a4a8c9e88327d00e06187",
+            "r_2b68ce841a414b7796e62feb42c0091b"
+          ],
+          "original_prompts_preserved": true
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:23.871092+00:00",
+      "seconds": 0.006,
+      "snapshot": "./scenario-results-snapshots/S12.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S12.png",
+        "sha256": "fef9216fe0fef294d94c8f188cfab7790f2861764a9af6491ec2ce7f40165933",
+        "state_snapshot": "./native-snapshots/S12.json"
+      }
+    },
+    {
+      "id": "S13",
+      "action": "amend",
+      "instruction": "For the grouped HarborWeb search request, also ensure an empty search does not hide all events and that keyboard focus survives filtering.",
+      "feature_ids": [
+        "PF04",
+        "PF08",
+        "PF11"
+      ],
+      "expectations": [
+        "Amend the original grouped child and advance its parent once.",
+        "Do not create a second independent dispatch for the child."
+      ],
+      "started_at": "2026-11-08T08:04:25.888941+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_003d15b0a8e84376a822695acafdb78b",
+          "request_id": "r_dce4f8ed026a4a8c9e88327d00e06187",
+          "revision": 2,
+          "routing": "reply to saved request",
+          "duplicate": false,
+          "group": {
+            "request_id": "r_054ccd6afdf944889d5a47ec7c5474ac",
+            "revision": 2
+          }
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:25.898024+00:00",
+      "seconds": 0.0091,
+      "snapshot": "./scenario-results-snapshots/S13.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S13.png",
+        "sha256": "d62f23de218e78945398cad80aa6db6af1c45c39efaba1947ca0c6e21ccf8d9a",
+        "state_snapshot": "./native-snapshots/S13.json"
+      }
+    },
+    {
+      "id": "S14",
+      "action": "cancel",
+      "instruction": "Withdraw the date/category filters for now. Keep event search, its accessibility criteria and the main HarborWeb website work active.",
+      "feature_ids": [
+        "PF04",
+        "PF05",
+        "PF33"
+      ],
+      "expectations": [
+        "Cancel only the filter demand.",
+        "Preserve search and unrelated website scope."
+      ],
+      "started_at": "2026-11-08T08:04:27.869857+00:00",
+      "details": {
+        "receipt": {
+          "request_id": "r_2b68ce841a414b7796e62feb42c0091b",
+          "status": "cancelled",
+          "revision": 2,
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:27.876093+00:00",
+      "seconds": 0.0062,
+      "snapshot": "./scenario-results-snapshots/S14.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S14.png",
+        "sha256": "1c3d7f8a3a5c0afe959bf2b3de4da69f802efeede423b071ca135d3622773645",
+        "state_snapshot": "./native-snapshots/S14.json"
+      }
+    },
+    {
+      "id": "S15",
+      "action": "reopen",
+      "instruction": "Reopen the withdrawn HarborWeb filters as a new request linked to the old one; restore its original filter acceptance criteria.",
+      "feature_ids": [
+        "PF02",
+        "PF06",
+        "PF39"
+      ],
+      "expectations": [
+        "Create a fresh request identity with an explicit historical link.",
+        "Recover the original filter requirement and pending deliverable."
+      ],
+      "started_at": "2026-11-08T08:04:29.853448+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_200d4d73f4ef48b392c1c36e4a2a5fb9",
+          "request_id": "r_f13564ac0cc04209a086188df8e63e43",
+          "revision": 1,
+          "routing": "historical request",
+          "duplicate": false,
+          "reopened_from": "r_2b68ce841a414b7796e62feb42c0091b"
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:29.857478+00:00",
+      "seconds": 0.004,
+      "snapshot": "./scenario-results-snapshots/S15.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S15.png",
+        "sha256": "fbb05e5cde4e0638d81a1986e41e0ac53ef56ea8f524661f721ff22314a62208",
+        "state_snapshot": "./native-snapshots/S15.json"
+      }
+    },
+    {
+      "id": "S16",
+      "action": "submit",
+      "instruction": "Create a separate PocketTasks export feature: export tasks as JSON and import them back without losing completed status or due dates.",
+      "feature_ids": [
+        "PF02",
+        "PF05",
+        "PF09"
+      ],
+      "expectations": [
+        "Create a distinct mobile export request with round-trip acceptance criteria."
+      ],
+      "started_at": "2026-11-08T08:04:31.845475+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_ce5cdc9b4a1f4df2a927fc33d80c3ec0",
+          "request_id": "r_067151dd9b5645a9b71512f4d169a698",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:31.851405+00:00",
+      "seconds": 0.0059,
+      "snapshot": "./scenario-results-snapshots/S16.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S16.png",
+        "sha256": "caa52aef13648a1b4d1b28325fe3f1a0ad411c6a02541b513429f4723ba459bf",
+        "state_snapshot": "./native-snapshots/S16.json"
+      }
+    },
+    {
+      "id": "S17",
+      "action": "submit",
+      "instruction": "Create a separate PocketTasks reminder feature using local notifications; handle denied notification permission without breaking task editing.",
+      "feature_ids": [
+        "PF02",
+        "PF05",
+        "PF09"
+      ],
+      "expectations": [
+        "Keep local reminder work distinct from the main mobile request."
+      ],
+      "started_at": "2026-11-08T08:04:33.791279+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_ca85dbcdce254516a3c7142977a673d3",
+          "request_id": "r_70c9bc590c43468cb6e909cfb479582b",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:33.798812+00:00",
+      "seconds": 0.0075,
+      "snapshot": "./scenario-results-snapshots/S17.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S17.png",
+        "sha256": "022896fba50984c43d44f86632548ca0b17d4e4c7e77f028ae47794fd1e7dd34",
+        "state_snapshot": "./native-snapshots/S17.json"
+      }
+    },
+    {
+      "id": "S18",
+      "action": "group",
+      "instruction": "Group PocketTasks export/import and local reminders into one release plan, preserving each original request and acceptance criterion.",
+      "feature_ids": [
+        "PF04",
+        "PF05",
+        "PF11"
+      ],
+      "expectations": [
+        "Group only mobile demands.",
+        "Preserve both deliverables and keep the website group separate."
+      ],
+      "started_at": "2026-11-08T08:04:35.815484+00:00",
+      "details": {
+        "receipt": {
+          "request_id": "r_020b5755384c41c4bbea09a77e8e703c",
+          "original_requests": [
+            "r_067151dd9b5645a9b71512f4d169a698",
+            "r_70c9bc590c43468cb6e909cfb479582b"
+          ],
+          "original_prompts_preserved": true
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:35.821579+00:00",
+      "seconds": 0.0061,
+      "snapshot": "./scenario-results-snapshots/S18.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S18.png",
+        "sha256": "8f6c8c22cd4b0b30cc59d88f348dad3a5e1f23ac2b686284eb421a72df2b4f16",
+        "state_snapshot": "./native-snapshots/S18.json"
+      }
+    },
+    {
+      "id": "S19",
+      "action": "amend",
+      "instruction": "Change the grouped reminder requirement: reminders must remain local and must not require cloud sync. Keep this requirement visible alongside the earlier optional-sync discussion.",
+      "feature_ids": [
+        "PF04",
+        "PF08",
+        "PF11",
+        "PF24"
+      ],
+      "expectations": [
+        "Amend the grouped reminder child and its parent.",
+        "Retain both local-only reminders and the separate original optional-sync history."
+      ],
+      "started_at": "2026-11-08T08:04:37.859843+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_b564bf45529e457ba11e44161cf26a21",
+          "request_id": "r_70c9bc590c43468cb6e909cfb479582b",
+          "revision": 2,
+          "routing": "reply to saved request",
+          "duplicate": false,
+          "group": {
+            "request_id": "r_020b5755384c41c4bbea09a77e8e703c",
+            "revision": 2
+          }
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:37.866764+00:00",
+      "seconds": 0.0069,
+      "snapshot": "./scenario-results-snapshots/S19.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S19.png",
+        "sha256": "17106410242629ce060fbb3a7f9d00706d0e4fc94590caac3e0f444f9814c9bd",
+        "state_snapshot": "./native-snapshots/S19.json"
+      }
+    },
+    {
+      "id": "S20",
+      "action": "retry",
+      "instruction": "Retry my PocketTasks export/import submission after a lost acknowledgement, using exactly its original client key and payload.",
+      "feature_ids": [
+        "PF02",
+        "PF08",
+        "PF32"
+      ],
+      "expectations": [
+        "Return the original receipt and request identity.",
+        "Do not append a duplicate prompt, obligation or revision."
+      ],
+      "started_at": "2026-11-08T08:04:39.892928+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_ce5cdc9b4a1f4df2a927fc33d80c3ec0",
+          "request_id": "r_067151dd9b5645a9b71512f4d169a698",
+          "duplicate": true
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:39.901569+00:00",
+      "seconds": 0.0086,
+      "snapshot": "./scenario-results-snapshots/S20.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S20.png",
+        "sha256": "ce4942caccecb7068f233e0dec13a557d370ea3ad36cc4e8307d5deaa3456a2b",
+        "state_snapshot": "./native-snapshots/S20.json"
+      }
+    },
+    {
+      "id": "S21",
+      "action": "stale_amend",
+      "instruction": "Try to add a paid booking option using the website revision I saw before the latest amendments. If it is stale, keep the newer requirements and tell me to refresh.",
+      "feature_ids": [
+        "PF08",
+        "PF11",
+        "PF44"
+      ],
+      "expectations": [
+        "Reject the explicitly stale revision.",
+        "Do not change the current request, original history or deliverables."
+      ],
+      "started_at": "2026-11-08T08:04:41.839921+00:00",
+      "details": {
+        "expected_rejection": "Revision changed; reread the request before amending"
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:41.843338+00:00",
+      "seconds": 0.0034,
+      "snapshot": "./scenario-results-snapshots/S21.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S21.png",
+        "sha256": "8b46b647ea5afff2cf8ae2321f785937a982ee44ebb62e1893b62b2c59e8f32a",
+        "state_snapshot": "./native-snapshots/S21.json"
+      }
+    },
+    {
+      "id": "S22",
+      "action": "submit",
+      "instruction": "Compare HarborWeb and PocketTasks and create a shared rollout checklist. I have not decided which project should own this work.",
+      "feature_ids": [
+        "PF03",
+        "PF07",
+        "PF10"
+      ],
+      "expectations": [
+        "Keep the ambiguous request saved as needing a project.",
+        "Do not guess ownership or silently grant cross-project access."
+      ],
+      "started_at": "2026-11-08T08:04:43.834038+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_d728f57dc9964411bb24e4a90a6c2711",
+          "request_id": "r_c8bab609b5cb4139bfba5a979e5972e3",
+          "revision": 1,
+          "routing": "ambiguous project",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:43.837735+00:00",
+      "seconds": 0.0037,
+      "snapshot": "./scenario-results-snapshots/S22.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S22.png",
+        "sha256": "23ff298d19a34ec633663f51303cdc719ff7ce77d09266fd15e58e38d1c2ce2a",
+        "state_snapshot": "./native-snapshots/S22.json"
+      }
+    },
+    {
+      "id": "S23",
+      "action": "assign",
+      "instruction": "Put the ambiguous HarborWeb/PocketTasks rollout comparison in EvidenceReview. This assignment does not grant it permission to read private project sources.",
+      "feature_ids": [
+        "PF07",
+        "PF10"
+      ],
+      "expectations": [
+        "Assign the existing request explicitly to EvidenceReview.",
+        "Do not create a cross-project source grant as a side effect."
+      ],
+      "started_at": "2026-11-08T08:04:45.763437+00:00",
+      "details": {
+        "request_id": "r_c8bab609b5cb4139bfba5a979e5972e3"
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:45.767472+00:00",
+      "seconds": 0.004,
+      "snapshot": "./scenario-results-snapshots/S23.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S23.png",
+        "sha256": "a7a4a6e6e307f059f6e0c83c80ce3c64b452390896c91c5f31451d5a9a00d42b",
+        "state_snapshot": "./native-snapshots/S23.json"
+      }
+    },
+    {
+      "id": "S24",
+      "action": "pause",
+      "instruction": "Pause new EvidenceReview work while the website and mobile projects remain available.",
+      "feature_ids": [
+        "PF09",
+        "PF12",
+        "PF33",
+        "PF42"
+      ],
+      "expectations": [
+        "Persist a project-scoped pause.",
+        "Keep other projects unpaused and intake available."
+      ],
+      "started_at": "2026-11-08T08:04:47.721154+00:00",
+      "details": {
+        "receipt": {
+          "project_id": "p_423a45a7d4314f568dd1cc18b36aef74",
+          "paused": true,
+          "notice": "Pause prevents new dispatch; already-running work remains under Paperclip control."
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:47.726015+00:00",
+      "seconds": 0.0049,
+      "snapshot": "./scenario-results-snapshots/S24.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S24.png",
+        "sha256": "64178aed79db57b77dec2199cb160fb37429248f04db8e2ca05cefb832cf35fe",
+        "state_snapshot": "./native-snapshots/S24.json"
+      }
+    },
+    {
+      "id": "S25",
+      "action": "submit",
+      "instruction": "While EvidenceReview is paused, queue a counterargument memo defending direct long-context prompting where the evidence supports it. Include costs, latency and cases where retrieval can fail.",
+      "feature_ids": [
+        "PF01",
+        "PF09",
+        "PF24",
+        "PF67"
+      ],
+      "expectations": [
+        "Save the new research prompt during the pause.",
+        "Keep it pending without claiming execution."
+      ],
+      "started_at": "2026-11-08T08:04:49.864647+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_d785d07147314b46bfc456c91e61b2f0",
+          "request_id": "r_1a63a8c19d35449094f3333615589e47",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:49.871348+00:00",
+      "seconds": 0.0067,
+      "snapshot": "./scenario-results-snapshots/S25.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S25.png",
+        "sha256": "0c23c58689b2948dd4d31a40c3f36116598964c69c24c74c13d9441eb5996028",
+        "state_snapshot": "./native-snapshots/S25.json"
+      }
+    },
+    {
+      "id": "S26",
+      "action": "resume",
+      "instruction": "Resume EvidenceReview and retain the original queue order and all pending research requests.",
+      "feature_ids": [
+        "PF09",
+        "PF12",
+        "PF33"
+      ],
+      "expectations": [
+        "Clear only the EvidenceReview pause.",
+        "Do not lose or duplicate queued research demands."
+      ],
+      "started_at": "2026-11-08T08:04:51.958748+00:00",
+      "details": {
+        "receipt": {
+          "project_id": "p_423a45a7d4314f568dd1cc18b36aef74",
+          "paused": false,
+          "notice": "Pause prevents new dispatch; already-running work remains under Paperclip control."
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:51.964072+00:00",
+      "seconds": 0.0053,
+      "snapshot": "./scenario-results-snapshots/S26.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S26.png",
+        "sha256": "c22aaa1045192db5c71f68d8b7c8f2949778037564102dcf998939ea5a074e72",
+        "state_snapshot": "./native-snapshots/S26.json"
+      }
+    },
+    {
+      "id": "S27",
+      "action": "context_scope",
+      "instruction": "Use only EvidenceReview sources when comparing context strategies. Keep HarborWeb and PocketTasks private notes out unless I explicitly grant access, and show any omissions rather than inventing coverage.",
+      "feature_ids": [
+        "PF10",
+        "PF20",
+        "PF23",
+        "PF25",
+        "PF59"
+      ],
+      "expectations": [
+        "Save this research instruction.",
+        "Ingest clearly labelled scenario-control notes, not invented paper findings.",
+        "Retrieve the research note, deny a foreign private note and expose corpus coverage honestly."
+      ],
+      "started_at": "2026-11-08T08:04:54.051928+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_2e5f59ebe468460fbaa64e980f97775b",
+          "request_id": "r_7934546016dc4c47b4c25c7de5dda9ab",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        },
+        "foreign_read": "denied",
+        "source_id": "s_87877a45642a44df887aaa06b9ae980b",
+        "packet": {
+          "project": "p_423a45a7d4314f568dd1cc18b36aef74",
+          "budget_chars": 1000,
+          "used_chars": 280,
+          "sources": [
+            {
+              "id": "s_87877a45642a44df887aaa06b9ae980b",
+              "hash": "0032c3621924e642399da43f672184c58adb96919c95685f12826267c1bedff2",
+              "authority": "source",
+              "locator": "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04/scenario-inputs/native-verified-04/research-control-note.md",
+              "passages": [
+                {
+                  "paragraph": 1,
+                  "text": "SCENARIO CONTROL NOTE, not a paper finding. EvidenceReview must compare retrieval and long context; preserve counterevidence. SCOPE-RESEARCH-ONLY\n"
+                }
+              ]
+            }
+          ],
+          "omitted": [],
+          "coverage": "targeted retrieval; not proof of exhaustive corpus understanding"
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:54.074544+00:00",
+      "seconds": 0.0226,
+      "snapshot": "./scenario-results-snapshots/S27.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S27.png",
+        "sha256": "5490796b854c0bdbfefa968b660b51493add631f8b9e886b649035e972322718",
+        "state_snapshot": "./native-snapshots/S27.json"
+      }
+    },
+    {
+      "id": "S28",
+      "action": "oversized",
+      "instruction": "Add the attached large acceptance checklist to HarborWeb. Preserve every original line, but block execution if the compiled packet exceeds the configured context budget instead of silently truncating it.",
+      "feature_ids": [
+        "PF02",
+        "PF25",
+        "PF30",
+        "PF70"
+      ],
+      "expectations": [
+        "Save the full below-intake-limit prompt.",
+        "Expose bounded context assembly and an explicit omitted source; record compiled execution preflight as unobserved unless a qualified worker path actually runs.",
+        "Do not count this as a real model context rollover."
+      ],
+      "started_at": "2026-11-08T08:04:55.725869+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_b5e9f22117b94680b37758b21af29822",
+          "request_id": "r_e815f8c4418a4019a0c610fd56cdb878",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        },
+        "prompt_chars": 64249,
+        "original_sha256": "800ec46e3372d7fadda87336b3e3708e80a33a0854c7caaad601c98301e9ffe5",
+        "context_packet": {
+          "project": "p_20c09c3fcaba418b9a6e624fd3901d2c",
+          "budget_chars": 1000,
+          "used_chars": 0,
+          "sources": [],
+          "omitted": [
+            "s_a56d844a272249699f4689034a8c1ac4"
+          ],
+          "coverage": "targeted retrieval; not proof of exhaustive corpus understanding"
+        },
+        "execution_preflight": {
+          "status": "blocked",
+          "reason": "Execution-packet guard requires a qualified configured worker path; this step only exercised public context assembly."
+        }
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:55.740152+00:00",
+      "seconds": 0.0143,
+      "snapshot": "./scenario-results-snapshots/S28.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S28.png",
+        "sha256": "6f1479fefab655a0e076f8adfbd16dfa2c2a03f36112506aabeb860440d14b39",
+        "state_snapshot": "./native-snapshots/S28.json"
+      }
+    },
+    {
+      "id": "S29",
+      "action": "restart",
+      "instruction": "After restarting the controller, prepare a concise EvidenceReview progress brief: what was requested, what is still queued or blocked, and which research claims have actually been checked. Keep the pending website and mobile work visible.",
+      "feature_ids": [
+        "PF02",
+        "PF09",
+        "PF29",
+        "PF36",
+        "PF46",
+        "PF48"
+      ],
+      "expectations": [
+        "Recover the same project/request identities through a fresh Application instance.",
+        "Save the progress-brief request without claiming that a report or app was generated."
+      ],
+      "started_at": "2026-11-08T08:04:57.410558+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_09eeb86dc8304f789f73dcc61058bc3d",
+          "request_id": "r_880bf1e1fa1d4419802efd56fb489c68",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        },
+        "recovered_requests": 14
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:57.426036+00:00",
+      "seconds": 0.0155,
+      "snapshot": "./scenario-results-snapshots/S29.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S29.png",
+        "sha256": "2a73d1607c49054ddccde74a9005162dd571d49bc8bede983856e6a8d8a9492a",
+        "state_snapshot": "./native-snapshots/S29.json"
+      }
+    },
+    {
+      "id": "S30",
+      "action": "outcomes",
+      "instruction": "Show me the saved outcomes for HarborWeb, PocketTasks and EvidenceReview separately from diagnostic logs. Identify missing website builds, mobile binaries, research citations and independent reviews instead of calling unfinished work complete.",
+      "feature_ids": [
+        "PF17",
+        "PF36",
+        "PF37",
+        "PF38",
+        "PF39",
+        "PF40",
+        "PF50",
+        "PF54"
+      ],
+      "expectations": [
+        "Save the outcome-inspection request and inspect public outcome/snapshot interfaces.",
+        "Retain a final status and per-step snapshots.",
+        "Intake/control success must remain distinct from verified artifacts and genuine agent execution."
+      ],
+      "started_at": "2026-11-08T08:04:59.031091+00:00",
+      "details": {
+        "receipt": {
+          "prompt_id": "pr_145a35a660a9429abf091d7749bc05f4",
+          "request_id": "r_f429898d4b204e8aa9698f50d2ce5c6c",
+          "revision": 1,
+          "routing": "explicit project",
+          "duplicate": false
+        },
+        "outcomes_by_project": {
+          "EvidenceReview": [],
+          "HarborWeb": [],
+          "PocketTasks": []
+        },
+        "product_completion": "Not inferred from saved prompts, state snapshots, source fixtures or empty outcome lists."
+      },
+      "status": "passed",
+      "finished_at": "2026-11-08T08:04:59.036285+00:00",
+      "seconds": 0.0052,
+      "snapshot": "./scenario-results-snapshots/S30.json",
+      "observation": {
+        "status": "captured",
+        "kind": "native WezTerm on authenticated Xvfb",
+        "screenshot": "./S30.png",
+        "sha256": "605e2c846ccaa0b55842fa75944018ee84a787bb7409bbf486b7e666f1619c4c",
+        "state_snapshot": "./native-snapshots/S30.json"
+      }
+    }
+  ],
+  "projects": {
+    "EvidenceReview": {
+      "id": "p_423a45a7d4314f568dd1cc18b36aef74",
+      "name": "EvidenceReview",
+      "repository": "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04/scenario-projects/EvidenceReview",
+      "aliases": "[]",
+      "created": 1794125041.2521784
+    },
+    "HarborWeb": {
+      "id": "p_20c09c3fcaba418b9a6e624fd3901d2c",
+      "name": "HarborWeb",
+      "repository": "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04/scenario-projects/HarborWeb",
+      "aliases": "[]",
+      "created": 1794125041.2546413
+    },
+    "PocketTasks": {
+      "id": "p_40be794cbf5842969aefab05f9ddd827",
+      "name": "PocketTasks",
+      "repository": "TEST_CHECKOUT/.local-evidence/scenarios/native/workbench-04/scenario-projects/PocketTasks",
+      "aliases": "[]",
+      "created": 1794125041.2574275
+    }
+  },
+  "capture_failures": [],
+  "notice": "Bookkeeping tests are distinct from actual agent execution, artifact correctness and independent acceptance.",
+  "request_aliases": {
+    "website": "r_a115d62126cb4af59dd5b073184b1db4",
+    "mobile": "r_bcd85e4a7ec54d30b3a40c4582352306",
+    "research": "r_14712011dc9c451da93e5c10e5bfbd70",
+    "web_search": "r_dce4f8ed026a4a8c9e88327d00e06187",
+    "web_filters": "r_2b68ce841a414b7796e62feb42c0091b",
+    "web_group": "r_054ccd6afdf944889d5a47ec7c5474ac",
+    "web_filters_reopened": "r_f13564ac0cc04209a086188df8e63e43",
+    "mobile_export": "r_067151dd9b5645a9b71512f4d169a698",
+    "mobile_reminders": "r_70c9bc590c43468cb6e909cfb479582b",
+    "mobile_group": "r_020b5755384c41c4bbea09a77e8e703c",
+    "ambiguous": "r_c8bab609b5cb4139bfba5a979e5972e3",
+    "counterargument": "r_1a63a8c19d35449094f3333615589e47",
+    "scoped_research": "r_7934546016dc4c47b4c25c7de5dda9ab",
+    "oversized": "r_e815f8c4418a4019a0c610fd56cdb878",
+    "progress_brief": "r_880bf1e1fa1d4419802efd56fb489c68",
+    "outcome_check": "r_f429898d4b204e8aa9698f50d2ce5c6c"
+  },
+  "delivery": {
+    "status": "blocked",
+    "qualified": false,
+    "projects": {
+      "website": {
+        "status": "blocked",
+        "request_id": "r_a115d62126cb4af59dd5b073184b1db4",
+        "revision": 3,
+        "request_status": "queued",
+        "execution_candidate_outcomes": [],
+        "review_candidate_outcomes": [],
+        "missing": [
+          "No current outcome with an actual coordinator run receipt",
+          "No current outcome with a distinct accepting reviewer",
+          "Current-revision artifact, build/device/browser and source correctness still require independent verification"
+        ]
+      },
+      "mobile": {
+        "status": "blocked",
+        "request_id": "r_bcd85e4a7ec54d30b3a40c4582352306",
+        "revision": 3,
+        "request_status": "queued",
+        "execution_candidate_outcomes": [],
+        "review_candidate_outcomes": [],
+        "missing": [
+          "No current outcome with an actual coordinator run receipt",
+          "No current outcome with a distinct accepting reviewer",
+          "Current-revision artifact, build/device/browser and source correctness still require independent verification"
+        ]
+      },
+      "research": {
+        "status": "blocked",
+        "request_id": "r_14712011dc9c451da93e5c10e5bfbd70",
+        "revision": 3,
+        "request_status": "queued",
+        "execution_candidate_outcomes": [],
+        "review_candidate_outcomes": [],
+        "missing": [
+          "No current outcome with an actual coordinator run receipt",
+          "No current outcome with a distinct accepting reviewer",
+          "Current-revision artifact, build/device/browser and source correctness still require independent verification"
+        ]
+      }
+    },
+    "notice": "This runner does not infer usable websites, mobile binaries or verified research from status strings or fixture text. Use the separate feature evidence gates."
+  },
+  "counts": {
+    "passed": 30
+  },
+  "bookkeeping_status": "passed",
+  "durable_prompts": 22,
+  "finished_at": "2026-11-08T08:05:01.445411+00:00"
+}

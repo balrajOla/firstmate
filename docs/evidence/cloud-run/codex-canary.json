@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "date": "2026-11-08",
+  "cli": "codex-cli 0.167.0",
+  "installation": "Official npm package @openai/codex",
+  "login_status": "Logged in using ChatGPT",
+  "model_canary": "blocked",
+  "successful_assistant_events": 0,
+  "observations": [
+    "Read-only canaries with an explicit model and closed stdin timed out.",
+    "A PTY canary also timed out without model events.",
+    "Ignoring user configuration did not produce a model response.",
+    "Startup debug output included HTTP 401 from a featured-plugin endpoint: authentication token could not be parsed."
+  ],
+  "diagnostic_limit": "The plugin authentication error is observed; it does not establish the final cause of the model startup hang.",
+  "consequence": "No profile qualification or product-owned live model execution is claimed. No account credentials were extracted or copied.",
+  "private_logs": "Raw debug logs are withheld because they can contain account/configuration data."
+}

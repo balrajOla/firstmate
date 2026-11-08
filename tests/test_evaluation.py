@@ -29,8 +29,8 @@ def test_routing_reports_misses_instead_of_hiding_them():
         [
             {
                 "id": "ambiguous",
-                "prompt": "Report architecture review",
-                "workflow": "report",
+                "prompt": "Build a website",
+                "workflow": "research",
             }
         ]
     )
