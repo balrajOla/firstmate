@@ -90,9 +90,10 @@ def verify_worker_agent(agent, harness):
             + " instead of the official " + harness
             + " CLI runner; reconcile or retire it before dispatch"
         )
-    if harness == "claude" and config.get("engine") != "cli":
+    if config.get("engine") != "cli":
         raise WorkbenchError(
-            "Paperclip Claude agent is not on the CLI engine; reconcile it before dispatch"
+            "Paperclip agent is not on the " + harness
+            + " CLI engine; reconcile or retire it before dispatch"
         )
     if config.get(BYPASS_KEYS[harness]) is not False:
         raise WorkbenchError(
@@ -182,8 +183,11 @@ class Engine:
                     "A subscription profile cannot pass a provider API key to Paperclip workers"
                 )
             adapter_config["env"] = {**env, **{k: "" for k in SUBSCRIPTION_BLOCKED_KEYS}}
-        if model["harness"] == "claude":
+        if model["harness"] in WORKER_ADAPTERS:
+            # Both adapters otherwise default to an embedded engine that does
+            # not use the official CLI or its sign-in.
             adapter_config["engine"] = "cli"
+        if model["harness"] == "claude":
             adapter_config["extraArgs"] = CLAUDE_WORKER_ARGS + [
                 "--allowedTools", "Bash(" + disposition_command() + ":*)"
             ] + list(adapter_config.get("extraArgs", []))
