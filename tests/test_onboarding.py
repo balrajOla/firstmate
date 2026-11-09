@@ -266,7 +266,8 @@ def test_signed_in_clis_become_checked_profiles(app, machine, monkeypatch, tmp_p
     # Paperclip needs Codex's sign-in as a file; the profile says what to run.
     assert statuses["codex sign-in"] == "not usable by Paperclip"
     assert statuses["codex profile"] == "not ready" and statuses["Semantic routing"] == "on"
-    assert config(app.home)["routing"]["semantic"]["profile"] == "claude"
+    assert config(app.home)["routing"]["semantic"] == {"profile": "claude", "min_confidence": 0.7,
+                                                       "create_projects": True}
 
 
 def test_missing_clis_and_models_are_reported_not_invented(app, machine, monkeypatch, tmp_path):

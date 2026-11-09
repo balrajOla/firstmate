@@ -353,9 +353,10 @@ class Setup:
                 ready.append(harness)
         if semantic and "claude" in ready:
             settings = config(self.home)
-            settings.setdefault("routing", {}).setdefault("semantic", {"profile": "claude", "min_confidence": 0.7})
+            settings.setdefault("routing", {}).setdefault(
+                "semantic", {"profile": "claude", "min_confidence": 0.7, "create_projects": True})
             atomic(self.home / "config.json", canonical(settings) + "\n")
-            self.step("Semantic routing", "on", "the claude profile chooses the project and team")
+            self.step("Semantic routing", "on", "the claude profile picks or starts the project and the team")
         return ready
 
     # Terminal ------------------------------------------------------------

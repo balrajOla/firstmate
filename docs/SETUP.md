@@ -9,7 +9,7 @@
 3. Writes a Paperclip user service (`<prefix>.paperclip`) that runs `pnpm paperclipai run` with `PAPERCLIP_HOME=<home>/paperclip`, `PORT`, a PATH that includes the agent CLIs, and Paperclip's telemetry opt-outs (`DO_NOT_TRACK`, `PAPERCLIP_TELEMETRY_DISABLED`). `NODE_EXTRA_CA_CERTS` and `SSL_CERT_FILE` are passed on when set, for networks with their own certificate authority. No credentials are written. A service file that does not mention this home is never replaced.
 4. Creates (or reuses) the company "Assistant Workbench", turns on isolated workspaces and writes `coordinator.url` and `coordinator.company_id`.
 5. Adds a `claude` and a `codex` profile for each CLI on PATH (`--claude-model`, default `sonnet`; `--codex-model`, default the `model` in Codex's `config.toml`) and probes each with one short prompt unless `--no-probe`. A Codex profile without `auth.json` is reported, because Paperclip needs the file. A CLI that is missing or has no model is reported, never guessed.
-6. Turns on semantic routing with the Claude profile when it is ready (`--no-semantic-routing` to skip).
+6. Turns on semantic routing with the Claude profile when it is ready, including [new projects and one-off work](#new-projects-and-one-off-work) (`--no-semantic-routing` to skip).
 7. Installs the bridge service (`<prefix>.bridge`) and records it and the Paperclip service in `open`, so `awb open` starts them.
 8. Adds the WezTerm include when WezTerm is installed, unless `--no-terminal`.
 

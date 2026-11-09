@@ -90,7 +90,7 @@ curl -fsSL https://raw.githubusercontent.com/balrajOla/firstmate/main/install.sh
 
 Or from a clone: `git clone https://github.com/balrajOla/firstmate.git && cd firstmate && ./install.sh`. Run it again later to upgrade; every step that is already done is skipped.
 
-Before you run it, have git (on macOS, `xcode-select --install`) and sign in to at least one agent CLI. The installer uses the sign-in you already have and never reads or copies it:
+Before you run it, have git (on macOS, `xcode-select --install`), about 6 GB of free disk space for Paperclip and its build tools, and sign in to at least one agent CLI. The installer uses the sign-in you already have and never reads or copies it:
 
 | Agent | Sign-in that works |
 |---|---|
@@ -105,7 +105,7 @@ What it does:
    - installs Node.js 24, pnpm and rustup under the Workbench home when the machine has no suitable copy (pinned versions, checked against recorded checksums);
    - builds [Paperclip](https://github.com/paperclipai/paperclip) at its pinned commit, onboards it for trusted local use with its telemetry off, creates its company and turns on isolated workspaces;
    - adds a profile for each signed-in agent CLI and checks it with one short prompt;
-   - turns on semantic routing when Claude is ready, so prompts find their project by themselves;
+   - turns on semantic routing when Claude is ready, so each prompt continues the right project, starts a new git-backed project for new work, or goes to General when it is a one-off;
    - installs the Paperclip and bridge services (launchd on macOS, `systemd --user` on Linux) so they start at login;
    - binds Ctrl+Shift+A in WezTerm, if WezTerm is installed.
 4. Prints what each step did. Then run `awb open`.
