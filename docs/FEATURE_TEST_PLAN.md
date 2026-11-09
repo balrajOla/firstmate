@@ -188,7 +188,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF55](#pf55) | Reviewed improvements with rollback | 2 | `journey`, `benchmark` |
 | [PF56](#pf56) | One GitHub repository and reproducible packages | 1 | `packages` |
 | [PF57](#pf57) | Harness and linked-project contracts | 32 | `linked_contract`, `models` |
-| [PF58](#pf58) | Doctor, migration, backup, restore and uninstall | 42 | `migration` |
+| [PF58](#pf58) | Doctor, migration, backup, restore and uninstall | 50 | `migration` |
 | [PF59](#pf59) | Authorization, credentials and effect audit | 97 | `isolation` |
 | [PF60](#pf60) | Authorized schedules and clear updates | 1 | `journey` |
 | [PF61](#pf61) | Optional OpenViking replacement context backend | 40 | `openviking`, `retention` |
@@ -201,7 +201,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF68](#pf68) | Automatic request-to-team planning | 20 | `workers`, `benchmark` |
 | [PF69](#pf69) | Evaluated model and effort selection with explanation | 11 | `models`, `benchmark` |
 | [PF70](#pf70) | Capability registry and workflow compilation | 45 | `procedures`, `coordinator` |
-| [PF71](#pf71) | Subscription, API and tested local/hybrid installation profiles | 28 | `models`, `packages`, `workers` |
+| [PF71](#pf71) | Subscription, API and tested local/hybrid installation profiles | 35 | `models`, `packages`, `workers` |
 
 ## Per-feature scenarios
 
@@ -1888,6 +1888,14 @@ Mapped pytest evidence:
 - `tests/test_launcher.py::test_open_settings_are_validated[unknown-session]`
 - `tests/test_launcher.py::test_open_settings_are_validated[session-name-space]`
 - `tests/test_launcher.py::test_open_settings_are_validated[unknown-key]`
+- `tests/test_onboarding.py::test_paperclip_is_onboarded_once_served_and_given_a_company`
+- `tests/test_onboarding.py::test_another_server_on_the_paperclip_port_stops_setup`
+- `tests/test_onboarding.py::test_a_service_file_of_another_installation_is_never_replaced`
+- `tests/test_onboarding.py::test_systemd_units_are_written_and_enabled`
+- `tests/test_onboarding.py::test_setup_installs_the_bridge_and_records_what_awb_open_starts`
+- `tests/test_onboarding.py::test_wezterm_is_optional`
+- `tests/test_onboarding.py::test_the_services_run_the_prefix_launcher_not_a_release`
+- `tests/test_onboarding.py::test_setup_cli_reports_each_step`
 
 ### PF59
 
@@ -2468,4 +2476,10 @@ Mapped pytest evidence:
 - `tests/test_app_integrations.py::test_temporal_auth_configuration_does_not_read_credentials_or_require_sdk`
 - `tests/test_memory_integration_contracts.py::test_lcm_summary_contract_marks_derived_output_and_rejects_provider_drift`
 - `tests/test_memory_integration_contracts.py::test_lcm_summary_provider_needs_matching_auth_profile`
-
+- `tests/test_onboarding.py::test_missing_build_tools_are_installed_under_the_home_after_their_checksums`
+- `tests/test_onboarding.py::test_a_download_with_the_wrong_checksum_installs_nothing`
+- `tests/test_onboarding.py::test_suitable_tools_on_the_path_are_used_as_they_are`
+- `tests/test_onboarding.py::test_node_older_than_paperclip_needs_is_not_used`
+- `tests/test_onboarding.py::test_signed_in_clis_become_checked_profiles`
+- `tests/test_onboarding.py::test_missing_clis_and_models_are_reported_not_invented`
+- `tests/test_onboarding.py::test_install_script_is_valid_posix_shell_and_never_uses_sudo`

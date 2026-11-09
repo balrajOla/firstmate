@@ -82,35 +82,46 @@ Not verified: Codex workers through Paperclip (Paperclip needs a file-based Code
 
 ## Install
 
-Requirements:
-- Python 3.11 or later and Git.
-- For Paperclip: Node 24.11 or later, pnpm and a Rust toolchain.
-- At least one official agent CLI (Claude Code or Codex), signed in.
+One command on macOS or Linux, with no sudo:
 
 ```sh
-git clone https://github.com/balrajOla/firstmate.git assistant-workbench
-cd assistant-workbench
-python3 -m venv .venv
-.venv/bin/python -m pip install -c requirements-runtime.lock '.[tui]'
-
-# Install an owned copy with its own launcher (upgrade and rollback work on this prefix)
-.venv/bin/awb install --source . --prefix ~/.local/awb
-export PATH="$HOME/.local/awb/bin:$PATH"
-awb init && awb doctor
+curl -fsSL https://raw.githubusercontent.com/balrajOla/firstmate/main/install.sh | sh
 ```
 
-Set up the coordinator and a model profile:
+Or from a clone: `git clone https://github.com/balrajOla/firstmate.git && cd firstmate && ./install.sh`. Run it again later to upgrade; every step that is already done is skipped.
 
-```sh
-awb deps install paperclip             # pinned Paperclip source and build
-# Start Paperclip, create a company, then set coordinator.url and
-# coordinator.company_id in ~/.local/share/assistant-workbench/config.json
-# (or $AWB_HOME/config.json, or the --home you pass).
-awb request '{"action":"profile.add","args":{"identity":"claude","harness":"claude","model":"MODEL_FROM_YOUR_CLI","effort":"medium","auth":"subscription","classes":["simple","code","design","report","research"],"priority":10}}'
-awb request '{"action":"profile.probe","args":{"identity":"claude"}}'
-```
+Before you run it, have git (on macOS, `xcode-select --install`) and sign in to at least one agent CLI. The installer uses the sign-in you already have and never reads or copies it:
 
-[Full setup guide](docs/SETUP.md), covering profiles, grants, routing, WezTerm and services · [Optional local services](docs/LOCAL_SERVICES.md) · [Temporal and remote workers](docs/RUNTIME_BACKENDS.md) · [CLI, HTTP and MCP reference](docs/API.md)
+| Agent | Sign-in that works |
+|---|---|
+| Claude Code | A Pro or Max subscription (`claude`, then `/login`), the default. For an API key, an `apiKeyHelper` or Bedrock/Vertex, pass `--claude-auth api`. |
+| Codex CLI | `codex login` with a ChatGPT plan or an API key. Paperclip reads the sign-in from `~/.codex/auth.json`, so set `cli_auth_credentials_store = "file"` in `~/.codex/config.toml` if your Codex keeps it in the system keychain. |
+
+What it does:
+
+1. Finds Python 3.11 or later, or installs Python 3.12 with a pinned [uv](https://github.com/astral-sh/uv) under the prefix.
+2. Installs the Workbench into `~/.local/awb` with its own launcher and links `awb` into `~/.local/bin`.
+3. Runs `awb setup`, which:
+   - installs Node.js 24, pnpm and rustup under the Workbench home when the machine has no suitable copy (pinned versions, checked against recorded checksums);
+   - builds [Paperclip](https://github.com/paperclipai/paperclip) at its pinned commit, onboards it for trusted local use with its telemetry off, creates its company and turns on isolated workspaces;
+   - adds a profile for each signed-in agent CLI and checks it with one short prompt;
+   - turns on semantic routing when Claude is ready, so prompts find their project by themselves;
+   - installs the Paperclip and bridge services (launchd on macOS, `systemd --user` on Linux) so they start at login;
+   - binds Ctrl+Shift+A in WezTerm, if WezTerm is installed.
+4. Prints what each step did. Then run `awb open`.
+
+Everything it installs is open source: the Workbench (MIT), Paperclip (MIT), Python, uv, Node.js, pnpm and Rust. It does not install the agent CLIs or any paid service, and it never switches to paid API use by itself.
+
+| Option (after `sh -s --` or `./install.sh`) | Use |
+|---|---|
+| `--claude-model MODEL`, `--codex-model MODEL` | Models for the profiles (defaults: `sonnet`; Codex's own configured model) |
+| `--claude-auth api`, `--codex-auth api` | Use an API key or helper instead of a subscription |
+| `--no-probe` | Add profiles without the one-prompt check |
+| `--no-paperclip` | Keep a coordinator you already configured |
+| `--label-prefix P --paperclip-port N --bridge-port N` | A second installation beside the first; give its state its own `--home` |
+| `--no-terminal` | Leave the WezTerm configuration alone |
+
+[Full setup guide](docs/SETUP.md), covering manual installation, profiles, grants, routing and services · [Optional local services](docs/LOCAL_SERVICES.md) · [Temporal and remote workers](docs/RUNTIME_BACKENDS.md) · [CLI, HTTP and MCP reference](docs/API.md)
 
 ## Use
 

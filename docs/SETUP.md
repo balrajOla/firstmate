@@ -1,5 +1,22 @@
 # Setup
 
+## One command
+
+`install.sh` at the repository root installs everything on macOS or Linux without sudo, and `awb setup` (which it runs) can also be run on its own, for example after an upgrade. See the [README](../README.md#install) for the sign-ins it expects and its options. In order, `awb setup`:
+
+1. Installs Node.js, pnpm and rustup under `<home>/tools` only when no suitable copy is on PATH: Node.js 24.11 or later, pnpm 9 and any `cargo`. Downloads are pinned in `assets/toolchain.json` and checked against recorded SHA-256 checksums before anything is unpacked. rustup is installed without a default toolchain; Paperclip's `rust-toolchain.toml` selects the Rust its build uses.
+2. Builds Paperclip with `awb deps install paperclip`. `paperclipai run` refuses to onboard without a terminal and `paperclipai onboard --yes` goes on to serve in the foreground, so setup runs the onboarding once in its own process group, waits until Paperclip answers on `--paperclip-port`, and stops that group. It stops first if another server already answers on that port.
+3. Writes a Paperclip user service (`<prefix>.paperclip`) that runs `pnpm paperclipai run` with `PAPERCLIP_HOME=<home>/paperclip`, `PORT`, a PATH that includes the agent CLIs, and Paperclip's telemetry opt-outs (`DO_NOT_TRACK`, `PAPERCLIP_TELEMETRY_DISABLED`). `NODE_EXTRA_CA_CERTS` and `SSL_CERT_FILE` are passed on when set, for networks with their own certificate authority. No credentials are written. A service file that does not mention this home is never replaced.
+4. Creates (or reuses) the company "Assistant Workbench", turns on isolated workspaces and writes `coordinator.url` and `coordinator.company_id`.
+5. Adds a `claude` and a `codex` profile for each CLI on PATH (`--claude-model`, default `sonnet`; `--codex-model`, default the `model` in Codex's `config.toml`) and probes each with one short prompt unless `--no-probe`. A Codex profile without `auth.json` is reported, because Paperclip needs the file. A CLI that is missing or has no model is reported, never guessed.
+6. Turns on semantic routing with the Claude profile when it is ready (`--no-semantic-routing` to skip).
+7. Installs the bridge service (`<prefix>.bridge`) and records it and the Paperclip service in `open`, so `awb open` starts them.
+8. Adds the WezTerm include when WezTerm is installed, unless `--no-terminal`.
+
+Every step reports `found`, `installed`, `ready`, `not ready` or why it was skipped, and is skipped on a rerun when already done. A second installation on the same machine needs its own `--home`, `--label-prefix`, `--paperclip-port` and `--bridge-port`.
+
+## Manual installation
+
 Install Python 3.11 or later and work from the reviewed repository checkout. The default coordinator is Paperclip. Temporal is an optional alternative; select one backend for an installation.
 
 ```sh
