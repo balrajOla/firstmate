@@ -1153,6 +1153,7 @@ Mapped pytest evidence:
 - `tests/test_paperclip_contract.py::test_unbound_project_work_does_not_need_isolation`
 - `tests/test_paperclip_contract.py::test_multi_dependency_nodes_keep_their_own_workspace`
 - `tests/test_paperclip_contract.py::test_task_branches_are_valid_and_distinct_per_revision`
+- `tests/test_paperclip_contract.py::test_role_agents_run_one_task_at_a_time_unless_configured`
 
 ### PF35
 

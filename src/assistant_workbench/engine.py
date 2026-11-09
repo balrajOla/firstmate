@@ -155,6 +155,12 @@ class Engine:
         # existing default-budget identity, with its timeout checked on reuse.
         if timeout != self.settings["limits"]["max_seconds"]:
             runtime["timeout_seconds"] = timeout
+        # One role agent serves that role for every request, so its run limit
+        # caps how many such tasks run at once. A changed limit is a new
+        # identity; the default keeps existing identities.
+        concurrent = self.settings["coordinator"].get("max_concurrent_runs", 1)
+        if concurrent != 1:
+            runtime["concurrent_runs"] = concurrent
         adapter = {**WORKER_ADAPTERS, "process": "process"}[model["harness"]]
         adapter_config = dict(model.get("adapter_config", {}))
         adapter_config.update(
@@ -306,7 +312,7 @@ class Engine:
             "permissions": {"canCreateAgents": False, "canCreateSkills": False},
             "metadata": {"workbenchKey": key},
             "runtimeConfig": {
-                "heartbeat": {"enabled": True, "intervalSec": 0, "maxConcurrentRuns": 1}
+                "heartbeat": {"enabled": True, "intervalSec": 0, "maxConcurrentRuns": concurrent}
             },
         }
         if model["harness"] in WORKER_ADAPTERS:

@@ -2,6 +2,8 @@
 
 import json
 
+from assistant_workbench.util import WorkbenchError
+
 import pytest
 from assistant_workbench.engine import Engine
 from conftest import FakePaperclip, PinnedPaperclip
@@ -480,6 +482,39 @@ def test_paperclip_escalation_is_not_a_worker_block(app, project, configured):
     api.finish(implement, "blocked", [])
     assert engine.observe()[request]["implement"]["report"] == "captured"
     assert api.issue(implement)["status"] == "done"
+
+
+def test_role_agents_run_one_task_at_a_time_unless_configured(app, project, configured):
+    import json as _json
+
+    official_cli_profile(app, configured)
+    app.store.submit("Fix bug", "a", project["id"])
+    api = PinnedPaperclip()
+    assert Engine(app.store, api).tick()["status"] == "delivered"
+    default = {a["id"]: a for a in api.agents_}
+    assert {a["runtimeConfig"]["heartbeat"]["maxConcurrentRuns"] for a in default.values()} == {1}
+    # The same role then serves every request, so independent tasks of that
+    # role run one after another. A higher limit gets new agents that allow it.
+    configured["coordinator"]["max_concurrent_runs"] = 3
+    (app.home / "config.json").write_text(_json.dumps(configured))
+    app.store.submit("Fix another bug", "b", project["id"])
+    assert Engine(app.store, api).tick()["status"] == "delivered"
+    added = [a for a in api.agents_ if a["id"] not in default]
+    assert added and {a["runtimeConfig"]["heartbeat"]["maxConcurrentRuns"] for a in added} == {3}
+    assert {a["metadata"]["workbenchKey"] for a in added}.isdisjoint(
+        a["metadata"]["workbenchKey"] for a in default.values())
+
+
+@pytest.mark.parametrize("runs", [0, 51, "2", True])
+def test_invalid_concurrent_run_limit_is_refused(app, configured, runs):
+    import json as _json
+
+    from assistant_workbench.config import config
+
+    configured["coordinator"]["max_concurrent_runs"] = runs
+    (app.home / "config.json").write_text(_json.dumps(configured))
+    with pytest.raises(WorkbenchError, match="max_concurrent_runs"):
+        config(app.home)
 
 
 def test_changed_worker_definition_is_not_served_by_an_old_agent(
