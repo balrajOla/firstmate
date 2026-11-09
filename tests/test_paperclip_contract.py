@@ -111,6 +111,39 @@ def test_claude_workers_use_the_official_cli_runner_with_isolation(
     assert config["model"] == "model-from-cli" and config["effort"] == "medium"
 
 
+def test_codex_workers_use_the_official_cli_engine(app, project, configured):
+    official_cli_profile(app, configured, "codex")
+    app.store.submit("Fix bug", "a", project["id"])
+    api = PinnedPaperclip()
+    assert Engine(app.store, api).tick()["status"] == "delivered"
+    agent = api.agents_[0]
+    config = agent["adapterConfig"]
+    # Unset, the pinned adapter runs its bundled ACP server, not the codex CLI
+    # and its sign-in (packages/adapters/codex-local/src/index.ts).
+    assert agent["adapterType"] == "codex_local" and agent["runner"] == "legacy"
+    assert config["engine"] == "cli"
+    assert config["dangerouslyBypassApprovalsAndSandbox"] is False
+    assert config["modelReasoningEffort"] == "medium"
+
+
+@pytest.mark.parametrize("harness", ["claude", "codex"])
+def test_agent_moved_off_the_cli_engine_is_refused(app, project, configured, harness):
+    official_cli_profile(app, configured, harness)
+    app.store.submit("Fix bug", "a", project["id"])
+    api = PinnedPaperclip()
+    original = api.create_agent
+
+    def default_engine(body):
+        # A coordinator that drops the engine choice falls back to ACP.
+        config = {k: v for k, v in body["adapterConfig"].items() if k != "engine"}
+        return original(body | {"adapterConfig": config})
+
+    api.create_agent = default_engine
+    result = Engine(app.store, api).tick()
+    assert result["status"] == "blocked" and "CLI engine" in result["error"]
+    assert not api.issues_
+
+
 @pytest.mark.parametrize("harness", ["claude", "codex"])
 def test_converted_worker_agent_is_refused(app, project, configured, harness):
     official_cli_profile(app, configured, harness)
