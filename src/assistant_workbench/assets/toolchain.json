@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "notice": "Open-source build tools that `awb setup` installs under the Workbench home when the machine has no suitable copy. Checksums are of the downloaded files.",
+  "node": {
+    "version": "24.22.2",
+    "minimum": [24, 11],
+    "license": "MIT",
+    "url": "https://nodejs.org/dist/v{version}/node-v{version}-{platform}.tar.gz",
+    "sha256": {
+      "darwin-arm64": "aa9549349e47dffaa42dcf95d6e06ade8c4bdafc980979883b88767670df385a",
+      "darwin-x64": "d5e336d588c45be0c37dbd52cc29895593009ca4997a77a1fd02815131ed0e52",
+      "linux-arm64": "95c264150aceb7f3437a29fd6984924f5f8d1511ea3cbd6c508b83f6c555dae2",
+      "linux-x64": "361718c444e49af2ca5a110c83ba6a8901143f23ab285ebbef0341f391f482a9"
+    }
+  },
+  "pnpm": {
+    "version": "9.15.4",
+    "license": "MIT",
+    "note": "The version Paperclip's package.json names; installed with the npm that comes with Node."
+  },
+  "rustup": {
+    "version": "1.29.3",
+    "license": "MIT OR Apache-2.0",
+    "url": "https://static.rust-lang.org/rustup/archive/{version}/{target}/rustup-init",
+    "note": "Installed without a default toolchain; Paperclip's rust-toolchain.toml selects the Rust version its build uses.",
+    "sha256": {
+      "darwin-arm64": "63752a1919a3a4793173ec70f8f212621a7ce38ba6a246095984482f4de20f9f",
+      "darwin-x64": "bc107f1fb0228de7fa32413c89c1b305cea9cd256e94b01150cd054128145429",
+      "linux-arm64": "9f608c142e0e38a78957d0661ba1dfaf0b6fb37184cfaa4b9a0aa57af6184282",
+      "linux-x64": "b1c8cb14e30889e7e2999e6b69e62d9e9b9ffc0f4df8180564d306d9680e6c55"
+    },
+    "targets": {
+      "darwin-arm64": "aarch64-apple-darwin",
+      "darwin-x64": "x86_64-apple-darwin",
+      "linux-arm64": "aarch64-unknown-linux-gnu",
+      "linux-x64": "x86_64-unknown-linux-gnu"
+    }
+  }
+}

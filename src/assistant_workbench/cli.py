@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import shutil
 import signal
 import sys
 from pathlib import Path
@@ -23,6 +24,23 @@ def parser():
     commands.add_parser("doctor")
     commands.add_parser("snapshot")
     commands.add_parser("tui")
+    setup = commands.add_parser("setup", help="install Paperclip, agent profiles and services, then use awb open")
+    setup.add_argument("--executable", help="the awb launcher services should run (default: this one)")
+    setup.add_argument("--label-prefix", default="com.assistant-workbench",
+                       help="service name prefix; give a second home its own")
+    setup.add_argument("--paperclip-port", type=int, default=3100)
+    setup.add_argument("--bridge-port", type=int, default=8765)
+    setup.add_argument("--no-paperclip", action="store_true", help="keep the coordinator already in config.json")
+    setup.add_argument("--no-agents", action="store_true", help="do not add or check agent profiles")
+    setup.add_argument("--no-probe", action="store_true", help="add profiles without the one-prompt sign-in check")
+    setup.add_argument("--claude-model", default="sonnet")
+    setup.add_argument("--codex-model", help="default: model in ~/.codex/config.toml")
+    setup.add_argument("--claude-auth", choices=["subscription", "api"], default="subscription")
+    setup.add_argument("--codex-auth", choices=["subscription", "api"], default="subscription")
+    setup.add_argument("--no-semantic-routing", action="store_true")
+    setup.add_argument("--no-services", action="store_true", help="do not install the bridge service")
+    setup.add_argument("--wezterm-config", help="default: ~/.wezterm.lua")
+    setup.add_argument("--no-terminal", action="store_true", help="leave the WezTerm configuration alone")
     opened = commands.add_parser("open", help="start whatever is down, then open the terminal UI")
     opened.add_argument("--session", choices=["herdr"], help="run the UI in a persistent session")
     opened.add_argument("--no-session", action="store_true", help="ignore open.session in config.json")
@@ -213,6 +231,22 @@ def main(argv=None):
                     server.workbench_stop.set()
                     server.server_close()
                 return 0
+            elif args.command == "setup":
+                from .onboarding import setup
+
+                from .onboarding import managed_launcher
+
+                launcher = args.executable or managed_launcher() or shutil.which("awb")
+                if not launcher:
+                    raise WorkbenchError("Pass --executable: the awb launcher the services should run")
+                result = setup(
+                    home, launcher, args.label_prefix, args.paperclip_port, args.bridge_port,
+                    paperclip=not args.no_paperclip, agents=not args.no_agents, probe=not args.no_probe,
+                    claude_model=args.claude_model, codex_model=args.codex_model,
+                    claude_auth=args.claude_auth, codex_auth=args.codex_auth,
+                    services=not args.no_services, semantic=not args.no_semantic_routing,
+                    wezterm_config=False if args.no_terminal else args.wezterm_config,
+                )
             elif args.command == "open":
                 import os
                 from .config import config
