@@ -311,6 +311,33 @@ def test_failed_or_empty_runs_are_never_captured(app, project, configured):
     assert not app.store.rows("SELECT id FROM outcomes WHERE request_id=?", (request,))
 
 
+def test_task_stopped_by_the_coordinator_needs_the_operator(app, project, configured):
+    from assistant_workbench.terminal import status
+
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    # Observed live: Paperclip refused to start a Codex worker without a
+    # sign-in, failed the run and blocked the task. No worker reported.
+    agent = api.issue(implement)["assigneeAgentId"]
+    next(a for a in api.agents_ if a["id"] == agent)["errorReason"] = "no Codex credentials available"
+    api.finish(implement, "blocked", [("failed", None)], agent=agent)
+    run = next(r for r in api.runs.values() if r["issueId"] == implement)
+    run.update(errorCode="configuration_incomplete", livenessReason="Run ended with failed (configuration_incomplete)")
+    assert engine.observe()[request]["implement"]["report"] == "failed"
+    engine.observe()
+    assert app.dispatch("request.get", {"request_id": request})["status"] == "running"
+    [item] = app.store.snapshot()["attention"]
+    assert (item["request_id"], item["status"], item["nodes"]) == (request, "execution_failed", ["implement"])
+    assert "implement: configuration_incomplete - no Codex credentials available" in item["error"]
+    assert "resume the task in the coordinator or amend the request" in item["error"]
+    assert status(app.store)["blocked"] == 1
+    events = app.store.rows("SELECT payload FROM events WHERE kind='execution.node_failed'")
+    assert len(events) == 1 and json.loads(events[0]["payload"])["nodes"] == ["implement"]
+    # The operator fixed the sign-in and resumed the task; its worker reported.
+    api.finish(implement, "blocked", [("succeeded", "Changed login.py.")])
+    assert engine.observe()[request]["implement"]["report"] == "captured"
+    assert app.store.snapshot()["attention"] == []
+
+
 def test_repository_work_requires_isolated_workspaces(app, project, configured):
     # Paperclip downgrades isolated_workspace to the project's own checkout
     # when its experimental setting is off; workers would edit the repository.

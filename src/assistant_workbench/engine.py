@@ -712,9 +712,11 @@ class Engine:
                         "updatedAt",
                     )
                 }
-                items[node.split(":", 1)[1]]["report"] = self._capture_report(
-                    req, node, issue
-                )
+                report = self._capture_report(req, node, issue)
+                items[node.split(":", 1)[1]]["report"] = report
+                if report != "failed" and self._cache("failure:" + req["id"] + ":" + node):
+                    with self.store.transaction() as db:
+                        db.execute("DELETE FROM meta WHERE key=?", ("failure:" + req["id"] + ":" + node,))
             observations[req["id"]] = items
             if items and all(i["report"] == "captured" for i in items.values()):
                 self._propose_worker_outcome(req, list(items))
@@ -730,6 +732,15 @@ class Engine:
                             "nodes": blocked,
                             "notice": self.store.WORKER_BLOCKED_NOTICE,
                         },
+                    )
+                self._cache(key, True)
+            failed = sorted(n for n, i in items.items() if i["report"] == "failed")
+            key = "observed-failed:" + req["id"] + ":" + str(req["revision"]) + ":" + ",".join(failed)
+            if failed and not self._cache(key):
+                with self.store.transaction() as db:
+                    self.store.event(
+                        db, "execution.node_failed", req["id"],
+                        {"nodes": failed, "notice": self.store.EXECUTION_FAILED_NOTICE},
                     )
                 self._cache(key, True)
             if items and all(i["status"] == "done" for i in items.values()):
@@ -775,11 +786,11 @@ class Engine:
         # run can still be active when the task already reads done or blocked.
         active = any(r.get("status") in {"queued", "running", "scheduled_retry"} for r in runs)
         unfinished = "pending" if active or issue["status"] != "blocked" else "failed"
-        if not succeeded:
-            return unfinished
-        detail = self.api.run(succeeded[0]["runId"])
+        detail = self.api.run(succeeded[0]["runId"]) if succeeded else {}
         text = str((detail.get("resultJson") or {}).get("result") or "").strip()
         if not text:
+            if unfinished == "failed":
+                self._note_failure(key.replace("report:", "failure:", 1), issue, runs)
             return unfinished
         usage = [
             {
@@ -828,6 +839,23 @@ class Engine:
                 },
             )
         return "blocked" if worker_blocked else "captured"
+
+    def _note_failure(self, key, issue, runs):
+        """Keep why the coordinator stopped a task that no worker reported
+        on, for the attention list. A later report clears it."""
+        latest = max(runs, key=lambda r: r.get("createdAt") or "", default={})
+        failure = {
+            "run": latest.get("runId"),
+            "agent": latest.get("agentId") or issue.get("assigneeAgentId"),
+            "code": latest.get("errorCode"),
+            "reason": latest.get("livenessReason") or latest.get("error"),
+        }
+        cached = self._cache(key)
+        if cached and {k: cached.get(k) for k in failure} == failure:
+            return
+        # The agent's own error usually names the fix, such as a missing sign-in.
+        agent = next((a for a in self.api.agents() if a.get("id") == failure["agent"]), {})
+        self._cache(key, {**failure, "agent_error": agent.get("errorReason")})
 
     def _worker_blocked(self, issue):
         """Whether the assigned worker itself set the task to blocked, rather

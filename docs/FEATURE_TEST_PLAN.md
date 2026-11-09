@@ -1393,6 +1393,8 @@ Mapped pytest evidence:
 - `tests/test_tui_scenarios.py::test_tui_fleet_capacity_keeps_uncertain_work_visible`
 - `tests/test_tui_scenarios.py::test_tui_worker_reported_block_is_in_the_inbox`
 - `tests/test_paperclip_contract.py::test_worker_reported_block_needs_the_operator`
+- `tests/test_tui_scenarios.py::test_tui_task_stopped_by_the_coordinator_is_in_the_inbox`
+- `tests/test_paperclip_contract.py::test_task_stopped_by_the_coordinator_needs_the_operator`
 
 ### PF43
 
