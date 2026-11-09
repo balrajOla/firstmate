@@ -26,7 +26,9 @@ from textual.widgets import (
 
 from .app import Application
 from .runtime_backends import Fleet
-from .util import WorkbenchError, now, read_json, safe_text, uid
+from .util import WorkbenchError, atomic, canonical, now, read_json, safe_text, uid
+
+TABS = ("inbox", "requests", "outcomes", "teams", "context", "health", "logs")
 
 
 class EntryDialog(ModalScreen):
@@ -135,6 +137,8 @@ class WorkbenchApp(App):
         self._project_options = None
         self._selected_detail = None
         self._diagnostic_errors = {}
+        self._saved_view = None
+        self._pending_view = {}
         self._notice = "F1 actions • Send chooses the prompt destination; View filters the saved work."
 
     def compose(self) -> ComposeResult:
@@ -180,6 +184,7 @@ class WorkbenchApp(App):
                 self.query_one("#" + name + "-table", DataTable).add_column(label, width=width)
         self._tables_ready = True
         self._resize_details()
+        self._restore_view()
         self.action_refresh()
         self.set_interval(2, self.action_refresh)
 
@@ -189,6 +194,49 @@ class WorkbenchApp(App):
 
     def _resize_details(self):
         self.query_one("#details-scroll").styles.height = 6 if self.size.height <= 27 else 9
+
+    def _restore_view(self):
+        """Reopen on the tab, filters and row that were open last time."""
+        try:
+            saved = read_json(self.work.home / "tui-state.json", {})
+            if not isinstance(saved, dict):
+                raise WorkbenchError("Expected an object")
+        except WorkbenchError:
+            self.notice("The saved view could not be read; starting from the inbox.")
+            return
+        if saved.get("tab") in TABS:
+            self.query_one(TabbedContent).active = saved["tab"]
+        for widget in ("request_search", "search"):
+            if isinstance(saved.get(widget), str):
+                self.query_one("#" + widget.replace("_", "-"), Input).value = saved[widget]
+        selected = saved.get("selected")
+        self._pending_view = {
+            "view": saved.get("view"),
+            "send": saved.get("send"),
+            "selected": tuple(selected) if isinstance(selected, list) and len(selected) == 2 else None,
+        }
+
+    def _save_view(self):
+        send = self.query_one("#project", Select).value
+        view = self.query_one("#project-filter", Select).value
+        state = {
+            "tab": self.query_one(TabbedContent).active,
+            "send": None if send is Select.NULL else send,
+            "view": None if view is Select.NULL else view,
+            "selected": list(self.selected) if self.selected else None,
+            "request_search": self.query_one("#request-search", Input).value,
+            "search": self.query_one("#search", Input).value,
+        }
+        if state != self._saved_view:
+            try:
+                atomic(self.work.home / "tui-state.json", canonical(state))
+                self._saved_view = state
+            except OSError:
+                pass  # Only the convenience of reopening in place is lost.
+
+    def on_tabbed_content_tab_activated(self, event):
+        if self._tables_ready:
+            self._save_view()
 
     @staticmethod
     def ticket(identity):
@@ -233,6 +281,9 @@ class WorkbenchApp(App):
         send = self.query_one("#project", Select)
         view = self.query_one("#project-filter", Select)
         send_value, view_value = send.value, view.value
+        if self._pending_view:
+            send_value = self._pending_view.pop("send", None) or send_value
+            view_value = self._pending_view.pop("view", None) or view_value
         send.set_options([("Send: " + name, identity) for name, identity in options])
         view.set_options([("View: all", "*"), *(("View: " + name, identity) for name, identity in options)])
         identities = {identity for _, identity in options}
@@ -367,6 +418,12 @@ class WorkbenchApp(App):
             ("release", ["Release", "Experimental", "Live harness and real GUI qualification required"], {"notice": "Headless TUI tests do not qualify WezTerm or a model."}),
         ] + fleet_rows + [(name, [name, "Unreadable", error], {"error": error}) for name, error in self._diagnostic_errors.items()])
         self.table("logs", [(e["seq"], [e["seq"], e["kind"], e["entity"]], e) for e in snapshot["events"]])
+        restored = self._pending_view.pop("selected", None)
+        if restored in self.records:
+            self.selected = restored
+            self.query_one("#" + restored[0] + "-table", DataTable).move_cursor(
+                row=list(self.previous[restored[0]]).index(restored[1]))
+            self._show_selected(reset_scroll=True)
         if self.selected and self.selected not in self.records:
             self.selected = None
             self._selected_detail = None
@@ -375,6 +432,7 @@ class WorkbenchApp(App):
             self._show_selected(reset_scroll=False)
         total = store.one("SELECT COUNT(*) AS n FROM requests WHERE (?='*' OR project_id=?)", (scope, scope))["n"]
         self.sub_title = f"{len(snapshot['projects'])} projects • {len(filtered_requests)}/{total} requests shown • {len(blocked)} blocked/retrying"
+        self._save_view()
 
     def _show_selected(self, reset_scroll=False):
         record = self.records.get(self.selected)
@@ -422,6 +480,7 @@ class WorkbenchApp(App):
             return
         self.selected = selected
         self._show_selected(reset_scroll=True)
+        self._save_view()
 
     def on_select_changed(self, event: Select.Changed):
         if event.select.id == "project-filter" and self._tables_ready:

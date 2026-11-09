@@ -167,9 +167,27 @@ awb terminal install --config-file "$HOME/.wezterm.lua" --executable "$HOME/.loc
 
 Use your actual installed absolute executable path. The installer backs up the Lua file, installs a pinned local module and inserts one managed include. It preserves existing settings and reports a conflicting Ctrl+Shift+A shortcut. Complex Lua layouts need manual placement of the documented include. Use `--status` only when Workbench should own the right status area.
 
-Ctrl+Shift+A opens `awb tui`. The view separates prompt destination from project filtering, outcomes from logs, and accepted deliverables from overall request completion. F1 shows controls; F2 creates a project; F3 amends; F4 confirms cancellation; F5 pauses new dispatch; F6 exports. Ctrl+B pins, Ctrl+D marks read, Ctrl+O reopens and Ctrl+Q closes the view. Closing the terminal does not stop coordinator-owned agents. See [terminal scenarios](TERMINAL_SCENARIOS.md).
+Ctrl+Shift+A runs `awb open` (below), which starts anything that is down and then opens the view. The view separates prompt destination from project filtering, outcomes from logs, and accepted deliverables from overall request completion. F1 shows controls; F2 creates a project; F3 amends; F4 confirms cancellation; F5 pauses new dispatch; F6 exports. Ctrl+B pins, Ctrl+D marks read, Ctrl+O reopens and Ctrl+Q closes the view. Closing the terminal does not stop coordinator-owned agents. See [terminal scenarios](TERMINAL_SCENARIOS.md).
 
 `awb serve` runs the loopback operator/control service. `awb service launchd --executable /absolute/path/to/awb` or `awb service systemd --executable /absolute/path/to/awb` prints a service definition; it does not silently install or start it. Service managers start with a minimal PATH, so the definition sets PATH to the directories where the installing user's `git`, `node`, package managers, `claude` and `codex` were found, followed by the system directories; it records no other environment and no credentials. Generate it from the shell you use the CLIs in, and regenerate it after moving a CLI. On macOS, save it as `~/Library/LaunchAgents/com.assistant-workbench.bridge.plist`, then `launchctl bootstrap gui/$(id -u) <plist>` starts it and `launchctl bootout gui/$(id -u)/com.assistant-workbench.bridge` stops it. To run a second Workbench home as a service on the same machine, give it its own `--label` and `--port`, and use that label in the file name and in `launchctl`. Verify profile authentication, coordinator connectivity and restart behavior in the real service environment before cutover.
+
+## One command: awb open
+
+`awb open` is the everyday entry point. It starts what is down, waits for the bridge to report healthy, checks the coordinator, then opens the terminal UI on the tab, project filters, searches and row you had open last time. It never stops or restarts anything that is already running.
+
+1. It starts each name in `open.services`, in order. Use this for the coordinator and any local services you run as launchd or systemd user services. On macOS a loaded but stopped job gets `launchctl kickstart` (without `-k`), and an unloaded one with a plist in `~/Library/LaunchAgents` gets `launchctl bootstrap`. On Linux an inactive unit gets `systemctl --user start`.
+2. If the bridge has not written a heartbeat in the last 30 seconds, it starts the bridge service: `open.bridge_service`, by default `com.assistant-workbench.bridge` on macOS and `assistant-workbench.service` on Linux. If no service is installed, it starts `awb serve` in the background in its own session (on `open.port` when set), so closing the terminal does not stop it. Install the service so the bridge also starts at login.
+3. It reports a coordinator that is not reachable yet instead of failing. Saved requests are dispatched once it is.
+
+```json
+"open": {
+  "services": ["com.example.paperclip"],
+  "session": "herdr",
+  "session_name": "workbench"
+}
+```
+
+Work runs in the services, not in the window: closing the terminal, or the UI, loses nothing, and the next `awb open` returns to the same place. With `"session": "herdr"` (or `awb open --session herdr`) the UI runs in a persistent [herdr](https://herdr.dev) session named `session_name`. `awb open` starts that session if needed, runs the UI in a workspace called Assistant Workbench, and attaches; your other herdr sessions are not touched. Quitting the UI closes that workspace, and the next open starts it again. Inside a herdr pane, `awb open` runs the UI directly. `awb open --no-tui` only starts services and prints their state as JSON, and `--no-session` ignores the configured session.
 
 ## Harness connection and qualification
 

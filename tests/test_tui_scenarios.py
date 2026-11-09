@@ -100,6 +100,56 @@ async def test_view_filter_does_not_change_prompt_destination(app):
         assert "Select an outcome" in str(ui.query_one("#notice", Static).content)
 
 
+async def test_reopening_the_ui_returns_to_the_same_place(app):
+    alpha = app.store.add_project("Alpha")
+    beta = app.store.add_project("Beta")
+    first = app.store.submit("Alpha first task", "a1", alpha["id"])["request_id"]
+    second = app.store.submit("Alpha second task", "a2", alpha["id"])["request_id"]
+    app.store.submit("Beta task", "b", beta["id"])
+    ui = WorkbenchApp(app.home)
+    async with ui.run_test(size=(120, 36)) as pilot:
+        await pilot.pause()
+        ui.query_one("#project-filter", Select).value = alpha["id"]
+        ui.query_one("#project", Select).value = beta["id"]
+        ui.query_one("#request-search", Input).value = "task"
+        await pilot.pause()
+        await choose_row(ui, pilot, "requests", first)
+        assert ui.selected == ("requests", first)
+    # The window closed. Work done meanwhile is shown, and the view is where it was left.
+    app.store.submit("Alpha third task", "a3", alpha["id"])
+    reopened = WorkbenchApp(app.home)
+    async with reopened.run_test(size=(120, 36)) as pilot:
+        await pilot.pause()
+        assert reopened.query_one(TabbedContent).active == "requests"
+        assert reopened.query_one("#project-filter", Select).value == alpha["id"]
+        assert reopened.query_one("#project", Select).value == beta["id"]
+        assert reopened.query_one("#request-search", Input).value == "task"
+        assert reopened.selected == ("requests", first)
+        table = reopened.query_one("#requests-table", DataTable)
+        assert list(reopened.previous["requests"])[table.cursor_row] == first
+        assert len(reopened.previous["requests"]) == 3 and second in reopened.previous["requests"]
+        assert "Alpha first task" in str(reopened.query_one("#details", Static).content)
+
+
+async def test_an_unreadable_or_outdated_saved_view_starts_from_the_inbox(app):
+    (app.home / "tui-state.json").write_text("{broken")
+    ui = WorkbenchApp(app.home)
+    async with ui.run_test(size=(120, 36)) as pilot:
+        await pilot.pause()
+        assert ui.query_one(TabbedContent).active == "inbox"
+        assert "saved view could not be read" in str(ui.query_one("#notice", Static).content)
+    # A project or request that no longer exists is not restored.
+    (app.home / "tui-state.json").write_text(json.dumps({
+        "tab": "secret-tab", "view": "p_gone", "send": "p_gone", "selected": ["requests", "r_gone"]}))
+    ui = WorkbenchApp(app.home)
+    async with ui.run_test(size=(120, 36)) as pilot:
+        await pilot.pause()
+        assert ui.query_one(TabbedContent).active == "inbox"
+        assert ui.query_one("#project-filter", Select).value == "*"
+        assert ui.query_one("#project", Select).value is Select.NULL
+        assert ui.selected is None
+
+
 async def test_tui_pin_reorders_preserves_selection_and_log_flood(app, project):
     requests = [app.store.submit(f"Report {n}", str(n), project["id"])["request_id"] for n in range(2)]
     outcomes = [Outcomes(app.store).propose(r, f"Saved result {n}", [], f"fixture-{n}", 1) for n, r in enumerate(requests)]

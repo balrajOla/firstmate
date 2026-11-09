@@ -23,6 +23,11 @@ def parser():
     commands.add_parser("doctor")
     commands.add_parser("snapshot")
     commands.add_parser("tui")
+    opened = commands.add_parser("open", help="start whatever is down, then open the terminal UI")
+    opened.add_argument("--session", choices=["herdr"], help="run the UI in a persistent session")
+    opened.add_argument("--no-session", action="store_true", help="ignore open.session in config.json")
+    opened.add_argument("--no-tui", action="store_true", help="only start services and report their state")
+    opened.add_argument("--wait", type=int, default=30, help="seconds to wait for the bridge")
     commands.add_parser("mcp")
     serve = commands.add_parser("serve")
     serve.add_argument("--port", type=int, default=8765)
@@ -208,6 +213,34 @@ def main(argv=None):
                     server.workbench_stop.set()
                     server.server_close()
                 return 0
+            elif args.command == "open":
+                import os
+                from .config import config
+                from .launcher import herdr_session, open_workbench
+
+                settings = config(home)
+
+                def coordinator():
+                    try:
+                        app.dispatch("coordinator.health")
+                        return True
+                    except WorkbenchError:
+                        return False
+
+                status = open_workbench(home, settings, args.wait, coordinator=coordinator)
+                if args.no_tui:
+                    result = status
+                else:
+                    for step in status["steps"]:
+                        print(step["service"] + ": " + step["action"], file=sys.stderr)
+                    session = None if args.no_session else args.session or settings.get("open", {}).get("session")
+                    # Inside a herdr pane the UI already outlives the window.
+                    if session == "herdr" and os.environ.get("HERDR_ENV") != "1":
+                        herdr_session(home, settings.get("open", {}).get("session_name", "workbench"))
+                    from .tui import WorkbenchApp
+
+                    WorkbenchApp(home).run()
+                    return 0
             elif args.command == "tui":
                 from .tui import WorkbenchApp
 
