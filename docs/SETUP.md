@@ -157,7 +157,7 @@ Dependencies are not installed automatically. Package scripts require explicit o
 
 ## WezTerm and service
 
-Install the official WezTerm build for your platform and record its version. A native WezTerm UI has been run in the cloud environment. That evidence does not qualify the user's Mac fonts, shortcuts, configuration, reconnect, sleep or reboot behavior.
+Install the official WezTerm build for your platform and record its version. The Workbench UI has run in native WezTerm on a cloud display and on a macOS desktop at three sizes. Reconnect, sleep and reboot behavior on your desktop still need checking.
 
 For a conventional configuration ending in `return config`:
 
