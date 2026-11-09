@@ -23,7 +23,29 @@ The initial local integration probe was blocked by automatic approval review bec
 
 The small lexical routing demonstration (`evals/routing.json`) now scores 10/10. “Report the architecture review” was classified as design in the earlier report; the lexical policy has since given the leading requested action precedence over subject nouns. The demonstration is not a held-out benchmark. On the 25 held-out cases in `evals/routing-heldout.json`, the optional semantic router (Claude Sonnet 5.5 at low effort, through the official CLI) chose the expected workflow and project in 25 of 25, with no errors and no confident wrong project, where the lexical policy managed 14/25 and 5/25. Mean latency was 15.8 seconds (2026-11-08, isolated Mac run). The same author wrote the labels and the router prompt, the suite is small, and it is not human-calibrated, so this shows the fix on these cases only. A second, adversarial held-out suite (`evals/routing-adversarial.json`, 20 cases written after the router prompt was fixed) adds shared terms with different meanings, misleading workflow words such as "research" or "investigate" in code requests, two pairs of similarly named projects, regressions of past work and unrelated new topics. On 2026-11-09 the semantic router chose the expected project in 20 of 20 cases and the expected workflow in 19 of 20, with no confident wrong project. The one miss, a one-word typo fix labelled simple, was answered as code at confidence 0.6, below the 0.7 threshold, so it would wait for the operator. The lexical policy scored 13/20 and 8/20. Mean latency was 16.0 seconds. The same caveats apply.
 
-A local full Paperclip startup was blocked by its embedded PostgreSQL root restriction; this container also refused a non-root ownership setup. The bridge has been tested against contract fixtures and inspected pinned source, not a running full coordinator here. Genuine signed-in CLI agents, effective model/effort confirmation and native cancellation remain required.
+In the original build container a full Paperclip startup was blocked by its embedded PostgreSQL root restriction. The live macOS run below used the pinned Paperclip as a user service with signed-in Claude Code workers.
+
+## Live macOS run (2026-11-09)
+
+One Apple-silicon Mac, macOS 27, with the release installed into an independent prefix, the pinned Paperclip and the bridge as launchd user services, signed-in Claude Code workers (Sonnet), and local models for the optional services. Every check below ran through public CLI, HTTP or TUI interfaces. None of it is human review.
+
+| Area | Observed | Result |
+|---|---|---|
+| Test suite | 584 unique tests, including the real Temporal server, TypeScript, Rust, installed CLI, Basic Memory, LCM and QMD (with local GGUF models) probes | all passed, none skipped |
+| Workflows | simple, code, design, report and research requests each ran end to end with real workers and produced one unverified outcome | passed |
+| Website | a repair-cafe site plus separate search and filter changes, built by workers, checked in a real browser (keyboard paths, empty states, URL state, malformed input, reset) | passed; the two changes need a manual merge |
+| Research | a sourced report checked claim by claim: 20 quotes, 41 numbers and every cited section matched the converted papers | passed |
+| Independent review | a worker asked only to review code against its spec found a deliberately seeded defect; its regression test fails on the original; a separate QA agent verified the fix | passed |
+| Mid-run change | amend during a running worker, stale amendment refused, grouped demand withdrawn, request cancelled; earlier-revision run cancelled 2.2 s after the amendment | passed (after the fix in #34) |
+| Stop and recovery | bridge killed with SIGKILL during delivery and restarted: no duplicate issues or runs; cancelling a running request stopped its run in 1.1 s and left no process | passed |
+| Install lifecycle | fresh, repeat, upgrade, rollback, backup, uninstall, restore and reinstall at a new prefix (paths with spaces); generated launchd service ran and unloaded | passed |
+| Schedules | 60 missed ticks coalesced to one request; restart, next interval, pause, and two concurrent bridges giving one request per tick | passed |
+| Routing | 45 held-out cases over two author-labeled suites | project 45/45, workflow 44/45, no confident wrong project |
+| Local services | Hindsight, OpenViking, Open Notebook (Ask with citations) and GPT Researcher with local models; Vale and Promptfoo procedures | passed; one GPT Researcher citation pointed at the wrong page |
+| Terminal | native WezTerm at about 80x24, 120x36 and 160x48 with real screenshots | passed; real keystroke, reconnect, sleep and reboot not observed |
+| Soak | 10 hours, 11 cycles, 220 intake prompts, 11 live requests | no lost prompts, no unhealthy cycles; stopped before 72 hours by the operator |
+
+Defects found during this run were fixed with regression tests in #17–#35. Not observed: Codex workers through Paperclip (its CLI engine needs a file-based Codex sign-in that the test machine did not use), a mobile build, two physical hosts, human-calibrated judging, a 72-hour soak and login-time service start.
 
 ## Required target-machine journeys
 
