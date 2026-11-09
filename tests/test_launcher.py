@@ -257,18 +257,24 @@ def test_open_settings_are_validated(app, open_settings, error):
         config(app.home)
 
 
-def test_open_without_the_ui_reports_the_state_as_json(app, monkeypatch, capsys):
-    heartbeat(app.home)
+@pytest.fixture
+def offline(monkeypatch):
+    """CLI runs: no real service manager, port probe or process."""
     monkeypatch.setattr(launcher, "_answers", lambda url: True)
+    monkeypatch.setattr(launcher, "manager", lambda: None)
+    monkeypatch.setattr(launcher.subprocess, "Popen", lambda *a, **k: pytest.fail("started a real process"))
+
+
+def test_open_without_the_ui_reports_the_state_as_json(app, offline, capsys):
+    heartbeat(app.home)
     assert cli.main(["--home", str(app.home), "open", "--no-tui", "--wait", "1"]) == 0
     result = json.loads(capsys.readouterr().out)
     assert result["steps"] == [{"service": "bridge", "action": "already running"}]
     assert "coordinator" in result
 
 
-def test_inside_a_herdr_pane_open_runs_the_ui_directly(app, monkeypatch):
+def test_inside_a_herdr_pane_open_runs_the_ui_directly(app, offline, monkeypatch):
     heartbeat(app.home)
-    monkeypatch.setattr(launcher, "_answers", lambda url: True)
     monkeypatch.setenv("HERDR_ENV", "1")
     monkeypatch.setattr(launcher, "herdr_session", lambda *a, **k: pytest.fail("nested herdr session"))
     import assistant_workbench.tui as tui

@@ -110,7 +110,7 @@ def _answers(url):
         return False
 
 
-def bridge_alive(home, answers=_answers):
+def bridge_alive(home, answers=None):
     """A bridge is up when its loop wrote a heartbeat in the last 30 seconds
     and the port it recorded answers."""
     try:
@@ -118,6 +118,7 @@ def bridge_alive(home, answers=_answers):
         service = read_json(home / "service.json", {})
     except WorkbenchError:
         return False
+    answers = answers or _answers
     at = health.get("at") if isinstance(health, dict) else None
     url = service.get("url") if isinstance(service, dict) else None
     return isinstance(at, (int, float)) and 0 <= now() - at < 30 and isinstance(url, str) and answers(url)
@@ -143,10 +144,11 @@ def _wait(check, seconds, sleep):
     return True
 
 
-def open_workbench(home, settings, wait=30, services=None, popen=subprocess.Popen,
-                   sleep=time.sleep, answers=_answers, coordinator=None, free=_free):
+def open_workbench(home, settings, wait=30, services=None, popen=None,
+                   sleep=time.sleep, answers=None, coordinator=None, free=None):
     """Start what is down and report what is up."""
     home = Path(home)
+    popen, answers, free = popen or subprocess.Popen, answers or _answers, free or _free
     opened = settings.get("open", {})
     services = services or Services()
     steps = [services.ensure(name) for name in opened.get("services", [])]
