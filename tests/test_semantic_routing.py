@@ -1,6 +1,8 @@
 """Opt-in semantic routing with a scripted CLI; not evidence of model quality."""
 
 import json
+import subprocess
+from pathlib import Path
 
 import pytest
 from assistant_workbench import routing
@@ -218,3 +220,100 @@ def test_plan_preview_shows_the_team_delivery_would_choose(app, project, semanti
     assert app.dispatch("request.plan", {"request_id": request, "kind": "report"})["workflow"] == "report"
     assert Engine(app.store, FakePaperclip()).tick()["status"] == "delivered"
     assert len(cli.calls) == 1
+
+
+@pytest.fixture
+def creating(app, semantic, tmp_path):
+    """Semantic routing that may start projects under a chosen root."""
+    semantic["routing"]["semantic"].update(create_projects=True, projects_root=str(tmp_path / "my projects"))
+    (app.home / "config.json").write_text(json.dumps(semantic))
+    return semantic
+
+
+def named(app, name):
+    rows = app.store.rows("SELECT * FROM projects WHERE name=?", (name,))
+    return rows[0] if rows else None
+
+
+def new(name, workflow="code", confidence=0.9):
+    return {**answer(workflow=workflow, confidence=confidence), "new_project": name}
+
+
+def test_new_work_gets_its_own_git_project_and_later_prompts_join_it(app, project, creating, tmp_path):
+    first = app.store.submit("Build a website for my bakery with an order form", "b1")["request_id"]
+    cli = ScriptedCLI(new("Bakery website"))
+    result = routing.route_pending(app.store, creating, runner=cli)
+    created = named(app, "Bakery website")
+    assert result["routed"][0] == {"request_id": first, "assigned": True, "project_id": created["id"], "error": None}
+    repo = tmp_path / "my projects/bakery-website"
+    assert created["repository"] == str(repo.resolve())
+    log = subprocess.run(["git", "-C", str(repo), "log", "--format=%s"], capture_output=True, text=True).stdout
+    assert log.strip() == "Start Bakery website"
+    assert ".paperclip/" in (repo / ".git/info/exclude").read_text()
+    assert app.store.one("SELECT status FROM requests WHERE id=?", (first,))["status"] == "queued"
+    assert app.store.rows("SELECT * FROM events WHERE kind='project.created_by_routing'")
+    # The model saw the choice it may make.
+    prompt = cli.calls[0]["argv"][cli.calls[0]["argv"].index("-p") + 1]
+    assert '"new_project"' in prompt and "deserves its own project" in prompt
+    # A follow-up that the model names the same way joins the project instead of copying it.
+    second = app.store.submit("Add opening hours to the bakery site", "b2")["request_id"]
+    routing.route_pending(app.store, creating, runner=ScriptedCLI(new("bakery WEBSITE")))
+    assert app.store.one("SELECT project_id FROM requests WHERE id=?", (second,))["project_id"] == created["id"]
+    assert [p.name for p in (tmp_path / "my projects").iterdir()] == ["bakery-website"]
+
+
+def test_a_one_off_question_goes_to_the_general_project(app, project, creating):
+    ids = [app.store.submit(text, key)["request_id"] for key, text in
+           (("q1", "What is the capital of Australia?"), ("q2", "Explain HTTP caching in three sentences"))]
+    for request_id in ids:
+        routing.route_pending(app.store, creating, runner=ScriptedCLI(answer(workflow="simple")))
+    general = named(app, "General")
+    assert general["repository"] is None
+    assert {r["project_id"] for r in app.store.rows("SELECT project_id FROM requests WHERE id IN (?,?)", ids)} == {
+        general["id"]}
+    assert len(app.store.rows("SELECT * FROM projects WHERE name='General'")) == 1
+
+
+def test_an_unsure_router_creates_nothing(app, project, creating, tmp_path):
+    pending = app.store.submit("Make it better", "u")["request_id"]
+    routing.route_pending(app.store, creating, runner=ScriptedCLI(new("Better things", confidence=0.5)))
+    assert app.store.one("SELECT status FROM requests WHERE id=?", (pending,))["status"] == "needs_project"
+    assert not (tmp_path / "my projects").exists() and named(app, "Better things") is None
+
+
+def test_without_create_projects_a_proposed_project_is_ignored(app, project, semantic):
+    pending = app.store.submit("Build a bakery website", "n")["request_id"]
+    cli = ScriptedCLI(new("Bakery website"))
+    routing.route_pending(app.store, semantic, runner=cli)
+    assert app.store.one("SELECT status FROM requests WHERE id=?", (pending,))["status"] == "needs_project"
+    assert named(app, "Bakery website") is None and named(app, "General") is None
+    prompt = cli.calls[0]["argv"][cli.calls[0]["argv"].index("-p") + 1]
+    assert "new_project" not in prompt
+
+
+@pytest.mark.parametrize("name, folder", [
+    ("../../etc/passwd", "etc-passwd"),
+    ("Café ☕ Orders", "caf-orders"),
+    ("☕", "project"),
+], ids=["traversal", "unicode", "symbols-only"])
+def test_project_folders_stay_inside_the_root(app, project, creating, tmp_path, name, folder):
+    app.store.submit("Start this new work", "f")
+    routing.route_pending(app.store, creating, runner=ScriptedCLI(new(name)))
+    assert [p.name for p in (tmp_path / "my projects").iterdir()] == [folder]
+    assert Path(named(app, name)["repository"]).parent == (tmp_path / "my projects").resolve()
+
+
+def test_an_unusable_new_project_name_never_routes(app, project, creating, tmp_path):
+    pending = app.store.submit("Build something", "x")["request_id"]
+    result = routing.route_pending(app.store, creating, runner=ScriptedCLI(new("   ")))
+    assert "unusable new project" in result["routed"][0]["error"]
+    assert app.store.one("SELECT status FROM requests WHERE id=?", (pending,))["status"] == "needs_project"
+
+
+def test_project_creation_settings_are_validated(semantic):
+    base = {"profile": "router"}
+    for extra, error in (({"create_projects": "yes"}, "create_projects"),
+                         ({"projects_root": "relative/dir"}, "projects_root"),
+                         ({"general_project": ""}, "general_project")):
+        with pytest.raises(Exception, match=error):
+            routing.semantic_settings({"routing": {"semantic": {**base, **extra}}})

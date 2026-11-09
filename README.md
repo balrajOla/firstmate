@@ -35,7 +35,7 @@ A deliverable from the same run: workers built a small repair-café website and 
 | Area | What you get |
 |---|---|
 | Requests | Send prompts while work runs. Each prompt is saved before anything else happens. Requests can be amended (stale edits are refused), grouped, withdrawn, cancelled, reopened and paused per project. |
-| Routing | Explicit project links and names, plus an optional semantic router that uses your signed-in CLI and explains each choice. Low-confidence choices wait for you. |
+| Routing | Explicit project links and names, plus a semantic router that uses your signed-in CLI and explains each choice. It continues an existing project, starts a new git-backed project for new work, or files one-off questions under General. Low-confidence choices wait for you. Each worker task carries the project's recent requests and results. |
 | Teams | Five workflows (`simple`, `code`, `design`, `report`, `research`) compile into small dependency graphs with roles, a qualified model profile and bounded limits. |
 | Coordinators | [Paperclip](https://github.com/paperclipai/paperclip) by default, or Temporal. Workers run the official Claude Code or Codex CLI on the CLI engine, with permission bypass always off and a private branch per task. |
 | Review | Worker reports become one unverified outcome per request. A reviewer agent checks the author's work, and nothing counts as accepted until you accept it. |
@@ -90,7 +90,7 @@ curl -fsSL https://raw.githubusercontent.com/balrajOla/firstmate/main/install.sh
 
 Or from a clone: `git clone https://github.com/balrajOla/firstmate.git && cd firstmate && ./install.sh`. Run it again later to upgrade; every step that is already done is skipped.
 
-Before you run it, have git (on macOS, `xcode-select --install`) and sign in to at least one agent CLI. The installer uses the sign-in you already have and never reads or copies it:
+Before you run it, have git (on macOS, `xcode-select --install`), about 6 GB of free disk space for Paperclip and its build tools, and sign in to at least one agent CLI. The installer uses the sign-in you already have and never reads or copies it:
 
 | Agent | Sign-in that works |
 |---|---|
@@ -105,7 +105,7 @@ What it does:
    - installs Node.js 24, pnpm and rustup under the Workbench home when the machine has no suitable copy (pinned versions, checked against recorded checksums);
    - builds [Paperclip](https://github.com/paperclipai/paperclip) at its pinned commit, onboards it for trusted local use with its telemetry off, creates its company and turns on isolated workspaces;
    - adds a profile for each signed-in agent CLI and checks it with one short prompt;
-   - turns on semantic routing when Claude is ready, so prompts find their project by themselves;
+   - turns on semantic routing when Claude is ready, so each prompt continues the right project, starts a new git-backed project for new work, or goes to General when it is a one-off;
    - installs the Paperclip and bridge services (launchd on macOS, `systemd --user` on Linux) so they start at login;
    - binds Ctrl+Shift+A in WezTerm, if WezTerm is installed.
 4. Prints what each step did. Then run `awb open`.

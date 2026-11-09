@@ -405,9 +405,41 @@ class Engine:
             raise SupersededDelivery("Request superseded during delivery")
         return current
 
+    def _project_history(self, req, project, budget):
+        """Earlier requests in the same project and the first line of each
+        latest outcome, newest first, so a worker continues the project's work
+        instead of starting blind. Only requests saved before this one count,
+        so the text stays the same each time this request is planned."""
+        rows = self.store.rows(
+            "SELECT r.id, r.title, r.status, o.status AS outcome_status, o.body AS outcome "
+            "FROM requests r LEFT JOIN outcomes o ON o.id = (SELECT id FROM outcomes WHERE request_id=r.id "
+            "ORDER BY created DESC LIMIT 1) WHERE r.project_id=? AND r.id<>? AND r.created<? "
+            "AND r.status NOT IN ('cancelled','grouped') ORDER BY r.created DESC LIMIT 8",
+            (project["id"], req["id"], req["created"]),
+        )
+        lines = []
+        for row in rows:
+            line = "- " + row["title"][:160] + " (" + row["status"] + ", ticket " + row["id"] + ")"
+            summary = next((l.strip() for l in (row["outcome"] or "").splitlines() if l.strip()), "")
+            if summary:
+                state = "accepted" if row["outcome_status"] == "accepted" else "unverified"
+                line += "\n  Result (" + state + "): " + summary[:300]
+            lines.append(line)
+        text = ""
+        for line in lines:
+            if len(text) + len(line) + 1 > budget:
+                break
+            text += line + "\n"
+        if not text:
+            return ""
+        return ("\n\n## Project history\nEarlier requests in this project, newest first. Results are the "
+                "workers' own reports unless accepted; check the repository for the current state.\n" + text)
+
     def _execution_packet(self, req, project, plan, node):
+        budget = min(4000, plan["limits"]["context_chars"] // 4)
         return (
             req["body"]
+            + self._project_history(req, project, budget)
             + "\n\n## Workbench execution contract\n"
             + canonical(
                 {
