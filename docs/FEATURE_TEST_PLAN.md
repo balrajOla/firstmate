@@ -133,10 +133,10 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 |---|---|---:|---|
 | [PF01](#pf01) | Concurrent prompt inbox; submit while work runs | 4 | `journey`, `workers` |
 | [PF02](#pf02) | Durable original prompts and receipts | 5 | `journey` |
-| [PF03](#pf03) | Context-aware project routing | 19 | `journey`, `benchmark` |
+| [PF03](#pf03) | Context-aware project routing | 30 | `journey`, `benchmark` |
 | [PF04](#pf04) | Compatible request grouping without lost identities | 10 | `journey` |
 | [PF05](#pf05) | Multiple deliverables tracked separately | 8 | `journey`, `workers` |
-| [PF06](#pf06) | New projects and historical reopening | 6 | `journey` |
+| [PF06](#pf06) | New projects and historical reopening | 11 | `journey` |
 | [PF07](#pf07) | Explainable/correctable routing and bounded clarification | 4 | `journey` |
 | [PF08](#pf08) | Ordered amendments and retry identity | 8 | `journey` |
 | [PF09](#pf09) | Durable project portfolio and priorities | 2 | `journey`, `capacity` |
@@ -155,7 +155,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF22](#pf22) | QMD exact/semantic scoped retrieval | 10 | `qmd_exact`, `qmd_semantic` |
 | [PF23](#pf23) | Whole-corpus coverage accounting | 1 | `corpus` |
 | [PF24](#pf24) | Facts, decisions, contradictions and supersession | 6 | `corpus`, `writing` |
-| [PF25](#pf25) | Bounded current-context assembly | 5 | `corpus`, `recovery` |
+| [PF25](#pf25) | Bounded current-context assembly | 7 | `corpus`, `recovery` |
 | [PF26](#pf26) | Export, invalidation, retention and deletion | 11 | `retention` |
 | [PF27](#pf27) | One replaceable runtime backend | 15 | `coordinator` |
 | [PF28](#pf28) | Real readiness and capability health | 16 | `models`, `coordinator` |
@@ -299,6 +299,10 @@ Mapped pytest evidence:
 - `tests/test_semantic_routing.py::test_invalid_answers_never_route[unknown-workflow]`
 - `tests/test_semantic_routing.py::test_invalid_answers_never_route[confidence]`
 - `tests/test_semantic_routing.py::test_invalid_answers_never_route[no-explanation]`
+- `tests/test_semantic_routing.py::test_a_one_off_question_goes_to_the_general_project`
+- `tests/test_semantic_routing.py::test_an_unsure_router_creates_nothing`
+- `tests/test_semantic_routing.py::test_without_create_projects_a_proposed_project_is_ignored`
+- `tests/test_semantic_routing.py::test_project_creation_settings_are_validated`
 
 ### PF04
 
@@ -380,6 +384,11 @@ Mapped pytest evidence:
 - `tests/test_requirement_scenarios.py::test_last_group_withdrawal_cannot_reopen_a_blank_scope`
 - `tests/test_tui_scenarios.py::test_tui_new_external_project_and_older_request_search`
 - `tests/test_scenario_runner.py::test_conflicting_requirements_group_identity_and_stale_rejection_are_observed`
+- `tests/test_semantic_routing.py::test_new_work_gets_its_own_git_project_and_later_prompts_join_it`
+- `tests/test_semantic_routing.py::test_project_folders_stay_inside_the_root[traversal]`
+- `tests/test_semantic_routing.py::test_project_folders_stay_inside_the_root[unicode]`
+- `tests/test_semantic_routing.py::test_project_folders_stay_inside_the_root[symbols-only]`
+- `tests/test_semantic_routing.py::test_an_unusable_new_project_name_never_routes`
 
 ### PF07
 
@@ -903,6 +912,8 @@ Mapped pytest evidence:
 - `tests/test_execution.py::test_oversized_packet_is_not_silently_truncated`
 - `tests/test_scenario_runner.py::test_scope_and_context_budget_checks_do_not_claim_execution_rollover`
 - `tests/test_engine_preflight.py::test_every_node_packet_is_checked_before_any_remote_mutation`
+- `tests/test_paperclip_contract.py::test_workers_see_the_projects_earlier_requests_and_results`
+- `tests/test_paperclip_contract.py::test_project_history_fits_its_share_of_the_context_budget`
 
 ### PF26
 

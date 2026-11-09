@@ -629,3 +629,42 @@ def test_terminated_agents_do_not_hold_pool_capacity(app, project, configured):
                             "adapterType": "process", "adapterConfig": {}})
     app.store.submit("Fix bug", "a", project["id"])
     assert Engine(app.store, api).tick()["status"] == "delivered"
+
+
+def test_workers_see_the_projects_earlier_requests_and_results(app, project, configured):
+    from assistant_workbench.quality import Outcomes
+
+    official_cli_profile(app, configured)
+    api = PinnedPaperclip()
+    engine = Engine(app.store, api)
+    first = app.store.submit("Add a login form", "h1", project["id"])["request_id"]
+    engine.tick()
+    Outcomes(app.store).propose(first, "The login form validates email and password.\nDetails follow.", [], "fixture", 1)
+    dropped = app.store.submit("Add a dark mode", "h2", project["id"])["request_id"]
+    app.store.cancel(dropped)
+    second = app.store.submit("Add a password reset link to the login form", "h3", project["id"])["request_id"]
+    for _ in range(4):  # the cancellation and the delivery each take a tick
+        engine.tick()
+    app.store.submit("Add a footer", "h4", project["id"])
+    description = next(i["description"] for i in api.issues_.values() if second in i["idempotencyKey"])
+    history = description.split("## Project history\n", 1)[1].split("\n\n## ", 1)[0]
+    assert "Add a login form (needs_review, ticket " + first + ")" in history
+    assert "Result (unverified): The login form validates email and password." in history
+    assert "Details follow" not in history and "dark mode" not in history
+    # Requests saved later never change an earlier request's task text.
+    assert "footer" not in description
+    # The first request had no history.
+    first_description = next(i["description"] for i in api.issues_.values() if first in i["idempotencyKey"])
+    assert "## Project history" not in first_description
+
+
+def test_project_history_fits_its_share_of_the_context_budget(app, project, configured):
+    official_cli_profile(app, configured)
+    for n in range(8):
+        app.store.submit("Earlier request " + str(n) + " " + "x" * 150, "e" + str(n), project["id"])
+    request = app.store.submit("The newest request", "new", project["id"])["request_id"]
+    engine = Engine(app.store, PinnedPaperclip())
+    req = app.store.one("SELECT * FROM requests WHERE id=?", (request,))
+    history = engine._project_history(req, project, 600)
+    assert 0 < len(history) - len(history.split("\n- ", 1)[0]) <= 600 + 2
+    assert history.count("\n- ") < 8 and "Earlier request 7" in history

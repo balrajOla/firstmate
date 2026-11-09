@@ -16,6 +16,7 @@ import os
 import re
 import shutil
 import time
+from pathlib import Path
 
 from .integrations import run_process
 from .policy import TEMPLATES, classification
@@ -42,20 +43,39 @@ def semantic_settings(settings):
     threshold = spec.get("min_confidence", 0.7)
     if not isinstance(threshold, (int, float)) or isinstance(threshold, bool) or not 0 <= threshold <= 1:
         raise WorkbenchError("routing.semantic.min_confidence must be between 0 and 1")
-    return {"profile": spec["profile"], "min_confidence": float(threshold)}
+    create = spec.get("create_projects", False)
+    if not isinstance(create, bool):
+        raise WorkbenchError("routing.semantic.create_projects must be true or false")
+    root = spec.get("projects_root")
+    if root is not None and (not isinstance(root, str) or not Path(root).expanduser().is_absolute()):
+        raise WorkbenchError("routing.semantic.projects_root must be an absolute path")
+    general = spec.get("general_project", "General")
+    if not isinstance(general, str) or not 0 < len(general.strip()) <= 160:
+        raise WorkbenchError("routing.semantic.general_project must be a project name")
+    return {"profile": spec["profile"], "min_confidence": float(threshold), "create_projects": create,
+            "projects_root": root, "general_project": general.strip()}
 
 
-def _prompt(text, projects, assigned=None):
+def _prompt(text, projects, assigned=None, create=False):
     if assigned:
         # The operator's project choice stands; only the workflow is open.
         name = next((p["name"] for p in projects if p["id"] == assigned), assigned)
         choose = ("This request is already assigned to project " + assigned + " (" + json.dumps(name)
                   + "). Answer with that project id, choose only the workflow, and give your confidence in the workflow.")
+    elif create:
+        choose = ("Choose a project from its name, aliases and recent requests when the request continues its work. "
+                  "If the request starts a separate piece of work that deserves its own project, such as a new app, "
+                  "website, document set or study, answer project null and new_project with a short name for it "
+                  "(two to five words). If it is a one-off question or task that belongs to no project, answer "
+                  "project null and new_project null. Your confidence covers this choice and the workflow.")
     else:
         choose = "Choose the project from its name, aliases and recent requests. Use null when no project clearly fits."
+    fields = '{"project": "<a project id below, or null>", '
+    if create and not assigned:
+        fields += '"new_project": "<a short name, or null>", '
     lines = [
         "You route one saved request for Assistant Workbench. Answer with one JSON object and nothing else:",
-        '{"project": "<a project id below, or null>", "workflow": "<' + "|".join(TEMPLATES)
+        fields + '"workflow": "<' + "|".join(TEMPLATES)
         + '>", "confidence": <number from 0 to 1>, "explanation": "<one sentence>"}',
         "",
         choose,
@@ -136,7 +156,8 @@ def decide(store, settings, request, runner=None):
         for p in store.rows("SELECT * FROM projects ORDER BY name")
     ]
     assigned = request.get("project_id")
-    prompt = _prompt(request["body"], projects, assigned)
+    create = spec["create_projects"] and not assigned
+    prompt = _prompt(request["body"], projects, assigned, create)
     argv = [executable, "-p", prompt, "--model", model["model"], "--output-format", "json",
             "--max-turns", "1", "--tools", "", *claude_args(model)]
     if model["effort"] != "default":
@@ -162,11 +183,22 @@ def decide(store, settings, request, runner=None):
     explanation = str(answer.get("explanation") or "").strip()[:500]
     if not explanation:
         raise WorkbenchError("The routing answer had no explanation")
+    new_project = None
+    if create and project is None and answer.get("new_project") is not None:
+        new_project = " ".join(str(answer["new_project"]).split())[:60].strip()
+        if not new_project or any(ord(c) < 32 for c in new_project):
+            raise WorkbenchError("The routing answer named an unusable new project")
+        # A proposed name that is already a project means that project.
+        same = next((p for p in projects if p["name"].casefold() == new_project.casefold()), None)
+        if same:
+            project, new_project = same["id"], None
     return {
         "method": "semantic policy (official CLI)",
         "profile": model["id"],
         "effective_models": effective,
         "project_id": project,
+        "new_project": new_project,
+        "one_off": bool(create and project is None and new_project is None),
         "workflow": answer["workflow"],
         "confidence": float(confidence),
         "explanation": explanation,
@@ -228,9 +260,55 @@ def route_pending(store, settings, limit=1, runner=None):
         if len(routed) >= limit:
             break
         decision = decision_for(store, settings, request, runner)
-        assigned = bool(decision.get("confident") and decision.get("project_id"))
-        if assigned:
-            store.assign(request["id"], decision["project_id"])
-        routed.append({"request_id": request["id"], "assigned": assigned,
-                       "project_id": decision.get("project_id"), "error": decision.get("error")})
+        project_id = decision.get("project_id") if decision.get("confident") else None
+        spec = semantic_settings(settings)
+        if decision.get("confident") and not project_id and spec["create_projects"]:
+            if decision.get("new_project"):
+                root = Path(spec["projects_root"] or store.home / "projects").expanduser()
+                project_id = create_project(store, root, decision["new_project"], request)["id"]
+            elif decision.get("one_off"):
+                project_id = general_project(store, spec["general_project"])["id"]
+        if project_id:
+            store.assign(request["id"], project_id)
+        routed.append({"request_id": request["id"], "assigned": bool(project_id),
+                       "project_id": project_id, "error": decision.get("error")})
     return {"routed": routed}
+
+
+def _git(path, *args):
+    result = run_process(["git", "-C", str(path), *args], timeout=60, allowed_codes=range(-255, 256))
+    if result["exit_code"]:
+        raise WorkbenchError("git " + args[0] + " failed: " + (result["stderr"] or result["stdout"]).strip()[-300:])
+
+
+def create_project(store, root, name, request):
+    """A new project for work the router judged separate: a git repository under
+    root with one commit, so its workers get isolated worktrees and history."""
+    existing = store.rows("SELECT * FROM projects WHERE lower(name)=lower(?)", (name,))
+    if existing:
+        return existing[0]
+    slug = re.sub(r"[^a-z0-9]+", "-", name.lower()).strip("-")[:48] or "project"
+    root.mkdir(parents=True, exist_ok=True)
+    path, n = root / slug, 2
+    while path.exists():
+        path, n = root / (slug + "-" + str(n)), n + 1
+    path.mkdir()
+    _git(path, "init", "-q")
+    (path / "README.md").write_text("# " + name + "\n\nStarted by Assistant Workbench for: "
+                                    + request["title"][:200] + "\n")
+    with open(path / ".git/info/exclude", "a") as exclude:
+        exclude.write(".paperclip/\n")  # Paperclip's task worktrees
+    _git(path, "add", "README.md")
+    _git(path, "-c", "user.name=Assistant Workbench", "-c", "user.email=assistant-workbench@localhost",
+         "commit", "-q", "-m", "Start " + name)
+    project = store.add_project(name, str(path))
+    with store.transaction() as db:
+        store.event(db, "project.created_by_routing", project["id"],
+                    {"request": request["id"], "name": name, "repository": str(path)})
+    return project
+
+
+def general_project(store, name):
+    """The project for one-off work, without a repository."""
+    found = store.rows("SELECT * FROM projects WHERE lower(name)=lower(?)", (name,))
+    return found[0] if found else store.add_project(name)

@@ -83,6 +83,26 @@ Each request revision then gets one tool-less `claude -p` call. The call sees th
 - **Explicit choices.** An explicit project, a reply link or a saved plan always takes precedence.
 - **Correction.** Run `request.route` with `force: true` to ask again, or `request.assign` and a saved plan to correct the decision.
 
+### New projects and one-off work
+
+With `"create_projects": true` the router can also decide that a prompt starts new work or is a one-off:
+
+```json
+{"routing": {"semantic": {"profile": "my-claude-router", "min_confidence": 0.7, "create_projects": true,
+                          "projects_root": "/absolute/path/projects", "general_project": "General"}}}
+```
+
+- **Continues a project.** It is assigned to that project, as above.
+- **Starts separate work** (a new app, website, document set or study). The router proposes a short name. A confident proposal creates a git repository under `projects_root` (default `<home>/projects`) with a README and one commit, with `.paperclip/` excluded, registers it as a project, and assigns the request; `project.created_by_routing` records it. A later prompt the router names the same way, ignoring case, joins that project instead of creating another. Folder names are reduced to lowercase letters, digits and hyphens inside the root.
+- **One-off question or task.** It goes to `general_project`, created without a repository the first time.
+- **Low confidence.** Nothing is created; the request waits in *Choose project*.
+
+Without `create_projects` the prompt and behavior are as before. `awb setup` turns it on when it turns on semantic routing.
+
+### Project history for workers
+
+Every task a worker receives includes a *Project history* section: up to eight earlier requests in the same project, newest first, with their state, ticket and the first line of their latest outcome, marked accepted or unverified. It takes at most a quarter of `limits.context_chars` (and at most 4,000 characters), and it lists only requests saved before the one being worked, so a request's task text does not change when later prompts arrive. Cancelled and grouped requests are left out. Workers are told to check the repository for the current state.
+
 Each decision costs one model call (about 21k context tokens on the test machine, mostly cacheable) and took about 16 seconds. `evaluation.semantic_routing` runs the router over a suite such as `evals/routing-heldout.json` in a throwaway store and records misses beside the lexical policy.
 
 ## Optional Temporal backend and fleet

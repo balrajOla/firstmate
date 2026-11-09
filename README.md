@@ -35,7 +35,7 @@ A deliverable from the same run: workers built a small repair-café website and 
 | Area | What you get |
 |---|---|
 | Requests | Send prompts while work runs. Each prompt is saved before anything else happens. Requests can be amended (stale edits are refused), grouped, withdrawn, cancelled, reopened and paused per project. |
-| Routing | Explicit project links and names, plus an optional semantic router that uses your signed-in CLI and explains each choice. Low-confidence choices wait for you. |
+| Routing | Explicit project links and names, plus a semantic router that uses your signed-in CLI and explains each choice. It continues an existing project, starts a new git-backed project for new work, or files one-off questions under General. Low-confidence choices wait for you. Each worker task carries the project's recent requests and results. |
 | Teams | Five workflows (`simple`, `code`, `design`, `report`, `research`) compile into small dependency graphs with roles, a qualified model profile and bounded limits. |
 | Coordinators | [Paperclip](https://github.com/paperclipai/paperclip) by default, or Temporal. Workers run the official Claude Code or Codex CLI on the CLI engine, with permission bypass always off and a private branch per task. |
 | Review | Worker reports become one unverified outcome per request. A reviewer agent checks the author's work, and nothing counts as accepted until you accept it. |
