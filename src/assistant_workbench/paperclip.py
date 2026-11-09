@@ -140,6 +140,21 @@ class Paperclip:
             {},
         )
 
+    def pause_agent(self, identity):
+        """Pausing also cancels the agent's active run."""
+        return self.request("POST", "/agents/" + urllib.parse.quote(identity, safe="") + "/pause", {})
+
+    def resume_agent(self, identity):
+        return self.request("POST", "/agents/" + urllib.parse.quote(identity, safe="") + "/resume", {})
+
+    def retry_issue(self, identity, idempotency_key, observed_run):
+        """Paperclip's own task retry: refused as stale unless observed_run is
+        still the task's latest run, and replayed for the same key."""
+        return self.request(
+            "POST", "/issues/" + urllib.parse.quote(identity, safe="") + "/retry",
+            {"idempotencyKey": idempotency_key, "observedRunId": observed_run},
+        )
+
     def experimental_settings(self):
         return self.request("GET", "/instance/settings/experimental")
 

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import sqlite3
+import time
 from pathlib import Path
 
 from rich.text import Text
@@ -412,8 +413,17 @@ class WorkbenchApp(App):
             if lease["state"] in {"leased", "running", "cancel_requested", "uncertain"}:
                 detail = {**lease, "notice": "Uncertain leases continue to occupy capacity until a worker stop receipt reconciles them."}
                 fleet_rows.append(("lease:" + lease["id"], ["Lease " + self.ticket(lease["request_id"]), lease["state"], lease["host_id"] + " / " + lease["task_key"]], detail))
+        network = self._diagnostic("network-health.json", {"status": "not observed"})
+        offline = network.get("status") == "offline"
+        since = network.get("since")
+        network_detail = (
+            "Providers unreachable" + (" since " + time.strftime("%H:%M", time.localtime(since)) if isinstance(since, (int, float)) else "")
+            + "; work is paused and resumes automatically" if offline
+            else "Providers reachable; interrupted tasks are retried automatically" if network.get("status") == "online"
+            else "Checked by the bridge")
         self.table("health", [
             ("bridge", ["Bridge", health.get("status"), health.get("reason", "")], health),
+            ("network", ["Network", network.get("status"), network_detail], network),
             ("observations", ["Agent state", "unavailable" if stale else "See Teams", observed_health.get("reason", "Only coordinator observations count as live state")], observed_health),
             ("release", ["Release", "Experimental", "Live harness and real GUI qualification required"], {"notice": "Headless TUI tests do not qualify WezTerm or a model."}),
         ] + fleet_rows + [(name, [name, "Unreadable", error], {"error": error}) for name, error in self._diagnostic_errors.items()])
@@ -431,7 +441,7 @@ class WorkbenchApp(App):
         elif self.selected:
             self._show_selected(reset_scroll=False)
         total = store.one("SELECT COUNT(*) AS n FROM requests WHERE (?='*' OR project_id=?)", (scope, scope))["n"]
-        self.sub_title = f"{len(snapshot['projects'])} projects • {len(filtered_requests)}/{total} requests shown • {len(blocked)} blocked/retrying"
+        self.sub_title = ("OFFLINE, work paused • " if offline else "") + f"{len(snapshot['projects'])} projects • {len(filtered_requests)}/{total} requests shown • {len(blocked)} blocked/retrying"
         self._save_view()
 
     def _show_selected(self, reset_scroll=False):

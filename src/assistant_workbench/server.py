@@ -140,6 +140,16 @@ def make_server(home, port=0, background=False):
             while not stopped.is_set():
                 try:
                     app.scheduled()
+                    network = app.dispatch("network.check")
+                    atomic(home / "network-health.json", canonical({**network, "at": now()}))
+                    if network["status"] == "offline":
+                        # Prompts are still saved; nothing is dispatched or
+                        # routed until the providers answer again.
+                        atomic(home / "bridge-health.json", canonical({
+                            "status": "offline", "at": now(), "since": network.get("since"),
+                            "reason": "The agents' providers are unreachable; work is paused and resumes automatically"}))
+                        stopped.wait(2)
+                        continue
                     try:
                         # One unresolved request per pass, when semantic
                         # routing is configured; a no-op otherwise. A routing

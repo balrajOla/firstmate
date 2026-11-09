@@ -6,11 +6,33 @@ import shlex
 import sys
 import time
 import fcntl
+import uuid
 from .config import config
 from .paperclip import Paperclip, CoordinatorError
 from .policy import TEMPLATES, compile_plan, select_model, validate_plan
 from .runtime_backends import select_runtime
 from .util import WorkbenchError, canonical, digest, now, uid
+
+
+# Task failures retried automatically: a run lost to a restart, a provider's
+# temporary failure or quota, or a network error. A sign-in or permission
+# problem is never retried; it waits for the operator.
+RESUMABLE_CODES = {"process_lost", "claude_transient_upstream", "codex_transient_upstream", "provider_quota"}
+NETWORK_ERROR = re.compile(
+    r"ENOTFOUND|EAI_AGAIN|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|socket hang up|"
+    r"fetch failed|network (?:error|is unreachable)|connection (?:error|reset|refused|closed)|getaddrinfo",
+    re.I,
+)
+SIGN_IN_ERROR = re.compile(r"log ?in|sign ?in|credential|api key|unauthori[sz]ed|forbidden|permission", re.I)
+RESUME_DELAYS = [0, 120, 600]
+QUOTA_DELAYS = [900, 1800, 3600]
+
+
+def resumable(failure):
+    if SIGN_IN_ERROR.search(str(failure.get("agent_error") or "")):
+        return False
+    text = str(failure.get("reason") or "") + " " + str(failure.get("agent_error") or "")
+    return failure.get("code") in RESUMABLE_CODES or bool(NETWORK_ERROR.search(text))
 
 
 class SupersededDelivery(WorkbenchError):
@@ -395,6 +417,92 @@ class Engine:
                     db.execute("DELETE FROM meta WHERE key=?", (row[0],))
                     forgotten.append(cached["id"])
         return {"retired": retired, "skipped": skipped, "forgotten": forgotten}
+
+    def _managed_agents(self):
+        agents = self.api.agents()
+        if not isinstance(agents, list):
+            raise WorkbenchError("Unexpected Paperclip agent-list contract")
+        return [a for a in agents if (a.get("metadata") or {}).get("workbenchKey") and a.get("status") != "terminated"]
+
+    def pause_for_network(self):
+        """Pause managed agents while their providers are unreachable, so no run
+        starts only to fail. Pausing cancels a running task's run, so the tasks
+        running now are remembered and retried on reconnecting."""
+        held = self._cache("network-paused") or {"agents": [], "issues": {}}
+        for req in self.store.rows("SELECT * FROM requests WHERE status='running'"):
+            for node, identity in (self._cache("issues:" + req["id"]) or {}).items():
+                if node.startswith(str(req["revision"]) + ":") and identity not in held["issues"]:
+                    issue = self.api.issue(identity)
+                    if issue.get("executionRunId") and issue.get("status") not in {"done", "cancelled"}:
+                        held["issues"][identity] = {"request": req["id"], "node": node}
+        for agent in self._managed_agents():
+            if agent.get("status") != "paused" and agent["id"] not in held["agents"]:
+                self.api.pause_agent(agent["id"])
+                held["agents"].append(agent["id"])
+                self._cache("network-paused", held)
+        self._cache("network-paused", held)
+        with self.store.transaction() as db:
+            self.store.event(db, "coordinator.paused_for_network", "network",
+                             {"agents": len(held["agents"]), "interrupted": sorted(held["issues"])})
+        return held
+
+    def resume_after_network(self):
+        """Resume exactly the agents the outage paused and retry the tasks it
+        interrupted."""
+        held = self._cache("network-paused") or {"agents": [], "issues": {}}
+        live = {a["id"] for a in self._managed_agents()}
+        for identity in held["agents"]:
+            if identity in live:
+                self.api.resume_agent(identity)
+        retried = []
+        for identity, origin in held["issues"].items():
+            runs = self.api.issue_runs(identity)
+            latest = max(runs, key=lambda r: r.get("createdAt") or "", default={}) if isinstance(runs, list) else {}
+            if latest.get("runId") and latest.get("status") not in {"queued", "running", "scheduled_retry", "succeeded"}:
+                key = str(uuid.uuid5(uuid.NAMESPACE_URL, "awb-network:" + identity + ":" + latest["runId"]))
+                receipt = self.api.retry_issue(identity, key, latest["runId"])
+                retried.append({"issue": identity, **origin, "accepted": bool(receipt.get("accepted"))})
+        with self.store.transaction() as db:
+            db.execute("DELETE FROM meta WHERE key='network-paused'")
+            self.store.event(db, "coordinator.resumed_after_network", "network",
+                             {"agents": len(held["agents"]), "retried": retried})
+        return {"agents": held["agents"], "retried": retried}
+
+    def _maybe_resume(self, req, node, issue):
+        """Retry a task the coordinator stopped for a recoverable reason, at most
+        three times per revision with growing delays, never while offline."""
+        failure = self._cache("failure:" + req["id"] + ":" + node) or {}
+        if not failure.get("run") or not resumable(failure):
+            return
+        network = self.store.rows("SELECT value FROM meta WHERE key='network'")
+        if network and json.loads(network[0]["value"]).get("status") == "offline":
+            return
+        key = "resume:" + req["id"] + ":" + node
+        record = self._cache(key)
+        if record is None:
+            # Delays count from when the failure was first seen, then from each retry.
+            record = self._cache(key, {"attempts": 0, "runs": [], "at": time.time()})
+        if failure["run"] in record["runs"]:
+            return
+        delays = QUOTA_DELAYS if failure.get("code") == "provider_quota" else RESUME_DELAYS
+        if record["attempts"] >= len(delays):
+            if not record.get("exhausted"):
+                record["exhausted"] = True
+                self._cache(key, record)
+                with self.store.transaction() as db:
+                    self.store.event(db, "execution.resume_exhausted", req["id"],
+                                     {"node": node, "attempts": record["attempts"], "code": failure.get("code")})
+            return
+        if time.time() - record["at"] < delays[record["attempts"]]:
+            return
+        idempotency = str(uuid.uuid5(uuid.NAMESPACE_URL, "awb-resume:" + issue["id"] + ":" + failure["run"]))
+        receipt = self.api.retry_issue(issue["id"], idempotency, failure["run"])
+        record = {"attempts": record["attempts"] + 1, "runs": record["runs"] + [failure["run"]], "at": time.time()}
+        self._cache(key, record)
+        with self.store.transaction() as db:
+            self.store.event(db, "execution.node_resumed", req["id"], {
+                "node": node, "attempt": record["attempts"], "code": failure.get("code"),
+                "accepted": bool(receipt.get("accepted")), "run": failure["run"]})
 
     def _check_current(self, request_id, revision):
         self._runtime_guard()
@@ -783,6 +891,8 @@ class Engine:
                     )
                 self._cache(key, True)
             failed = sorted(n for n, i in items.items() if i["report"] == "failed")
+            for name in failed:
+                self._maybe_resume(req, str(req["revision"]) + ":" + name, items[name])
             key = "observed-failed:" + req["id"] + ":" + str(req["revision"]) + ":" + ",".join(failed)
             if failed and not self._cache(key):
                 with self.store.transaction() as db:
