@@ -203,6 +203,22 @@ async def test_tui_worker_reported_block_is_in_the_inbox(app, project):
         assert "implement" in str(ui.query_one("#details", Static).content)
 
 
+async def test_tui_task_stopped_by_the_coordinator_is_in_the_inbox(app, project):
+    request = app.store.submit("Add a word counter", "coordinator-stop", project["id"])["request_id"]
+    with app.store.transaction() as db:
+        db.execute("UPDATE requests SET status='running' WHERE id=?", (request,))
+        db.execute("UPDATE outbox SET status='delivered' WHERE request_id=?", (request,))
+        # The bridge's saved cause for a task the coordinator stopped.
+        db.execute("INSERT INTO meta VALUES(?,?)", ("failure:" + request + ":1:implement", json.dumps(
+            {"code": "configuration_incomplete", "agent_error": "no Codex credentials available"})))
+    ui = WorkbenchApp(app.home)
+    async with ui.run_test(size=(120, 36)) as pilot:
+        await pilot.pause()
+        assert "execution_failed" in ui.previous["requests"][request]
+        inbox = ui.previous["inbox"]["execution-failed:" + request]
+        assert "no Codex credentials available" in inbox[2]
+
+
 async def test_tui_new_external_project_and_older_request_search(app, project):
     old = app.store.submit("Old singular ARCHIVE-MARKER", "old", project["id"])["request_id"]
     for number in range(205):

@@ -287,7 +287,7 @@ class WorkbenchApp(App):
         for item in obligations:
             by_request.setdefault((item["request_id"], item["revision"]), []).append(item)
         jobs = store.rows("SELECT * FROM outbox WHERE status IN ('blocked','uncertain','retry') ORDER BY rowid")
-        blocked = {j["request_id"]: j for j in store.worker_blocked() + jobs if j["request_id"] in request_map and j["revision"] == request_map[j["request_id"]]["revision"]}
+        blocked = {j["request_id"]: j for j in store.execution_attention() + jobs if j["request_id"] in request_map and j["revision"] == request_map[j["request_id"]]["revision"]}
         paused_projects = {p["project_id"] for p in store.rows("SELECT project_id FROM project_policy WHERE paused=1")}
         request_rows = []
         for r in filtered_requests:

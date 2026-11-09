@@ -662,7 +662,7 @@ class Store:
             ),
             "attention": self.rows(
                 "SELECT * FROM outbox WHERE status IN ('blocked','uncertain','retry') ORDER BY rowid"
-            ) + self.worker_blocked(),
+            ) + self.execution_attention(),
             "events": self.rows("SELECT * FROM events ORDER BY seq DESC LIMIT 50"),
         }
 
@@ -671,20 +671,59 @@ class Store:
         "amend the request with what would unblock it, or cancel it"
     )
 
+    EXECUTION_FAILED_NOTICE = (
+        "The coordinator stopped a task before its worker reported; fix the cause, "
+        "then resume the task in the coordinator or amend the request, or cancel it"
+    )
+
+    def execution_attention(self):
+        return self.worker_blocked() + self.execution_failed()
+
+    def _current_revision_meta(self, prefix):
+        """Meta rows '<prefix>:<request>:<revision>:<node>' for the current
+        revision of running requests."""
+        return self.rows(
+            "SELECT r.id AS request_id, r.revision, m.key, m.value FROM requests r JOIN meta m "
+            # Keys from '<prefix>:<id>:<revision>:' up to, not including, the
+            # same prefix ending in ';', the character after ':'.
+            "ON m.key > ? || ':' || r.id || ':' || r.revision || ':' "
+            "AND m.key < ? || ':' || r.id || ':' || r.revision || ';' "
+            "WHERE r.status='running' ORDER BY r.created, m.key",
+            (prefix, prefix),
+        )
+
+    def execution_failed(self):
+        """Running requests whose current revision has a task the coordinator
+        stopped before any worker report, for example a worker without a
+        sign-in. Nothing else moves them either."""
+        failed = {}
+        for row in self._current_revision_meta("failure"):
+            value = json.loads(row["value"])
+            item = failed.setdefault(row["request_id"], {
+                "id": "execution-failed:" + row["request_id"],
+                "request_id": row["request_id"],
+                "revision": row["revision"],
+                "status": "execution_failed",
+                "nodes": [],
+                "failures": {},
+            })
+            node = row["key"].rsplit(":", 1)[1]
+            item["nodes"].append(node)
+            item["failures"][node] = value
+        for item in failed.values():
+            causes = "; ".join(
+                node + ": " + " - ".join(str(v) for v in (f.get("code"), f.get("agent_error") or f.get("reason")) if v)
+                for node, f in item["failures"].items()
+            )
+            item["error"] = self.EXECUTION_FAILED_NOTICE + " (" + causes + ")"
+        return list(failed.values())
+
     def worker_blocked(self):
         """Running requests whose current revision has a task the worker
         itself reported blocked. Nothing else moves them, so they need the
         operator even though no delivery failed."""
-        rows = self.rows(
-            "SELECT r.id AS request_id, r.revision, m.key, m.value FROM requests r JOIN meta m "
-            # Keys from 'report:<id>:<revision>:' up to, not including, the
-            # same prefix ending in ';', the character after ':'.
-            "ON m.key > 'report:' || r.id || ':' || r.revision || ':' "
-            "AND m.key < 'report:' || r.id || ':' || r.revision || ';' "
-            "WHERE r.status='running' ORDER BY r.created, m.key"
-        )
         blocked = {}
-        for row in rows:
+        for row in self._current_revision_meta("report"):
             if json.loads(row["value"]).get("disposition") != "blocked":
                 continue
             item = blocked.setdefault(row["request_id"], {
