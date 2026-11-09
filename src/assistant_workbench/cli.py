@@ -76,6 +76,9 @@ def parser():
     service = commands.add_parser("service")
     service.add_argument("kind", choices=["launchd", "systemd"])
     service.add_argument("--executable", required=True)
+    service.add_argument("--label", default="com.assistant-workbench.bridge",
+                         help="launchd label; give each additional Workbench home its own")
+    service.add_argument("--port", type=int, help="bridge port; give each additional home its own")
     backup = commands.add_parser("backup")
     backup.add_argument("destination")
     restore = commands.add_parser("restore")
@@ -226,7 +229,7 @@ def main(argv=None):
             elif args.command == "service":
                 from .operations import service_definition
 
-                print(service_definition(home, args.executable, args.kind))
+                print(service_definition(home, args.executable, args.kind, args.label, args.port))
                 return 0
             elif args.command == "deps":
                 from .operations import install_dependencies

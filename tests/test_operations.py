@@ -254,6 +254,23 @@ def test_service_finds_the_users_tools_without_inheriting_secrets(app, tmp_path,
     assert "sk-not-for-services" not in unit
 
 
+def test_a_second_home_gets_its_own_service_label_and_port(app):
+    import plistlib
+
+    first = plistlib.loads(service_definition(app.home, sys.executable).encode())
+    second = plistlib.loads(service_definition(
+        app.home, sys.executable, label="com.example.workbench-test", port=8771).encode())
+    assert first["Label"] == "com.assistant-workbench.bridge" and first["ProgramArguments"][-1] == "serve"
+    assert second["Label"] == "com.example.workbench-test"
+    assert second["ProgramArguments"][-3:] == ["serve", "--port", "8771"]
+    unit = service_definition(app.home, sys.executable, "systemd", port=8771)
+    assert unit.splitlines()[[l.startswith("ExecStart=") for l in unit.splitlines()].index(True)].endswith(
+        " serve --port 8771")
+    for label, port in (("two words", None), ("../escape", None), ("com.example.ok", 70000)):
+        with pytest.raises(WorkbenchError):
+            service_definition(app.home, sys.executable, label=label, port=port)
+
+
 def test_missing_or_expired_qualification_is_not_a_pass(app, tmp_path):
     result = qualification(app, "subscription")
     assert not result["qualified"] and all(
