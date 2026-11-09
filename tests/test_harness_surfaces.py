@@ -198,7 +198,7 @@ def test_probe_signs_in_the_way_workers_will_and_records_it(app, monkeypatch):
     fixture = profiles.run_process
     monkeypatch.setattr(profiles, "run_process", lambda argv, **kw: seen.append(argv) or fixture(argv, **kw))
     receipt = profiles.probe(app.home, model["id"])
-    assert seen[0][-3:] == ["--setting-sources", "", "--strict-mcp-config"]
+    assert seen[0][-4:] == ["--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands"]
     assert receipt["claude_sign_in"] == "account"
     saved = json.loads((app.home / "config.json").read_text())["models"][0]
     assert profiles.readiness(saved)[0]

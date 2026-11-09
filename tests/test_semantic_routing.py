@@ -73,6 +73,7 @@ def test_confident_decision_routes_an_unresolved_request(app, project, semantic)
     assert argv[argv.index("--tools") + 1] == "" and argv[argv.index("--max-turns") + 1] == "1"
     # The router signs in like the profile's workers, without personal settings.
     assert argv[argv.index("--setting-sources") + 1] == "" and "--strict-mcp-config" in argv
+    assert "--disable-slash-commands" in argv
     assert "ANTHROPIC_API_KEY" not in cli.calls[0]["env"]
     decided = app.store.rows("SELECT payload FROM events WHERE kind='request.route_decided'")
     payload = json.loads(decided[0]["payload"])

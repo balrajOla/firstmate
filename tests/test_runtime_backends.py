@@ -1050,6 +1050,7 @@ async def test_claude_worker_runs_isolated_with_edit_permission_and_profile_gran
     assert argv[argv.index("--permission-mode") + 1] == "acceptEdits" and "--bare" not in argv
     # A subscription profile keeps the CLI's own sign-in without user or project settings.
     assert argv[argv.index("--setting-sources") + 1] == "" and "--strict-mcp-config" in argv
+    assert "--disable-slash-commands" in argv
     assert "Bash(python -m pytest:*)" in argv and "Bash(git status:*)" in argv
     assert not any("commit" in a or "push" in a for a in argv)
     # With claude_sign_in key the worker runs --bare instead.
