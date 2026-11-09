@@ -477,14 +477,24 @@ def service_path():
     return ":".join(d for d in dict.fromkeys(dirs + SYSTEM_PATH) if ":" not in d)
 
 
-def service_definition(home, executable, kind="launchd"):
+SERVICE_LABEL = "com.assistant-workbench.bridge"
+
+
+def service_definition(home, executable, kind="launchd", label=SERVICE_LABEL, port=None):
+    """A service for one Workbench home. A second home on the same machine
+    needs its own label and port; the defaults are the single-home ones."""
     executable = str(Path(executable).expanduser().resolve(strict=True))
     home = Path(home).resolve()
+    if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", label):
+        raise WorkbenchError("Service label may contain only letters, digits, '.', '_' and '-'")
+    if port is not None and not 0 < int(port) < 65536:
+        raise WorkbenchError("Service port must be between 1 and 65535")
+    serve = ["serve"] + (["--port", str(int(port))] if port is not None else [])
     if kind == "launchd":
         return plistlib.dumps(
             {
-                "Label": "com.assistant-workbench.bridge",
-                "ProgramArguments": [executable, "--home", str(home), "serve"],
+                "Label": label,
+                "ProgramArguments": [executable, "--home", str(home)] + serve,
                 "EnvironmentVariables": {"PATH": service_path()},
                 "RunAtLoad": True,
                 "KeepAlive": True,
@@ -513,7 +523,8 @@ def service_definition(home, executable, kind="launchd"):
             + quote(executable)
             + " --home "
             + quote(str(home))
-            + " serve\nRestart=on-failure\nRestartSec=10\n[Install]\nWantedBy=default.target\n"
+            + " " + " ".join(serve)
+            + "\nRestart=on-failure\nRestartSec=10\n[Install]\nWantedBy=default.target\n"
         )
     raise WorkbenchError("Unsupported service manager")
 
