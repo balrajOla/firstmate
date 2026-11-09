@@ -1,0 +1,32 @@
+{
+  "description": "Adversarial held-out routing cases: shared terms with different meanings, misleading workflow keywords, near-identical project names, history-based reopening and new topics. Labels were written before the first run and the router prompt was not changed afterwards. null means no registered project clearly owns the request; such a request should be left for the operator rather than confidently assigned.",
+  "projects": [
+    {"key": "website", "name": "Harbor Bakery website", "aliases": ["bakery-site"], "history": ["Add an online ordering page with pickup times", "Fix the broken image carousel on the home page", "Write the copy for the new seasonal menu page"]},
+    {"key": "mobile", "name": "Trailmate", "aliases": ["trailmate-app"], "history": ["Implement offline map caching for hiking routes", "Fix the crash when GPS permission is denied on Android", "Add a dark mode toggle to the settings screen"]},
+    {"key": "research", "name": "Sodium battery study", "aliases": ["cell-study"], "history": ["Compare published cycle-life results for sodium-ion cells", "Summarize the safety findings from the 2025 abuse tests", "Investigate supplier claims about energy density"]},
+    {"key": "tours", "name": "Trailmark Tours booking site", "aliases": ["trailmark"], "history": ["Add a guided-tour booking form with group sizes", "Fix the tour calendar showing past dates"]},
+    {"key": "newsletter", "name": "Harbor Pilots Guild newsletter", "aliases": ["pilots-news"], "history": ["Write the spring newsletter about the new pilot boat", "Summarize the guild meeting minutes for members"]}
+  ],
+  "cases": [
+    {"id": "a01", "prompt": "Investigate why the Trailmate app drains the battery when tracking a long hike, and fix it.", "workflow": "code", "project": "mobile"},
+    {"id": "a02", "prompt": "Compare how quickly sodium-ion and lithium-ion cells lose capacity in cold weather, using published sources.", "workflow": "research", "project": "research"},
+    {"id": "a03", "prompt": "The seasonal menu page on the bakery site shows last year's prices; update them from the attached list.", "workflow": "code", "project": "website"},
+    {"id": "a04", "prompt": "Write up the research findings on supplier energy-density claims as a two-page brief for the board.", "workflow": "report", "project": "research"},
+    {"id": "a05", "prompt": "Research says users abandon long forms; shorten the Trailmark group booking form to three fields.", "workflow": "code", "project": "tours"},
+    {"id": "a06", "prompt": "The image carousel is broken again on the bakery home page, the same bug we fixed before.", "workflow": "code", "project": "website"},
+    {"id": "a07", "prompt": "Draft the autumn newsletter for the pilots guild, covering the harbour dredging schedule.", "workflow": "report", "project": "newsletter"},
+    {"id": "a08", "prompt": "Plan how the trail app should sync recorded hikes between a phone and a watch before anyone builds it.", "workflow": "design", "project": "mobile"},
+    {"id": "a09", "prompt": "The tour calendar is showing past dates again for Trailmark.", "workflow": "code", "project": "tours"},
+    {"id": "a10", "prompt": "What is the capital of Australia?", "workflow": "simple", "project": null},
+    {"id": "a11", "prompt": "Design a loyalty-card scheme for a coffee shop I might open next year.", "workflow": "design", "project": null},
+    {"id": "a12", "prompt": "Summarize this week's guild meeting minutes for members who missed it.", "workflow": "report", "project": "newsletter"},
+    {"id": "a13", "prompt": "Add a 'report a closed trail' button to the hiking app.", "workflow": "code", "project": "mobile"},
+    {"id": "a14", "prompt": "Find and compare three published studies on electrolyte additives for sodium cells.", "workflow": "research", "project": "research"},
+    {"id": "a15", "prompt": "Fix the typo in the harbour pilot boat article: 'peir' should be 'pier'.", "workflow": "simple", "project": "newsletter"},
+    {"id": "a16", "prompt": "Brainstorm names for a new sourdough loaf to feature on the bakery website.", "workflow": "design", "project": "website"},
+    {"id": "a17", "prompt": "Write a short guide to choosing hiking boots for a beginners' blog.", "workflow": "report", "project": null},
+    {"id": "a18", "prompt": "Trailmate crashes when GPS permission is denied, but this time on iOS.", "workflow": "code", "project": "mobile"},
+    {"id": "a19", "prompt": "Book a table for two at the harbour restaurant on Friday.", "workflow": "simple", "project": null},
+    {"id": "a20", "prompt": "Investigate whether our bakery ordering page meets WCAG 2.2 contrast rules and fix any failures.", "workflow": "code", "project": "website"}
+  ]
+}
