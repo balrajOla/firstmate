@@ -20,13 +20,14 @@ class SupersededDelivery(WorkbenchError):
 # Pinned Paperclip's native runner replaces official CLIs with its bundled
 # provider binary (without this machine's sign-in) and defaults to approving
 # every tool. Official-CLI workers therefore use its legacy CLI runner.
-# --bare keeps the user's personal plugins, hooks and CLAUDE.md out of
-# product workers; acceptEdits allows workspace edits; local commits on the
-# task branch hand work to dependent tasks; the disposition command closes the
-# worker's own task. Other tools stay unapproved.
+# The profile's Claude sign-in mode (profiles.CLAUDE_SIGN_IN) keeps the user's
+# personal plugins, hooks, settings and CLAUDE.md out of product workers;
+# acceptEdits allows workspace edits; local commits on the task branch hand
+# work to dependent tasks; the disposition command closes the worker's own
+# task. Other tools stay unapproved.
 WORKER_ADAPTERS = {"claude": "claude_local", "codex": "codex_local"}
 CLAUDE_WORKER_ARGS = [
-    "--bare", "--permission-mode", "acceptEdits", "--allowedTools",
+    "--permission-mode", "acceptEdits", "--allowedTools",
     "Bash(git status:*)", "Bash(git diff:*)", "Bash(git add:*)", "Bash(git commit:*)",
 ]
 BYPASS_KEYS = {
@@ -180,9 +181,9 @@ class Engine:
                     "Paperclip workers run with them enforced"
                 )
         if model["harness"] in WORKER_ADAPTERS and model.get("auth") == "subscription":
-            # Paperclip starts workers with its own environment. A provider key
-            # there would make a --bare Claude worker, which never reads a
-            # subscription sign-in, bill that key instead.
+            # Paperclip starts workers with its own environment. The CLI prefers
+            # a provider key there over the subscription sign-in and would bill
+            # that key instead.
             env = dict(adapter_config.get("env") or {})
             if any(env.get(k) for k in SUBSCRIPTION_BLOCKED_KEYS):
                 raise WorkbenchError(
@@ -194,7 +195,9 @@ class Engine:
             # not use the official CLI or its sign-in.
             adapter_config["engine"] = "cli"
         if model["harness"] == "claude":
-            adapter_config["extraArgs"] = CLAUDE_WORKER_ARGS + [
+            from .profiles import claude_args
+
+            adapter_config["extraArgs"] = claude_args(model) + CLAUDE_WORKER_ARGS + [
                 "--allowedTools", "Bash(" + disposition_command() + ":*)"
             ] + list(adapter_config.get("extraArgs", []))
         field = {"claude": "effort", "codex": "modelReasoningEffort"}.get(

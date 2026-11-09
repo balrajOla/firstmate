@@ -9,8 +9,28 @@ from .config import config
 from .integrations import run_process
 from .util import WorkbenchError, atomic, canonical, digest, now, uid
 
+# How the Claude CLI signs in for Workbench work. "key" runs --bare, which
+# reads only ANTHROPIC_API_KEY, an apiKeyHelper or a third-party provider and
+# never an account sign-in. "account" keeps the CLI's own sign-in, such as a
+# Pro or Max subscription, while loading no user or project settings (hooks,
+# plugins, permission rules, CLAUDE.md) and no MCP servers. Managed settings
+# apply in both. Probes, workers and the router use the same mode.
+CLAUDE_SIGN_IN = {
+    "key": ["--bare"],
+    "account": ["--setting-sources", "", "--strict-mcp-config"],
+}
 
-def add(home, identity, harness, model, effort, auth, classes, priority=100):
+
+def claude_sign_in(model):
+    """The Claude sign-in mode of a profile: account for subscriptions by default."""
+    return model.get("claude_sign_in") or ("account" if model["auth"] == "subscription" else "key")
+
+
+def claude_args(model):
+    return CLAUDE_SIGN_IN[claude_sign_in(model)]
+
+
+def add(home, identity, harness, model, effort, auth, classes, priority=100, claude_sign_in=None):
     if harness not in {"claude", "codex"} or auth not in {
         "subscription",
         "api",
@@ -19,6 +39,8 @@ def add(home, identity, harness, model, effort, auth, classes, priority=100):
         raise WorkbenchError(
             "Choose an explicit supported harness and authentication profile"
         )
+    if claude_sign_in is not None and (harness != "claude" or claude_sign_in not in CLAUDE_SIGN_IN):
+        raise WorkbenchError("claude_sign_in applies to Claude profiles and is account or key")
     settings = config(home)
     if any(m["id"] == identity for m in settings["models"]):
         raise WorkbenchError(
@@ -35,6 +57,8 @@ def add(home, identity, harness, model, effort, auth, classes, priority=100):
         "priority": priority,
         "verified": False,
     }
+    if claude_sign_in is not None:
+        item["claude_sign_in"] = claude_sign_in
     settings["models"].append(item)
     atomic(home / "config.json", canonical(settings) + "\n")
     return item
@@ -105,6 +129,8 @@ def _probe(home, identity):
         ]
         if model["effort"] != "default":
             argv += ["--effort", model["effort"]]
+        # Probe the way workers sign in, so a pass means workers can too.
+        argv += claude_args(model)
     else:
         argv = [
             executable,
@@ -125,8 +151,12 @@ def _probe(home, identity):
             env.pop(key, None)
     result = run_process(argv, env=env, timeout=120, cwd=home)
     if marker not in result["stdout"]:
+        hint = ""
+        if model["harness"] == "claude" and claude_sign_in(model) == "key":
+            hint = ("; with claude_sign_in key, Claude runs --bare and reads only an API key, an "
+                    "apiKeyHelper or a third-party provider, not a subscription sign-in")
         raise WorkbenchError(
-            "CLI did not return the required canary marker; profile remains unqualified"
+            "CLI did not return the required canary marker; profile remains unqualified" + hint
         )
     # Inspect the assistant/result event, not an echoed input, wherever the CLI exposes one.
     events = []
@@ -189,6 +219,7 @@ def _probe(home, identity):
         ),
         "argv": argv,
         "output_sha256": digest(result["stdout"]),
+        **({"claude_sign_in": claude_sign_in(model)} if model["harness"] == "claude" else {}),
         "scope": "One official CLI canary with the CLI-reported model identity where available; not model ranking, coordinator execution, effort verification or semantic quality.",
     }
     path = home / "profiles" / (identity + ".json")
@@ -224,6 +255,8 @@ def readiness(model):
         k: model[k] for k in ("id", "harness", "model", "effort", "auth")
     }:
         return False, "Profile changed since qualification"
+    if model["harness"] == "claude" and receipt.get("claude_sign_in") != claude_sign_in(model):
+        return False, "The probe did not use this profile's Claude sign-in; rerun it"
     return (
         True,
         "Official CLI canary passed; live coordinator and quality checks remain separate",

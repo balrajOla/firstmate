@@ -93,6 +93,10 @@ def config(home: Path):
             "local",
         }:
             raise WorkbenchError("Unsupported effort or authentication profile")
+        if "claude_sign_in" in model and (
+            model["harness"] != "claude" or model["claude_sign_in"] not in {"account", "key"}
+        ):
+            raise WorkbenchError("claude_sign_in applies to Claude profiles and is account or key")
     return value
 
 

@@ -1047,9 +1047,17 @@ async def test_claude_worker_runs_isolated_with_edit_permission_and_profile_gran
     result = await executor.execute(packet_for("argv"))
     assert result["body"] == "CLAUDE ARGV FIXTURE"
     argv = json.loads(argv_log.read_text())
-    assert argv[argv.index("--permission-mode") + 1] == "acceptEdits" and "--bare" in argv
+    assert argv[argv.index("--permission-mode") + 1] == "acceptEdits" and "--bare" not in argv
+    # A subscription profile keeps the CLI's own sign-in without user or project settings.
+    assert argv[argv.index("--setting-sources") + 1] == "" and "--strict-mcp-config" in argv
     assert "Bash(python -m pytest:*)" in argv and "Bash(git status:*)" in argv
     assert not any("commit" in a or "push" in a for a in argv)
+    # With claude_sign_in key the worker runs --bare instead.
+    model["claude_sign_in"] = "key"
+    await executor.execute(packet_for("key"))
+    argv = json.loads(argv_log.read_text())
+    assert "--bare" in argv and "--setting-sources" not in argv
+    del model["claude_sign_in"]
     # A profile that would bypass permissions never starts a process.
     argv_log.unlink()
     model["adapter_config"] = {"extraArgs": ["--permission-mode", "bypassPermissions"]}
