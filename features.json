@@ -31,7 +31,7 @@
       "src/assistant_workbench/routing.py",
       "tests/test_semantic_routing.py"
     ],
-    "remaining": "Explicit links and exact project names route requests; an opt-in semantic router resolves unrouted projects and workflows through a qualified CLI profile and was evaluated only on 25 author-labeled held-out cases. Human-calibrated evaluation, history beyond recent titles and live follow-up journeys remain."
+    "remaining": "Explicit links and exact project names route requests; an opt-in semantic router resolves unrouted projects and workflows through a qualified CLI profile. On two author-labeled held-out suites (25 and 20 adversarial cases) it chose the expected project in 45/45 and workflow in 44/45, with no confident wrong project. Human-calibrated evaluation and history beyond recent titles remain."
   },
   {
     "id": "PF04",
@@ -87,7 +87,7 @@
       "tests/test_intake.py",
       "tests/test_requirement_scenarios.py"
     ],
-    "remaining": "Revision checks, idempotent retries and concurrent grouped amendments are covered; live worker response to changes remains separate."
+    "remaining": "Revision checks, idempotent retries and concurrent grouped amendments are covered. Live macOS run (2026-11-09): an amendment during a running worker created revision 2, a stale amendment was refused, and the revision 1 run was cancelled 2.2 s later with no commits; only revision 2 produced an outcome."
   },
   {
     "id": "PF09",
@@ -194,7 +194,7 @@
       "src/assistant_workbench/quality.py",
       "tests/test_requirement_scenarios.py"
     ],
-    "remaining": "Independent outcome labels, separate deliverable acceptance and competing-review protection exist; authenticated independence and useful repair loops remain."
+    "remaining": "Independent outcome labels, separate deliverable acceptance and competing-review protection exist. Live macOS run (2026-11-09): a signed-in worker reviewing operator-written code against its spec found and fixed a deliberately seeded defect with a regression test that fails on the original; a separate QA agent verified the fix. Human review and longer repair loops remain."
   },
   {
     "id": "PF18",
@@ -340,7 +340,7 @@
       "src/assistant_workbench/temporal_runtime.py",
       "tests/test_runtime_backends.py"
     ],
-    "remaining": "Paperclip issue DAGs and Temporal parallel activities are wired; authenticated detached model runs and production restarts remain."
+    "remaining": "Paperclip issue DAGs and Temporal parallel activities are wired. Live macOS run (2026-11-09): two signed-in workers' runs overlapped, a bridge killed mid-delivery was restarted with no duplicate issues or runs, and workers ran to completion after the submitting CLI exited. Production restarts and long runs remain."
   },
   {
     "id": "PF30",
@@ -393,7 +393,7 @@
       "tests/test_requirement_scenarios.py",
       "tests/test_runtime_backends.py"
     ],
-    "remaining": "Grouped withdrawal, new-dispatch pause and scoped cancellation are wired; cancellation status alone does not prove every process stopped."
+    "remaining": "Grouped withdrawal, new-dispatch pause and scoped cancellation are wired. Live macOS run (2026-11-09): cancelling a running request cancelled its active run within 1.1 s, cancelled the dependent task, left no worker process and no commit; withdrawing one grouped demand moved the group to a revision with only the surviving demand."
   },
   {
     "id": "PF34",
@@ -407,12 +407,12 @@
       "src/assistant_workbench/runtime_backends.py",
       "tests/test_execution_packs.py"
     ],
-    "remaining": "Private execution copies, local writer locks, fleet leases and bounded processes exist; distributed workspaces, OS isolation and global resource quotas remain."
+    "remaining": "Private execution copies, local writer locks, fleet leases and bounded processes exist; each Paperclip task runs in its own git worktree and branch. One agent per role runs one task at a time unless coordinator.max_concurrent_runs is raised. Distributed workspaces, OS isolation and global resource quotas remain."
   },
   {
     "id": "PF35",
     "name": "Native WezTerm navigation",
-    "status": "target-pending",
+    "status": "partial",
     "files": [
       "src/assistant_workbench/assets/wezterm.lua",
       "src/assistant_workbench/terminal.py",
@@ -420,7 +420,7 @@
       "tests/test_tui_scenarios.py",
       "docs/TERMINAL_SCENARIOS.md"
     ],
-    "remaining": "Native WezTerm has run in the cloud; the user desktop, configuration conflicts, shortcuts, reconnect, sleep and reboot still need qualification."
+    "remaining": "Native WezTerm on a user macOS desktop opened the Workbench at about 80x24, 120x36 and 160x48 with real screenshots, and the Ctrl+Shift+A binding resolved. A real keystroke, reconnect, sleep and reboot still need qualification on the target desktop."
   },
   {
     "id": "PF36",
@@ -512,7 +512,7 @@
       "tests/test_surfaces.py",
       "tests/test_tui_scenarios.py"
     ],
-    "remaining": "Context coverage, health/attention and stale diagnostics are visible; evaluated retrieval health and model context-pressure detection remain."
+    "remaining": "Context coverage, health/attention and stale diagnostics are visible. Requests whose worker reported a block (worker_blocked) or whose coordinator stopped a task before any report (execution_failed, with the cause) are listed in the attention inbox, snapshot and terminal status; both appeared in live runs. Evaluated retrieval health and model context-pressure detection remain."
   },
   {
     "id": "PF43",
@@ -550,7 +550,7 @@
       "src/assistant_workbench/assets/dependencies.json",
       "tests/test_policy_scenarios.py"
     ],
-    "remaining": "Pinned Superpowers activation and missing-procedure blocking are wired; live brainstorming coverage, useful alternatives and artifact quality remain."
+    "remaining": "Pinned Superpowers activation and missing-procedure blocking are wired. Live macOS run (2026-11-09): a design request ran design, critique and plan agents that compared approaches, recommended one and listed open questions; the critique found real gaps. Human judgement of usefulness remains."
   },
   {
     "id": "PF46",
@@ -654,7 +654,7 @@
       "tests/test_tui_scenarios.py",
       "evals/routing-heldout.json"
     ],
-    "remaining": "Lexical routing, plan selection and result-finding cases are tested; held-out semantic routing and model quality/cost comparisons remain."
+    "remaining": "Lexical routing, plan selection and result-finding cases are tested; the semantic router was evaluated on 45 held-out cases (see PF03). Model quality/cost comparisons remain."
   },
   {
     "id": "PF54",
@@ -668,7 +668,7 @@
       "tests/test_runtime_backends.py",
       "tests/test_server_workers.py"
     ],
-    "remaining": "Selected concurrency, cancellation, expiry, output/memory bounds and HTTP faults are tested; disk-full, host reboot, physical fleets and 72-hour soak remain."
+    "remaining": "Selected concurrency, cancellation, expiry, output/memory bounds and HTTP faults are tested. Live macOS run (2026-11-09): a 10-hour live soak (one real request per hour, 20 synthetic intake prompts per cycle) lost no prompts and had no unhealthy cycles; it was stopped by the operator before 72 hours. Disk-full, host reboot, physical fleets and a 72-hour soak remain."
   },
   {
     "id": "PF55",
@@ -717,7 +717,7 @@
       "tests/test_operations.py",
       "tests/test_workspace_backup.py"
     ],
-    "remaining": "Installation, private workspace/state backup and fixture migration are tested; actual customized-user cutover, recovery and service lifecycle remain."
+    "remaining": "Installation, private workspace/state backup and fixture migration are tested. Live macOS run (2026-11-09): fresh install, repeat install, upgrade, rollback, backup, uninstall, restore and reinstall at a new prefix (paths with spaces) passed, the restored state ran with the old roots unavailable, and the generated launchd service ran and unloaded cleanly. Actual customized-user cutover remains."
   },
   {
     "id": "PF59",
@@ -740,12 +740,12 @@
       "src/assistant_workbench/app.py",
       "tests/test_intake.py"
     ],
-    "remaining": "Explicit UTC interval schedules coalesce missed ticks; calendar/DST/overlap policies and external destinations remain."
+    "remaining": "Explicit UTC interval schedules coalesce missed ticks. Live macOS run (2026-11-09): 60 missed ticks produced one request, a bridge restart did not repeat it, the next interval fired, pause stopped it, and two concurrent bridges produced one request per tick. Calendar/DST policies and external destinations remain."
   },
   {
     "id": "PF61",
     "name": "Optional OpenViking replacement context backend",
-    "status": "contract-tested",
+    "status": "adapter-tested",
     "files": [
       "docs/ARCHITECTURE.md",
       "src/assistant_workbench/context_backends.py",
@@ -753,12 +753,12 @@
       "tests/test_app_integrations.py",
       "docs/CONTEXT_BACKENDS.md"
     ],
-    "remaining": "OpenViking managed ingest/recall/read/delete/reconcile is wired; the local archive remains authoritative. Upstream service/model and replacement-backend qualification remain."
+    "remaining": "OpenViking 0.5.3 ran as a real local service with local models: managed ingest, recall, read-back, delete and reconcile worked through the adapter, and an uncertain delete was reconciled. The local archive remains authoritative; replacement-backend qualification remains."
   },
   {
     "id": "PF62",
     "name": "Optional Hindsight experience memory",
-    "status": "contract-tested",
+    "status": "adapter-tested",
     "files": [
       "docs/ARCHITECTURE.md",
       "src/assistant_workbench/context_backends.py",
@@ -766,7 +766,7 @@
       "tests/test_app_integrations.py",
       "docs/CONTEXT_BACKENDS.md"
     ],
-    "remaining": "Hindsight managed source copies and derived recall are wired with scope/readback/deletion receipts; actual service/provider and semantic experience-memory quality remain."
+    "remaining": "Hindsight 1.2.0 ran as a real local service with a local model: scoped retain, recall, read-back, delete and status worked, and recall from an unbound project was refused. Semantic experience-memory quality remains."
   },
   {
     "id": "PF63",
@@ -810,22 +810,22 @@
   {
     "id": "PF66",
     "name": "Open Notebook source-workspace integration",
-    "status": "adapter-only",
+    "status": "adapter-tested",
     "files": [
       "src/assistant_workbench/integrations.py",
       "docs/COMPATIBILITY.md"
     ],
-    "remaining": "Configured source-workspace/ask adapter exists; actual service generation and a qualified subscription-only inference setup remain."
+    "remaining": "Open Notebook ran as a real local service with local chat and embedding models: sources were ingested and Ask answered with citations and said when the sources did not cover a question. A qualified subscription-only inference setup remains."
   },
   {
     "id": "PF67",
     "name": "GPT Researcher bounded investigation integration",
-    "status": "adapter-only",
+    "status": "adapter-tested",
     "files": [
       "src/assistant_workbench/integrations.py",
       "docs/COMPATIBILITY.md"
     ],
-    "remaining": "Configured bounded research adapter exists; actual sourced investigation, provider setup and a qualified subscription-only inference setup remain."
+    "remaining": "GPT Researcher ran with a local model and the keyless DuckDuckGo retriever and returned a source-linked report; review found one fact cited to the wrong page, so outputs still need checking. A qualified subscription-only inference setup remains."
   },
   {
     "id": "PF68",
