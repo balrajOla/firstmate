@@ -148,7 +148,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF15](#pf15) | Peer versus child ownership and limits | 1 | `coordinator`, `workers` |
 | [PF16](#pf16) | Durable agent communication with receipts | 2 | `journey`, `workers` |
 | [PF17](#pf17) | Independent review and bounded repair | 23 | `workers`, `writing` |
-| [PF18](#pf18) | Harness/model/effort capability profiles | 11 | `models` |
+| [PF18](#pf18) | Harness/model/effort capability profiles | 22 | `models` |
 | [PF19](#pf19) | Captured permitted conversation history | 13 | `lcm` |
 | [PF20](#pf20) | Original source archive and anchors | 8 | `corpus` |
 | [PF21](#pf21) | Expandable summaries linked to originals | 15 | `summaries`, `lcm` |
@@ -187,7 +187,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF54](#pf54) | Fault, capacity and soak verification | 13 | `capacity`, `soak` |
 | [PF55](#pf55) | Reviewed improvements with rollback | 2 | `journey`, `benchmark` |
 | [PF56](#pf56) | One GitHub repository and reproducible packages | 1 | `packages` |
-| [PF57](#pf57) | Harness and linked-project contracts | 27 | `linked_contract`, `models` |
+| [PF57](#pf57) | Harness and linked-project contracts | 31 | `linked_contract`, `models` |
 | [PF58](#pf58) | Doctor, migration, backup, restore and uninstall | 42 | `migration` |
 | [PF59](#pf59) | Authorization, credentials and effect audit | 97 | `isolation` |
 | [PF60](#pf60) | Authorized schedules and clear updates | 1 | `journey` |
@@ -710,6 +710,11 @@ Mapped pytest evidence:
 - `tests/test_harness_surfaces.py::test_probe_rejects_a_substituted_model[claude-opus-5-5-usage0]`
 - `tests/test_harness_surfaces.py::test_probe_rejects_a_substituted_model[opus-usage1]`
 - `tests/test_harness_surfaces.py::test_probe_keeps_unreported_model_identity_unknown`
+- `tests/test_harness_surfaces.py::test_probe_signs_in_the_way_workers_will_and_records_it`
+- `tests/test_harness_surfaces.py::test_a_probe_from_before_sign_in_modes_is_not_trusted`
+- `tests/test_harness_surfaces.py::test_a_key_probe_that_finds_no_key_explains_the_sign_in_mode`
+- `tests/test_harness_surfaces.py::test_claude_sign_in_is_validated[claude-oauth]`
+- `tests/test_harness_surfaces.py::test_claude_sign_in_is_validated[codex-account]`
 
 ### PF19
 
@@ -1818,6 +1823,10 @@ Mapped pytest evidence:
 - `tests/test_app_integrations.py::test_dispatch_rejects_malformed_envelopes[-args2]`
 - `tests/test_app_integrations.py::test_dispatch_rejects_malformed_envelopes[backend.status-args3]`
 - `tests/test_app_integrations.py::test_dispatch_rejects_malformed_envelopes[backend.status-token]`
+- `tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[subscription-default]`
+- `tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[subscription-key]`
+- `tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[api-default]`
+- `tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[api-account]`
 
 ### PF58
 

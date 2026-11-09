@@ -1052,7 +1052,12 @@
         "tests/test_harness_surfaces.py::test_probe_records_effective_model_reported_by_cli[sonnet-usage2-effective2]",
         "tests/test_harness_surfaces.py::test_probe_rejects_a_substituted_model[claude-opus-5-5-usage0]",
         "tests/test_harness_surfaces.py::test_probe_rejects_a_substituted_model[opus-usage1]",
-        "tests/test_harness_surfaces.py::test_probe_keeps_unreported_model_identity_unknown"
+        "tests/test_harness_surfaces.py::test_probe_keeps_unreported_model_identity_unknown",
+        "tests/test_harness_surfaces.py::test_probe_signs_in_the_way_workers_will_and_records_it",
+        "tests/test_harness_surfaces.py::test_a_probe_from_before_sign_in_modes_is_not_trusted",
+        "tests/test_harness_surfaces.py::test_a_key_probe_that_finds_no_key_explains_the_sign_in_mode",
+        "tests/test_harness_surfaces.py::test_claude_sign_in_is_validated[claude-oauth]",
+        "tests/test_harness_surfaces.py::test_claude_sign_in_is_validated[codex-account]"
       ],
       "required_gates": [
         "models"
@@ -2526,7 +2531,11 @@
         "tests/test_app_integrations.py::test_dispatch_rejects_malformed_envelopes[action1-args1]",
         "tests/test_app_integrations.py::test_dispatch_rejects_malformed_envelopes[-args2]",
         "tests/test_app_integrations.py::test_dispatch_rejects_malformed_envelopes[backend.status-args3]",
-        "tests/test_app_integrations.py::test_dispatch_rejects_malformed_envelopes[backend.status-token]"
+        "tests/test_app_integrations.py::test_dispatch_rejects_malformed_envelopes[backend.status-token]",
+        "tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[subscription-default]",
+        "tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[subscription-key]",
+        "tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[api-default]",
+        "tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[api-account]"
       ],
       "required_gates": [
         "linked_contract",

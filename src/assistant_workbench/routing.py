@@ -19,6 +19,7 @@ import time
 
 from .integrations import run_process
 from .policy import TEMPLATES, classification
+from .profiles import claude_args
 from .util import WorkbenchError, digest, now
 
 WORKFLOW_GUIDE = {
@@ -137,7 +138,7 @@ def decide(store, settings, request, runner=None):
     assigned = request.get("project_id")
     prompt = _prompt(request["body"], projects, assigned)
     argv = [executable, "-p", prompt, "--model", model["model"], "--output-format", "json",
-            "--max-turns", "1", "--tools", ""]
+            "--max-turns", "1", "--tools", "", *claude_args(model)]
     if model["effort"] != "default":
         argv += ["--effort", model["effort"]]
     env = os.environ.copy()

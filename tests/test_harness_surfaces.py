@@ -189,3 +189,62 @@ def test_probe_keeps_unreported_model_identity_unknown(app, monkeypatch):
     receipt = profiles.probe(app.home, model["id"])
     assert receipt["effective_models"] == []
     assert receipt["effective_model_source"] == "not reported by CLI"
+
+
+def test_probe_signs_in_the_way_workers_will_and_records_it(app, monkeypatch):
+    model = claude_profile(app, "claude-sonnet-5-5")
+    seen = []
+    claude_fixture(monkeypatch, ["claude-sonnet-5-5"])
+    fixture = profiles.run_process
+    monkeypatch.setattr(profiles, "run_process", lambda argv, **kw: seen.append(argv) or fixture(argv, **kw))
+    receipt = profiles.probe(app.home, model["id"])
+    assert seen[0][-3:] == ["--setting-sources", "", "--strict-mcp-config"]
+    assert receipt["claude_sign_in"] == "account"
+    saved = json.loads((app.home / "config.json").read_text())["models"][0]
+    assert profiles.readiness(saved)[0]
+    # Switching the profile to an API key or helper needs a new probe.
+    saved["claude_sign_in"] = "key"
+    assert profiles.readiness(saved) == (False, "The probe did not use this profile's Claude sign-in; rerun it")
+
+
+def test_a_probe_from_before_sign_in_modes_is_not_trusted(app, monkeypatch):
+    model = claude_profile(app, "claude-sonnet-5-5")
+    claude_fixture(monkeypatch, ["claude-sonnet-5-5"])
+    receipt_path = app.home / "profiles/claude-contract.json"
+    profiles.probe(app.home, model["id"])
+    receipt = json.loads(receipt_path.read_text())
+    del receipt["claude_sign_in"]
+    receipt_path.write_text(json.dumps(receipt))
+    saved = json.loads((app.home / "config.json").read_text())["models"][0]
+    assert not profiles.readiness(saved)[0]
+
+
+def test_a_key_probe_that_finds_no_key_explains_the_sign_in_mode(app, monkeypatch):
+    profiles.add(app.home, "claude-key", "claude", "claude-sonnet-5-5", "medium", "api", ["all"],
+                 claude_sign_in="key")
+    monkeypatch.setattr(profiles.shutil, "which", lambda _: "/test/claude")
+    calls = []
+
+    def no_key(argv, **kwargs):
+        calls.append(argv)
+        return {"stdout": json.dumps({"type": "result", "is_error": True, "result": "Not logged in"}), "exit_code": 1}
+
+    monkeypatch.setattr(profiles, "run_process", no_key)
+    with pytest.raises(WorkbenchError, match="runs --bare and reads only an API key"):
+        profiles.probe(app.home, "claude-key")
+    assert "--bare" in calls[0]
+
+
+@pytest.mark.parametrize("harness, value", [("claude", "oauth"), ("codex", "account")])
+def test_claude_sign_in_is_validated(app, harness, value):
+    with pytest.raises(WorkbenchError, match="claude_sign_in applies to Claude profiles"):
+        profiles.add(app.home, "bad", harness, "m", "low", "subscription", ["all"], claude_sign_in=value)
+    settings = json.loads((app.home / "config.json").read_text())
+    settings["models"].append({"id": "bad", "harness": harness, "model": "m", "effort": "low", "efforts": ["low"],
+                               "auth": "subscription", "classes": ["all"], "verified": False,
+                               "claude_sign_in": value})
+    (app.home / "config.json").write_text(json.dumps(settings))
+    from assistant_workbench.config import config
+
+    with pytest.raises(WorkbenchError, match="claude_sign_in applies to Claude profiles"):
+        config(app.home)

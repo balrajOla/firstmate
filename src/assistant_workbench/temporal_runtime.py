@@ -17,6 +17,7 @@ import shutil
 import signal
 import urllib.parse
 
+from .profiles import claude_args
 from .runtime_backends import Fleet, WorkerControl, USAGE_FIELDS, select_runtime
 from .util import WorkbenchError, atomic, canonical, digest, now
 
@@ -914,7 +915,7 @@ class TemporalRuntime:
 
 
 TEMPORAL_CLAUDE_ARGS = [
-    "--bare", "--permission-mode", "acceptEdits",
+    "--permission-mode", "acceptEdits",
     "--allowedTools", "Bash(git status:*)", "Bash(git diff:*)",
 ]
 
@@ -1121,6 +1122,7 @@ class OfficialCLIExecutor:
                     model["model"],
                     "--max-turns",
                     "30",
+                    *claude_args(model),
                     *TEMPORAL_CLAUDE_ARGS,
                     *extra,
                 ]

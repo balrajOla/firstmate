@@ -31,7 +31,7 @@ def semantic(app, configured, monkeypatch, tmp_path):
     profile = {"id": "router", "harness": "claude", "model": "claude-sonnet-5-5", "effort": "low",
                "efforts": ["low"], "auth": "subscription", "classes": ["simple"], "verified": True,
                "priority": 50}
-    receipt.write_text(json.dumps({"result": "passed", "created": now(), "profile": {
+    receipt.write_text(json.dumps({"result": "passed", "created": now(), "claude_sign_in": "account", "profile": {
         k: profile[k] for k in ("id", "harness", "model", "effort", "auth")}}))
     profile["qualification"] = str(receipt)
     configured["models"].append(profile)
@@ -71,6 +71,8 @@ def test_confident_decision_routes_an_unresolved_request(app, project, semantic)
                  "password strength meter"):
         assert text in prompt
     assert argv[argv.index("--tools") + 1] == "" and argv[argv.index("--max-turns") + 1] == "1"
+    # The router signs in like the profile's workers, without personal settings.
+    assert argv[argv.index("--setting-sources") + 1] == "" and "--strict-mcp-config" in argv
     assert "ANTHROPIC_API_KEY" not in cli.calls[0]["env"]
     decided = app.store.rows("SELECT payload FROM events WHERE kind='request.route_decided'")
     payload = json.loads(decided[0]["payload"])

@@ -76,9 +76,12 @@ def official_cli_profile(app, configured, harness="claude", adapter_config=None,
     if adapter_config is not None:
         profile["adapter_config"] = adapter_config
     receipt = app.home / "probe.json"
+    from assistant_workbench.profiles import claude_sign_in
+
     receipt.write_text(json.dumps({
         "result": "passed", "created": now(),
         "profile": {k: profile[k] for k in ("id", "harness", "model", "effort", "auth")},
+        **({"claude_sign_in": claude_sign_in(profile)} if harness == "claude" else {}),
     }))
     profile["qualification"] = str(receipt)
     (app.home / "config.json").write_text(json.dumps(configured))
@@ -97,8 +100,9 @@ def test_claude_workers_use_the_official_cli_runner_with_isolation(
     assert config["engine"] == "cli" and config["dangerouslySkipPermissions"] is False
     # Isolation defaults come first; the profile may add narrower grants.
     from assistant_workbench.engine import CLAUDE_WORKER_ARGS, disposition_command
+    from assistant_workbench.profiles import CLAUDE_SIGN_IN
 
-    assert config["extraArgs"] == CLAUDE_WORKER_ARGS + [
+    assert config["extraArgs"] == CLAUDE_SIGN_IN["account"] + CLAUDE_WORKER_ARGS + [
         "--allowedTools", "Bash(" + disposition_command() + ":*)",
         "--allowedTools", "Bash(pytest:*)",
     ]
@@ -108,7 +112,10 @@ def test_claude_workers_use_the_official_cli_runner_with_isolation(
     assert "`" + disposition_command() + " done`" in instructions
     assert ("you can run only `git status`, `git diff`, `git add`, `git commit`, `"
             + disposition_command() + "`, `pytest`. Other commands are refused") in instructions
-    assert config["extraArgs"][:3] == ["--bare", "--permission-mode", "acceptEdits"]
+    # A subscription worker keeps the CLI's own sign-in but loads no user or
+    # project settings and no MCP servers.
+    assert config["extraArgs"][:5] == ["--setting-sources", "", "--strict-mcp-config", "--permission-mode", "acceptEdits"]
+    assert "--bare" not in config["extraArgs"]
     assert not any("push" in a for a in config["extraArgs"])
     assert config["model"] == "model-from-cli" and config["effort"] == "medium"
 
@@ -273,6 +280,26 @@ def test_outcome_headline_skips_headers_and_markup(app, project, configured):
     engine.observe()
     outcome = app.store.one("SELECT body FROM outcomes WHERE request_id=?", (request,))
     assert outcome["body"].splitlines()[0] == "All 3 login tests pass on the branch."
+
+
+@pytest.mark.parametrize("auth, sign_in, expected", [
+    ("subscription", None, ["--setting-sources", "", "--strict-mcp-config"]),
+    ("subscription", "key", ["--bare"]),
+    ("api", None, ["--bare"]),
+    ("api", "account", ["--setting-sources", "", "--strict-mcp-config"]),
+], ids=["subscription-default", "subscription-key", "api-default", "api-account"])
+def test_claude_workers_sign_in_the_way_the_profile_says(app, project, configured, auth, sign_in, expected):
+    official_cli_profile(app, configured, auth=auth)
+    if sign_in:
+        configured["models"][0]["claude_sign_in"] = sign_in
+        official_cli_profile(app, configured, auth=auth)
+    app.store.submit("Fix bug", "a", project["id"])
+    api = PinnedPaperclip()
+    assert Engine(app.store, api).tick()["status"] == "delivered"
+    args = api.agents_[0]["adapterConfig"]["extraArgs"]
+    assert args[:len(expected)] == expected and args[len(expected)] == "--permission-mode"
+    # Exactly one mode: --bare never reads an account sign-in.
+    assert ("--bare" in args) != ("--setting-sources" in args)
 
 
 def test_granted_commands_follow_the_cli_argument_forms():
