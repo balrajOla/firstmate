@@ -509,6 +509,14 @@ class Engine:
             return "delivered"
         if req["status"] in {"cancelled", "accepted", "grouped", "needs_project"}:
             return "superseded"
+        # An amendment makes earlier-revision work stale whatever the new plan
+        # is, so stop it before planning, which can wait on a routing model.
+        # Paperclip cancels a task's active run when the task is cancelled.
+        if req["revision"] > 1:
+            for key, identity in issue_map.items():
+                if not key.startswith(str(req["revision"]) + ":"):
+                    self._check_current(req["id"], req["revision"])
+                    self.api.update_issue(identity, {"status": "cancelled"})
         project = self.store.project(req["project_id"])
         plan, ordered, packets = self._preflight(req, project)
         # Paperclip silently runs "isolated" tasks in the project's own
@@ -549,12 +557,6 @@ class Engine:
                     (remote["id"], project["id"]),
                 )
             project["remote_id"] = remote["id"]
-        # Old-revision work is cancelled by its coordinator before replacement tasks.
-        if req["revision"] > 1:
-            for key, identity in issue_map.items():
-                if not key.startswith(str(req["revision"]) + ":"):
-                    self._check_current(req["id"], req["revision"])
-                    self.api.update_issue(identity, {"status": "cancelled"})
         created = {}
         for node in ordered:
             self._check_current(req["id"], req["revision"])
