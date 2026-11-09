@@ -315,6 +315,27 @@ def test_granted_commands_follow_the_cli_argument_forms():
         "--model", "Bash(not-a-grant:*)", "--allowed-tools=Bash(/v/bin/python -m pytest:*) Read",
         "--allowedTools", "Bash(git status:*),Bash(cargo test:*)",
     ]) == ["git status", "npm test", "/v/bin/python -m pytest", "cargo test"]
+    # An unscoped grant allows every command, in any of the CLI's forms.
+    for grant in (["--allowedTools", "Bash"], ["--allowedTools", "Edit,Bash"], ["--allowedTools", "Edit Bash Write"],
+                  ["--allowedTools=Bash(*)"], ["--allowedTools", "Bash(:*)"]):
+        assert granted_commands(["--allowedTools", "Bash(git status:*)", *grant]) == ["*"], grant
+    for narrow in (["--allowedTools", "BashOutput"], ["--model", "Bash"], ["--allowedTools", "Bash(npm *)"]):
+        assert granted_commands(narrow) != ["*"], narrow
+
+
+def test_a_profile_that_grants_every_command_says_so_to_its_workers(app, project, configured):
+    official_cli_profile(app, configured, adapter_config={"extraArgs": ["--allowedTools", "Bash", "Edit", "Write"]})
+    app.store.submit("Fix bug", "a", project["id"])
+    api = PinnedPaperclip()
+    assert Engine(app.store, api).tick()["status"] == "delivered"
+    agent = api.agents_[0]
+    instructions = agent["instructionsBundle"]["files"]["AGENTS.md"]
+    assert "run any command the task needs" in instructions
+    assert "you can run only" not in instructions
+    # The grant widens tools; it never turns on a permission bypass.
+    config = agent["adapterConfig"]
+    assert config["dangerouslySkipPermissions"] is False
+    assert config["extraArgs"][config["extraArgs"].index("--permission-mode") + 1] == "acceptEdits"
 
 
 def test_worker_instructions_ask_for_a_leading_result_sentence(app, project, configured):

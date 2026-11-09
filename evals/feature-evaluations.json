@@ -2535,7 +2535,8 @@
         "tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[subscription-default]",
         "tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[subscription-key]",
         "tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[api-default]",
-        "tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[api-account]"
+        "tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[api-account]",
+        "tests/test_paperclip_contract.py::test_a_profile_that_grants_every_command_says_so_to_its_workers"
       ],
       "required_gates": [
         "linked_contract",
