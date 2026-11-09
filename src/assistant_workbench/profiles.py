@@ -13,11 +13,14 @@ from .util import WorkbenchError, atomic, canonical, digest, now, uid
 # reads only ANTHROPIC_API_KEY, an apiKeyHelper or a third-party provider and
 # never an account sign-in. "account" keeps the CLI's own sign-in, such as a
 # Pro or Max subscription, while loading no user or project settings (hooks,
-# plugins, permission rules, CLAUDE.md) and no MCP servers. Managed settings
-# apply in both. Probes, workers and the router use the same mode.
+# plugins, permission rules, CLAUDE.md), no MCP servers and no skills or slash
+# commands. Managed settings apply in both. Probes, workers and the router use
+# the same mode. Without --disable-slash-commands the CLI lists every skill
+# when it starts, and Paperclip's sign-in check reads a skill description that
+# says "unauthorized" as a failed login and pauses the agent.
 CLAUDE_SIGN_IN = {
     "key": ["--bare"],
-    "account": ["--setting-sources", "", "--strict-mcp-config"],
+    "account": ["--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands"],
 }
 
 

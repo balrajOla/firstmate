@@ -114,7 +114,12 @@ def test_claude_workers_use_the_official_cli_runner_with_isolation(
             + disposition_command() + "`, `pytest`. Other commands are refused") in instructions
     # A subscription worker keeps the CLI's own sign-in but loads no user or
     # project settings and no MCP servers.
-    assert config["extraArgs"][:5] == ["--setting-sources", "", "--strict-mcp-config", "--permission-mode", "acceptEdits"]
+    assert config["extraArgs"][:6] == ["--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands",
+                                       "--permission-mode", "acceptEdits"]
+    # Without it the CLI lists every skill at start-up, and Paperclip's sign-in
+    # check took a skill description containing "unauthorized" for a failed
+    # login and paused the agent.
+    assert "--disable-slash-commands" in config["extraArgs"]
     assert "--bare" not in config["extraArgs"]
     assert not any("push" in a for a in config["extraArgs"])
     assert config["model"] == "model-from-cli" and config["effort"] == "medium"
@@ -283,10 +288,10 @@ def test_outcome_headline_skips_headers_and_markup(app, project, configured):
 
 
 @pytest.mark.parametrize("auth, sign_in, expected", [
-    ("subscription", None, ["--setting-sources", "", "--strict-mcp-config"]),
+    ("subscription", None, ["--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands"]),
     ("subscription", "key", ["--bare"]),
     ("api", None, ["--bare"]),
-    ("api", "account", ["--setting-sources", "", "--strict-mcp-config"]),
+    ("api", "account", ["--setting-sources", "", "--strict-mcp-config", "--disable-slash-commands"]),
 ], ids=["subscription-default", "subscription-key", "api-default", "api-account"])
 def test_claude_workers_sign_in_the_way_the_profile_says(app, project, configured, auth, sign_in, expected):
     official_cli_profile(app, configured, auth=auth)
