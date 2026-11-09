@@ -23,12 +23,12 @@
       "port": 8081
     },
     "hindsight": {
-      "executable": "/home/you/awb/venvs/hindsight/bin/hindsight-api",
+      "executable": "/home/you/awb/deps/dependencies/hindsight/1.2.0/venv/bin/hindsight-api",
       "home": "/home/you/awb/state/hindsight-home",
       "llm_model": "local-chat"
     },
     "openviking": {
-      "executable": "/home/you/awb/venvs/openviking/bin/openviking-server",
+      "executable": "/home/you/awb/deps/dependencies/openviking/0.5.3/venv/bin/openviking-server",
       "home": "/home/you/awb/state/openviking-home",
       "vlm_model": "local-chat",
       "embedding_model": "local-embed",

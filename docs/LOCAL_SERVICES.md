@@ -15,12 +15,12 @@ Everything binds to `127.0.0.1`. Pick your own directories. The examples use
 | Component | Version | Notes |
 |---|---|---|
 | Paperclip | pinned in `assets/dependencies.json` | `awb deps install paperclip` |
-| llama.cpp `llama-server` | release b12211 | official release archive; check its published SHA-256 |
+| llama.cpp `llama-server` | release b12211, pinned in `assets/dependencies.json` | official release archive; check its published SHA-256 |
 | Chat model | any GGUF chat model with tool calling | verified with Qwen3-8B Q4_K_M (Apache-2.0) |
 | Embedding model | any GGUF embedding model | verified with embeddinggemma-300M Q8_0 (768 dimensions) |
-| Hindsight | `hindsight-api` 1.2.0 | embedded PostgreSQL (pg0) |
-| OpenViking | `openviking` 0.5.3 | local file and vector storage |
-| SurrealDB | 2.7.0 | the v2 line that Open Notebook's compose file uses |
+| Hindsight | `hindsight-api` 1.2.0, pinned | `awb deps install hindsight`; embedded PostgreSQL (pg0) |
+| OpenViking | `openviking` 0.5.3, pinned | `awb deps install openviking`; local file and vector storage |
+| SurrealDB | 2.7.0, pinned | official release binary; the v2 line that Open Notebook's compose file uses |
 | Open Notebook | pinned in `assets/dependencies.json` | install from its `uv.lock` |
 | GPT Researcher | pinned in `assets/dependencies.json` | plus `ddgs` for the keyless DuckDuckGo retriever |
 
@@ -30,10 +30,14 @@ Create one virtual environment per Python service. Behind a TLS-inspecting
 proxy, point `SSL_CERT_FILE` at your CA bundle for pip and model downloads.
 
 ```sh
-python3 -m venv ~/awb/venvs/hindsight && ~/awb/venvs/hindsight/bin/pip install "hindsight-api==1.2.0"
-python3 -m venv ~/awb/venvs/openviking && ~/awb/venvs/openviking/bin/pip install "openviking==0.5.3"
-awb --home ~/awb/deps deps install paperclip open-notebook gpt-researcher
+awb --home ~/awb/deps deps install paperclip hindsight openviking open-notebook gpt-researcher
 ```
+
+Hindsight and OpenViking land in their own virtual environments under
+`~/awb/deps/dependencies/<name>/<version>/venv`; point the generated services
+at those interpreters. `awb deps list` shows every pinned component, including
+the platform binaries (SurrealDB, llama.cpp) that you install from their
+official release archives.
 
 Open Notebook must be installed from its lockfile. An unlocked install pulled
 SurrealDB SDK 3.0.0 where the lock pins 1.0.8, and startup then failed with

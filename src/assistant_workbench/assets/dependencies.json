@@ -129,5 +129,43 @@
       ]
     ],
     "qualification": "not implied by installation"
+  },
+  "hindsight": {
+    "kind": "python",
+    "url": "https://github.com/vectorize-io/hindsight.git",
+    "revision": "1.2.0",
+    "release": "v1.2.0",
+    "build": [],
+    "qualification": "not implied by installation",
+    "package": "hindsight-api",
+    "source_revision": "34a138684a899b6ec34175f7a2b633860466d289"
+  },
+  "openviking": {
+    "kind": "python",
+    "url": "https://github.com/volcengine/OpenViking.git",
+    "revision": "0.5.3",
+    "release": "v0.5.3",
+    "build": [],
+    "qualification": "not implied by installation",
+    "package": "openviking",
+    "source_revision": "178a8cdfb41b51e7d24c4bf79a13cc54981e0ee8"
+  },
+  "surrealdb": {
+    "kind": "platform",
+    "url": "https://github.com/surrealdb/surrealdb.git",
+    "revision": "f43f1ee0ffd4a80abf03a06ca9c9f8089f9a0ac9",
+    "release": "v2.7.0",
+    "build": [],
+    "qualification": "not implied by installation",
+    "caveat": "Install the official v2.7.0 release binary for your platform; Open Notebook's compose file uses the v2 line."
+  },
+  "llama.cpp": {
+    "kind": "platform",
+    "url": "https://github.com/ggml-org/llama.cpp.git",
+    "revision": "7d7f0287530bc8981690f361d8c1627dbae1c99a",
+    "release": "b12211",
+    "build": [],
+    "qualification": "not implied by installation",
+    "caveat": "Install the official b12211 release archive for your platform and check its published SHA-256; it provides llama-server."
   }
 }
