@@ -59,6 +59,9 @@ def config(home: Path):
     if not isinstance(runs, int) or isinstance(runs, bool) or not 1 <= runs <= 50:
         raise WorkbenchError("coordinator.max_concurrent_runs must be an integer from 1 to 50")
     _validate_open(value.get("open", {}))
+    from .network import network_settings
+
+    network_settings(value)
     integrations = value.get("integrations", {})
     if not isinstance(integrations, dict) or any(
         not isinstance(item, dict) for item in integrations.values()

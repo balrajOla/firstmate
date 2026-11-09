@@ -158,12 +158,12 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF25](#pf25) | Bounded current-context assembly | 7 | `corpus`, `recovery` |
 | [PF26](#pf26) | Export, invalidation, retention and deletion | 11 | `retention` |
 | [PF27](#pf27) | One replaceable runtime backend | 15 | `coordinator` |
-| [PF28](#pf28) | Real readiness and capability health | 16 | `models`, `coordinator` |
+| [PF28](#pf28) | Real readiness and capability health | 23 | `models`, `coordinator` |
 | [PF29](#pf29) | Detached parallel execution | 14 | `workers`, `gui` |
 | [PF30](#pf30) | Ralph-style fresh-context continuation | 3 | `recovery` |
 | [PF31](#pf31) | Bounded iteration and no-progress detection | 3 | `recovery` |
-| [PF32](#pf32) | Crash and uncertain-effect reconciliation | 8 | `coordinator`, `recovery` |
-| [PF33](#pf33) | Scoped pause/cancel including shared work | 12 | `workers`, `coordinator` |
+| [PF32](#pf32) | Crash and uncertain-effect reconciliation | 21 | `coordinator`, `recovery` |
+| [PF33](#pf33) | Scoped pause/cancel including shared work | 14 | `workers`, `coordinator` |
 | [PF34](#pf34) | Isolated workspaces and shared resource limits | 12 | `isolation`, `capacity` |
 | [PF35](#pf35) | Native WezTerm navigation | 11 | `gui` |
 | [PF36](#pf36) | Persistent requests and obligation progress | 10 | `journey`, `gui` |
@@ -1010,6 +1010,13 @@ Mapped pytest evidence:
 - `tests/test_engine_preflight.py::test_missing_qualification_is_rejected_before_creating_remote_project`
 - `tests/test_engine_preflight.py::test_saved_profile_qualification_is_rechecked_when_receipt_expires`
 - `tests/test_app_integrations.py::test_temporal_configuration_is_valid_without_sdk_and_health_reports_missing_sdk`
+- `tests/test_network.py::test_offline_needs_two_failed_probes_and_one_success_ends_it`
+- `tests/test_network.py::test_probe_hosts_follow_the_configured_harnesses`
+- `tests/test_network.py::test_network_settings_are_validated[enabled]`
+- `tests/test_network.py::test_network_settings_are_validated[hosts]`
+- `tests/test_network.py::test_network_settings_are_validated[interval]`
+- `tests/test_network.py::test_network_settings_are_validated[unknown]`
+- `tests/test_network.py::test_a_disabled_guard_or_no_hosts_never_reports_offline`
 
 ### PF29
 
@@ -1115,6 +1122,17 @@ Mapped pytest evidence:
 - `tests/test_app_integrations.py::test_retry_works_for_temporal_without_constructing_paperclip`
 - `tests/test_paperclip_contract.py::test_reused_issue_belonging_to_other_work_is_refused`
 - `tests/test_paperclip_contract.py::test_replay_of_own_issue_after_lost_cache_is_accepted`
+- `tests/test_network.py::test_a_task_lost_to_a_restart_is_retried_once_per_run_with_growing_delays`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[restart]`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[transient]`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[dns]`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[reset]`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[plain-failure]`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[no-credentials]`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[signed-out]`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[bad-key]`
+- `tests/test_network.py::test_nothing_is_retried_while_offline_or_for_a_sign_in_problem`
+- `tests/test_network.py::test_a_quota_failure_waits_much_longer`
 
 ### PF33
 
@@ -1146,6 +1164,8 @@ Mapped pytest evidence:
 - `tests/test_runtime_backends.py::test_cli_process_contract_stdin_receipt_and_cancel`
 - `tests/test_engine_preflight.py::test_stale_cancel_job_does_not_cancel_current_issues`
 - `tests/test_engine_preflight.py::test_scope_change_while_reading_agent_pool_prevents_agent_creation`
+- `tests/test_network.py::test_an_outage_pauses_managed_agents_and_reconnecting_retries_what_it_interrupted`
+- `tests/test_network.py::test_the_bridge_saves_prompts_but_dispatches_nothing_while_offline`
 
 ### PF34
 

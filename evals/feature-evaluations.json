@@ -1441,7 +1441,14 @@
         "tests/test_runtime_backends.py::test_temporal_missing_worker_poller_blocks_dispatch",
         "tests/test_engine_preflight.py::test_missing_qualification_is_rejected_before_creating_remote_project",
         "tests/test_engine_preflight.py::test_saved_profile_qualification_is_rechecked_when_receipt_expires",
-        "tests/test_app_integrations.py::test_temporal_configuration_is_valid_without_sdk_and_health_reports_missing_sdk"
+        "tests/test_app_integrations.py::test_temporal_configuration_is_valid_without_sdk_and_health_reports_missing_sdk",
+        "tests/test_network.py::test_offline_needs_two_failed_probes_and_one_success_ends_it",
+        "tests/test_network.py::test_probe_hosts_follow_the_configured_harnesses",
+        "tests/test_network.py::test_network_settings_are_validated[enabled]",
+        "tests/test_network.py::test_network_settings_are_validated[hosts]",
+        "tests/test_network.py::test_network_settings_are_validated[interval]",
+        "tests/test_network.py::test_network_settings_are_validated[unknown]",
+        "tests/test_network.py::test_a_disabled_guard_or_no_hosts_never_reports_offline"
       ],
       "required_gates": [
         "models",
@@ -1581,7 +1588,18 @@
         "tests/test_workspace_backup.py::test_backup_restores_artifacts_and_rebinds_workspace_then_executes",
         "tests/test_app_integrations.py::test_retry_works_for_temporal_without_constructing_paperclip",
         "tests/test_paperclip_contract.py::test_reused_issue_belonging_to_other_work_is_refused",
-        "tests/test_paperclip_contract.py::test_replay_of_own_issue_after_lost_cache_is_accepted"
+        "tests/test_paperclip_contract.py::test_replay_of_own_issue_after_lost_cache_is_accepted",
+        "tests/test_network.py::test_a_task_lost_to_a_restart_is_retried_once_per_run_with_growing_delays",
+        "tests/test_network.py::test_only_recoverable_failures_are_retried[restart]",
+        "tests/test_network.py::test_only_recoverable_failures_are_retried[transient]",
+        "tests/test_network.py::test_only_recoverable_failures_are_retried[dns]",
+        "tests/test_network.py::test_only_recoverable_failures_are_retried[reset]",
+        "tests/test_network.py::test_only_recoverable_failures_are_retried[plain-failure]",
+        "tests/test_network.py::test_only_recoverable_failures_are_retried[no-credentials]",
+        "tests/test_network.py::test_only_recoverable_failures_are_retried[signed-out]",
+        "tests/test_network.py::test_only_recoverable_failures_are_retried[bad-key]",
+        "tests/test_network.py::test_nothing_is_retried_while_offline_or_for_a_sign_in_problem",
+        "tests/test_network.py::test_a_quota_failure_waits_much_longer"
       ],
       "required_gates": [
         "coordinator",
@@ -1621,7 +1639,9 @@
         "tests/test_runtime_backends.py::test_temporal_real_service_cancellation_stops_activity",
         "tests/test_runtime_backends.py::test_cli_process_contract_stdin_receipt_and_cancel",
         "tests/test_engine_preflight.py::test_stale_cancel_job_does_not_cancel_current_issues",
-        "tests/test_engine_preflight.py::test_scope_change_while_reading_agent_pool_prevents_agent_creation"
+        "tests/test_engine_preflight.py::test_scope_change_while_reading_agent_pool_prevents_agent_creation",
+        "tests/test_network.py::test_an_outage_pauses_managed_agents_and_reconnecting_retries_what_it_interrupted",
+        "tests/test_network.py::test_the_bridge_saves_prompts_but_dispatches_nothing_while_offline"
       ],
       "required_gates": [
         "workers",

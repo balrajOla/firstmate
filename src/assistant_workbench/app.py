@@ -155,6 +155,23 @@ class Application:
             if not isinstance(runtime, Engine):
                 raise WorkbenchError("Retiring managed agents applies to the Paperclip coordinator")
             return runtime.retire_agents(**args)
+        if action == "network.check":
+            # Pause managed Paperclip agents when the providers become
+            # unreachable and resume them, retrying interrupted tasks, when
+            # they are back. Other coordinators only stop dispatching.
+            from .network import Guard
+
+            guard = Guard(s, config(self.home))
+            state = guard.update()
+            runtime = self._coordinator()
+            if isinstance(runtime, Engine):
+                if state["status"] == "offline" and not state.get("paused"):
+                    runtime.pause_for_network()
+                    guard.mark(True)
+                elif state["status"] == "online" and state.get("paused"):
+                    runtime.resume_after_network()
+                    guard.mark(False)
+            return guard.state()
         if action == "coordinator.health":
             runtime = self._coordinator()
             return (
