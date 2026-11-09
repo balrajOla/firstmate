@@ -159,13 +159,13 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF26](#pf26) | Export, invalidation, retention and deletion | 11 | `retention` |
 | [PF27](#pf27) | One replaceable runtime backend | 15 | `coordinator` |
 | [PF28](#pf28) | Real readiness and capability health | 16 | `models`, `coordinator` |
-| [PF29](#pf29) | Detached parallel execution | 4 | `workers`, `gui` |
+| [PF29](#pf29) | Detached parallel execution | 14 | `workers`, `gui` |
 | [PF30](#pf30) | Ralph-style fresh-context continuation | 3 | `recovery` |
 | [PF31](#pf31) | Bounded iteration and no-progress detection | 3 | `recovery` |
 | [PF32](#pf32) | Crash and uncertain-effect reconciliation | 8 | `coordinator`, `recovery` |
 | [PF33](#pf33) | Scoped pause/cancel including shared work | 12 | `workers`, `coordinator` |
 | [PF34](#pf34) | Isolated workspaces and shared resource limits | 12 | `isolation`, `capacity` |
-| [PF35](#pf35) | Native WezTerm navigation | 5 | `gui` |
+| [PF35](#pf35) | Native WezTerm navigation | 11 | `gui` |
 | [PF36](#pf36) | Persistent requests and obligation progress | 10 | `journey`, `gui` |
 | [PF37](#pf37) | Dedicated Outcomes view | 5 | `gui`, `workers` |
 | [PF38](#pf38) | Versioned result cards, checks and limitations | 27 | `journey`, `gui` |
@@ -188,7 +188,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF55](#pf55) | Reviewed improvements with rollback | 2 | `journey`, `benchmark` |
 | [PF56](#pf56) | One GitHub repository and reproducible packages | 1 | `packages` |
 | [PF57](#pf57) | Harness and linked-project contracts | 27 | `linked_contract`, `models` |
-| [PF58](#pf58) | Doctor, migration, backup, restore and uninstall | 32 | `migration` |
+| [PF58](#pf58) | Doctor, migration, backup, restore and uninstall | 42 | `migration` |
 | [PF59](#pf59) | Authorization, credentials and effect audit | 97 | `isolation` |
 | [PF60](#pf60) | Authorized schedules and clear updates | 1 | `journey` |
 | [PF61](#pf61) | Optional OpenViking replacement context backend | 40 | `openviking`, `retention` |
@@ -1017,6 +1017,16 @@ Mapped pytest evidence:
 - `tests/test_execution.py::test_concurrent_bridge_calls_claim_once`
 - `tests/test_server_workers.py::test_background_uses_selected_coordinator_and_recovers_observation_health[paperclip]`
 - `tests/test_server_workers.py::test_background_uses_selected_coordinator_and_recovers_observation_health[temporal]`
+- `tests/test_launcher.py::test_a_running_bridge_is_left_alone`
+- `tests/test_launcher.py::test_launchd_services_are_loaded_or_started_but_never_restarted`
+- `tests/test_launcher.py::test_without_a_service_the_bridge_starts_detached_from_the_terminal`
+- `tests/test_launcher.py::test_a_stale_heartbeat_or_a_silent_port_is_not_a_running_bridge`
+- `tests/test_launcher.py::test_a_bridge_that_never_reports_healthy_is_an_error_not_a_second_bridge`
+- `tests/test_launcher.py::test_systemd_units_start_but_another_homes_bridge_unit_is_left_alone`
+- `tests/test_launcher.py::test_a_service_that_refuses_to_start_is_reported`
+- `tests/test_launcher.py::test_an_unreachable_coordinator_is_reported_without_blocking_the_ui`
+- `tests/test_launcher.py::test_open_without_the_ui_reports_the_state_as_json`
+- `tests/test_launcher.py::test_a_bridge_service_for_another_home_is_not_used`
 
 ### PF30
 
@@ -1179,6 +1189,12 @@ Mapped pytest evidence:
 - `tests/test_tui_scenarios.py::test_tui_project_amend_cancel_and_export_journey[size0]`
 - `tests/test_tui_scenarios.py::test_tui_project_amend_cancel_and_export_journey[size1]`
 - `tests/test_tui_scenarios.py::test_tui_project_amend_cancel_and_export_journey[size2]`
+- `tests/test_tui_scenarios.py::test_reopening_the_ui_returns_to_the_same_place`
+- `tests/test_tui_scenarios.py::test_an_unreadable_or_outdated_saved_view_starts_from_the_inbox`
+- `tests/test_launcher.py::test_herdr_session_is_started_once_and_runs_the_ui_in_its_own_workspace`
+- `tests/test_launcher.py::test_reopening_a_live_session_focuses_the_ui_instead_of_starting_another`
+- `tests/test_launcher.py::test_missing_herdr_is_a_clear_error`
+- `tests/test_launcher.py::test_inside_a_herdr_pane_open_runs_the_ui_directly`
 
 ### PF36
 
@@ -1854,6 +1870,14 @@ Mapped pytest evidence:
 - `tests/test_workspace_backup.py::test_backup_detects_concurrent_writes_and_removes_partial_copy[filesystem]`
 - `tests/test_workspace_backup.py::test_backup_detects_concurrent_writes_and_removes_partial_copy[database]`
 - `tests/test_workspace_backup.py::test_backup_rejects_actual_running_process_until_cancelled`
+- `tests/test_launcher.py::test_open_settings_are_validated[unsafe-service]`
+- `tests/test_launcher.py::test_open_settings_are_validated[services-not-a-list]`
+- `tests/test_launcher.py::test_open_settings_are_validated[empty-bridge]`
+- `tests/test_launcher.py::test_open_settings_are_validated[port-range]`
+- `tests/test_launcher.py::test_open_settings_are_validated[port-bool]`
+- `tests/test_launcher.py::test_open_settings_are_validated[unknown-session]`
+- `tests/test_launcher.py::test_open_settings_are_validated[session-name-space]`
+- `tests/test_launcher.py::test_open_settings_are_validated[unknown-key]`
 
 ### PF59
 

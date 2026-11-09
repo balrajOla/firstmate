@@ -64,13 +64,14 @@ def sha256(path):
 
 
 def shortcut_bound(keys):
-    """Whether `wezterm show-keys --lua` lists Ctrl+Shift+A opening the TUI.
+    """Whether `wezterm show-keys --lua` lists Ctrl+Shift+A opening the TUI,
+    through `awb open` or, in older installs, `awb tui`.
 
     WezTerm normalizes Ctrl+Shift+A to key 'A' with mods 'CTRL'.
     """
     for line in keys.splitlines():
         match = re.search(r"key = '([Aa])', mods = '([A-Z|]+)'", line)
-        if match and "'tui'" in line:
+        if match and ("'open'" in line or "'tui'" in line):
             mods = set(match.group(2).split("|"))
             if "CTRL" in mods and (match.group(1) == "A" or "SHIFT" in mods):
                 return True

@@ -58,6 +58,7 @@ def config(home: Path):
     runs = coordinator.get("max_concurrent_runs", 1)
     if not isinstance(runs, int) or isinstance(runs, bool) or not 1 <= runs <= 50:
         raise WorkbenchError("coordinator.max_concurrent_runs must be an integer from 1 to 50")
+    _validate_open(value.get("open", {}))
     integrations = value.get("integrations", {})
     if not isinstance(integrations, dict) or any(
         not isinstance(item, dict) for item in integrations.values()
@@ -93,6 +94,33 @@ def config(home: Path):
         }:
             raise WorkbenchError("Unsupported effort or authentication profile")
     return value
+
+
+SERVICE_NAME = r"[A-Za-z0-9][A-Za-z0-9@._-]{0,127}"
+
+
+def _validate_open(spec):
+    """Settings for `awb open`: services to start first, the bridge service,
+    a fallback port and an optional persistent terminal session."""
+    if not isinstance(spec, dict) or set(spec) - {"services", "bridge_service", "port", "session", "session_name"}:
+        raise WorkbenchError("open accepts services, bridge_service, port, session and session_name")
+    services = spec.get("services", [])
+    if not isinstance(services, list) or any(
+        not isinstance(name, str) or not re.fullmatch(SERVICE_NAME, name) for name in services
+    ):
+        raise WorkbenchError("open.services must list launchd labels or systemd unit names")
+    if "bridge_service" in spec and not (
+        isinstance(spec["bridge_service"], str) and re.fullmatch(SERVICE_NAME, spec["bridge_service"])
+    ):
+        raise WorkbenchError("open.bridge_service must be a launchd label or systemd unit name")
+    port = spec.get("port")
+    if port is not None and (not isinstance(port, int) or isinstance(port, bool) or not 0 < port < 65536):
+        raise WorkbenchError("open.port must be between 1 and 65535")
+    if spec.get("session") not in {None, "herdr"}:
+        raise WorkbenchError("open.session must be null or herdr")
+    name = spec.get("session_name", "workbench")
+    if not isinstance(name, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]{0,63}", name):
+        raise WorkbenchError("open.session_name must be a short identifier")
 
 
 def _validate_temporal(spec):

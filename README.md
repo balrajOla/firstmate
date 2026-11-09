@@ -43,7 +43,7 @@ A deliverable from the same run: workers built a small repair-café website and 
 | Context and memory | Original-source archive with hashes, scoped retrieval and coverage, plus optional LCM, Basic Memory, QMD, Docling, Hindsight, OpenViking and Open Notebook. |
 | Research and writing | Optional GPT Researcher, Superpowers brainstorming and planning, Elements of Style, Humanizer, Vale and Promptfoo checks. |
 | Code execution | Bounded Python, JavaScript, TypeScript and Rust checks with artifact manifests. |
-| Terminal | Textual UI for WezTerm (Ctrl+Shift+A): inbox, requests, outcomes, teams, context, health and logs; search, pin, read, reopen and export. |
+| Terminal | `awb open` starts what is down and reopens the Textual UI where you left it, optionally in a persistent herdr session; Ctrl+Shift+A in WezTerm. Inbox, requests, outcomes, teams, context, health and logs; search, pin, read, reopen and export. |
 | Operations | Owned installer with upgrade and rollback, launchd and systemd service definitions, verified backup and restore, uninstall, schedules, a doctor command and evidence-backed qualification. |
 | Access | CLI, a loopback HTTP API and MCP tools for other harnesses. |
 
@@ -115,11 +115,17 @@ awb request '{"action":"profile.probe","args":{"identity":"claude"}}'
 ## Use
 
 ```sh
+awb open
+```
+
+`awb open` is the one command to remember. It starts the coordinator and the bridge if they are down, waits until they are healthy, and opens the terminal UI on the tab, filters and row you left. Type prompts there. Work runs in background services, so closing the window or the UI loses nothing; run `awb open` again to pick up where you were. With `--session herdr`, the UI itself also survives a closed terminal in a persistent [herdr](https://herdr.dev) session. [How it works](docs/SETUP.md#one-command-awb-open)
+
+From the shell:
+
+```sh
 awb project add "My site" --repository ~/code/my-site
 awb submit "Add a contact form with validation and tests" --project "My site"
-awb serve                                  # bridge: dispatches work and observes results
-awb tui                                    # the terminal UI
-awb terminal install --config-file ~/.wezterm.lua --executable "$(command -v awb)"   # Ctrl+Shift+A in WezTerm
+awb terminal install --config-file ~/.wezterm.lua --executable "$(command -v awb)"   # Ctrl+Shift+A runs awb open in WezTerm
 ```
 
 Amend a request with `awb submit "…" --reply-to REQUEST_ID --expected-revision N`. Cancel it with `awb request '{"action":"request.cancel","args":{"request_id":"…"}}'`.

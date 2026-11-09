@@ -338,9 +338,11 @@
       "src/assistant_workbench/policy.py",
       "tests/test_execution.py",
       "src/assistant_workbench/temporal_runtime.py",
-      "tests/test_runtime_backends.py"
+      "tests/test_runtime_backends.py",
+      "src/assistant_workbench/launcher.py",
+      "tests/test_launcher.py"
     ],
-    "remaining": "Paperclip issue DAGs and Temporal parallel activities are wired. Live macOS run (2026-11-09): two signed-in workers' runs overlapped, a bridge killed mid-delivery was restarted with no duplicate issues or runs, and workers ran to completion after the submitting CLI exited. Production restarts and long runs remain."
+    "remaining": "Paperclip issue DAGs and Temporal parallel activities are wired. Live macOS run (2026-11-09): two signed-in workers' runs overlapped, a bridge killed mid-delivery was restarted with no duplicate issues or runs, and workers ran to completion after the submitting CLI exited. Production restarts and long runs remain. `awb open` starts stopped services and, without one, a bridge detached from the terminal; on macOS it started a background bridge for a second home in under a second and left the first home's service alone. Start at login was not observed."
   },
   {
     "id": "PF30",
@@ -418,9 +420,10 @@
       "src/assistant_workbench/terminal.py",
       "tests/test_operations.py",
       "tests/test_tui_scenarios.py",
-      "docs/TERMINAL_SCENARIOS.md"
+      "docs/TERMINAL_SCENARIOS.md",
+      "src/assistant_workbench/launcher.py"
     ],
-    "remaining": "Native WezTerm on a user macOS desktop opened the Workbench at about 80x24, 120x36 and 160x48 with real screenshots, and the Ctrl+Shift+A binding resolved. A real keystroke, reconnect, sleep and reboot still need qualification on the target desktop."
+    "remaining": "Native WezTerm on a user macOS desktop opened the Workbench at about 80x24, 120x36 and 160x48 with real screenshots, and the Ctrl+Shift+A binding resolved. A real keystroke, reconnect, sleep and reboot still need qualification on the target desktop. The view reopens on the saved tab, filters, searches and row. In a named herdr session on macOS the UI ran with no client attached, a reopen focused it instead of starting another, and quitting it closed its workspace until the next open."
   },
   {
     "id": "PF36",

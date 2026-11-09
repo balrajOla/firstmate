@@ -7,7 +7,7 @@ function M.apply_to_config(config, options)
   local executable = options.executable or 'awb'
   config.keys = config.keys or {}
   local binding = {key='A', mods='CTRL|SHIFT', action=wezterm.action.SpawnCommandInNewTab{
-    args={executable, '--home', home, 'tui'}, domain='CurrentPaneDomain'}}
+    args={executable, '--home', home, 'open'}, domain='CurrentPaneDomain'}}
   for _, key in ipairs(config.keys) do
     if key.key == binding.key and key.mods == binding.mods then
       error('Workbench shortcut CTRL|SHIFT+A conflicts with an existing binding; choose a custom binding')
