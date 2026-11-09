@@ -402,6 +402,34 @@ def test_dependents_start_from_the_predecessor_branch(app, project, configured):
     assert "inheritExecutionWorkspaceFromIssueId" not in api.issue(verify)
 
 
+def test_amendment_stops_earlier_revision_work_before_planning(app, project, configured, monkeypatch):
+    import assistant_workbench.engine as engine_module
+
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    original = engine_module.compile_plan
+    seen = []
+
+    def plan_after_checking(*args, **kwargs):
+        # Planning can wait on a routing model; the old worker must already
+        # have been told to stop by then.
+        seen.append({api.issue(i)["status"] for i in (implement, verify)})
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(engine_module, "compile_plan", plan_after_checking)
+    app.store.submit("Also cover the logout path.", "amend", reply_to=request, expected_revision=1)
+    assert engine.tick()["status"] == "delivered"
+    assert seen == [{"cancelled"}]
+
+
+def test_amendment_that_cannot_dispatch_still_stops_earlier_work(app, project, configured):
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    app.store.submit("Checklist: " + "keep keyboard access. " * 3000, "amend", reply_to=request,
+                     expected_revision=1)
+    result = engine.tick()
+    assert result["status"] == "blocked" and "character budget" in result["error"]
+    assert {api.issue(i)["status"] for i in (implement, verify)} == {"cancelled"}
+
+
 def test_task_branches_are_valid_and_distinct_per_revision():
     from assistant_workbench.engine import task_branch
 

@@ -433,6 +433,8 @@ Mapped pytest evidence:
 - `tests/test_requirement_scenarios.py::test_group_amendment_after_parent_acceptance_is_rejected_without_writes`
 - `tests/test_tui_scenarios.py::test_tui_stale_amendment_is_rejected_without_clobbering`
 - `tests/test_scenario_runner.py::test_conflicting_requirements_group_identity_and_stale_rejection_are_observed`
+- `tests/test_paperclip_contract.py::test_amendment_stops_earlier_revision_work_before_planning`
+- `tests/test_paperclip_contract.py::test_amendment_that_cannot_dispatch_still_stops_earlier_work`
 
 ### PF09
 
