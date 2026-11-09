@@ -187,7 +187,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF54](#pf54) | Fault, capacity and soak verification | 13 | `capacity`, `soak` |
 | [PF55](#pf55) | Reviewed improvements with rollback | 2 | `journey`, `benchmark` |
 | [PF56](#pf56) | One GitHub repository and reproducible packages | 1 | `packages` |
-| [PF57](#pf57) | Harness and linked-project contracts | 31 | `linked_contract`, `models` |
+| [PF57](#pf57) | Harness and linked-project contracts | 32 | `linked_contract`, `models` |
 | [PF58](#pf58) | Doctor, migration, backup, restore and uninstall | 42 | `migration` |
 | [PF59](#pf59) | Authorization, credentials and effect audit | 97 | `isolation` |
 | [PF60](#pf60) | Authorized schedules and clear updates | 1 | `journey` |
@@ -1827,6 +1827,7 @@ Mapped pytest evidence:
 - `tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[subscription-key]`
 - `tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[api-default]`
 - `tests/test_paperclip_contract.py::test_claude_workers_sign_in_the_way_the_profile_says[api-account]`
+- `tests/test_paperclip_contract.py::test_a_profile_that_grants_every_command_says_so_to_its_workers`
 
 ### PF58
 

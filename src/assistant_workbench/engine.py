@@ -53,7 +53,8 @@ def disposition_command():
 
 
 def granted_commands(args):
-    """Shell commands that Claude CLI arguments allow through --allowedTools."""
+    """Shell commands that Claude CLI arguments allow through --allowedTools.
+    An unscoped grant (Bash, Bash(*) or Bash(:*)) allows any command: ["*"]."""
     commands, granting = [], False
     for arg in args:
         if arg in ("--allowedTools", "--allowed-tools"):
@@ -66,6 +67,8 @@ def granted_commands(args):
             continue
         elif not granting:
             continue
+        if re.search(r"(?<![\w(])Bash(?![\w(])|Bash\(\s*:?\*\s*\)", arg):
+            return ["*"]
         for match in re.finditer(r"Bash\(([^)]*)\)", arg):
             command = match.group(1).removesuffix(":*").strip()
             if command and command not in commands:
@@ -231,11 +234,13 @@ class Engine:
                 else "Record your task disposition if Paperclip lets you; otherwise end with the report. "
             )
             + (
-                "Apart from editing files you can run only "
+                ""
+                if model["harness"] != "claude"
+                else "You can edit files and run any command the task needs, including its tests. "
+                if granted_commands(adapter_config["extraArgs"]) == ["*"]
+                else "Apart from editing files you can run only "
                 + ", ".join("`" + c + "`" for c in granted_commands(adapter_config["extraArgs"]))
                 + ". Other commands are refused, so name any check you could not run in your report. "
-                if model["harness"] == "claude"
-                else ""
             )
             + "A reviewer checks the author's work instead of redoing it. "
             "Stop when the task is cancelled and never start a replacement process."
