@@ -414,6 +414,27 @@ def test_worker_reported_block_keeps_dependents_blocked(app, project, configured
     assert api.issue(implement)["status"] == "blocked"
 
 
+def test_worker_reported_block_needs_the_operator(app, project, configured):
+    from assistant_workbench.terminal import status
+
+    request, api, engine, implement, verify = delivered_code_request(app, project, configured)
+    assert status(app.store)["blocked"] == 0
+    api.finish(implement, "blocked", [("succeeded", "Blocked: the login service is missing.")],
+               by_worker=True)
+    engine.observe()
+    # No delivery failed and the request still reads running, yet nothing
+    # will move it until the operator amends or cancels it.
+    assert app.dispatch("request.get", {"request_id": request})["status"] == "running"
+    attention = app.store.snapshot()["attention"]
+    assert [(a["request_id"], a["status"], a["nodes"]) for a in attention] == [
+        (request, "worker_blocked", ["implement"])]
+    assert "amend the request with what would unblock it" in attention[0]["error"]
+    assert status(app.store)["blocked"] == 1
+    # An amendment starts a new revision, which is not blocked.
+    app.store.submit("Use the login stub in tests/.", "amend", reply_to=request, expected_revision=1)
+    assert app.store.snapshot()["attention"] == []
+
+
 def test_disposition_recorded_before_the_final_message_waits_for_the_run(app, project, configured):
     request, api, engine, implement, verify = delivered_code_request(app, project, configured)
     api.finish(implement, "blocked", [("running", None)], by_worker=True)

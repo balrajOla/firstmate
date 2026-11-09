@@ -728,8 +728,7 @@ class Engine:
                         req["id"],
                         {
                             "nodes": blocked,
-                            "notice": "A worker reported it could not complete its task; "
-                            "amend the request with what would unblock it, or cancel it",
+                            "notice": self.store.WORKER_BLOCKED_NOTICE,
                         },
                     )
                 self._cache(key, True)

@@ -185,6 +185,24 @@ async def test_tui_deliverables_blockers_and_scoped_pause(app, project):
         assert app.store.one("SELECT * FROM project_policy WHERE project_id=?", (project["id"],))["paused"] == 0
 
 
+async def test_tui_worker_reported_block_is_in_the_inbox(app, project):
+    request = app.store.submit("Fix the login form", "worker-block", project["id"])["request_id"]
+    with app.store.transaction() as db:
+        db.execute("UPDATE requests SET status='running' WHERE id=?", (request,))
+        db.execute("UPDATE outbox SET status='delivered' WHERE request_id=?", (request,))
+        # The bridge's saved report for a task its worker marked blocked.
+        db.execute("INSERT INTO meta VALUES(?,?)", ("report:" + request + ":1:implement",
+                                                    json.dumps({"disposition": "blocked"})))
+    ui = WorkbenchApp(app.home)
+    async with ui.run_test(size=(120, 36)) as pilot:
+        await pilot.pause()
+        assert "worker_blocked" in ui.previous["requests"][request]
+        inbox = ui.previous["inbox"]["worker-blocked:" + request]
+        assert "worker_blocked" in inbox and "amend the request" in inbox[2]
+        await choose_row(ui, pilot, "requests", request)
+        assert "implement" in str(ui.query_one("#details", Static).content)
+
+
 async def test_tui_new_external_project_and_older_request_search(app, project):
     old = app.store.submit("Old singular ARCHIVE-MARKER", "old", project["id"])["request_id"]
     for number in range(205):
