@@ -662,9 +662,42 @@ class Store:
             ),
             "attention": self.rows(
                 "SELECT * FROM outbox WHERE status IN ('blocked','uncertain','retry') ORDER BY rowid"
-            ),
+            ) + self.worker_blocked(),
             "events": self.rows("SELECT * FROM events ORDER BY seq DESC LIMIT 50"),
         }
+
+    WORKER_BLOCKED_NOTICE = (
+        "A worker reported it could not complete its task; "
+        "amend the request with what would unblock it, or cancel it"
+    )
+
+    def worker_blocked(self):
+        """Running requests whose current revision has a task the worker
+        itself reported blocked. Nothing else moves them, so they need the
+        operator even though no delivery failed."""
+        rows = self.rows(
+            "SELECT r.id AS request_id, r.revision, m.key, m.value FROM requests r JOIN meta m "
+            # Keys from 'report:<id>:<revision>:' up to, not including, the
+            # same prefix ending in ';', the character after ':'.
+            "ON m.key > 'report:' || r.id || ':' || r.revision || ':' "
+            "AND m.key < 'report:' || r.id || ':' || r.revision || ';' "
+            "WHERE r.status='running' ORDER BY r.created, m.key"
+        )
+        blocked = {}
+        for row in rows:
+            if json.loads(row["value"]).get("disposition") != "blocked":
+                continue
+            item = blocked.setdefault(row["request_id"], {
+                "id": "worker-blocked:" + row["request_id"],
+                "request_id": row["request_id"],
+                "revision": row["revision"],
+                "status": "worker_blocked",
+                "nodes": [],
+            })
+            item["nodes"].append(row["key"].rsplit(":", 1)[1])
+        for item in blocked.values():
+            item["error"] = self.WORKER_BLOCKED_NOTICE + " (blocked: " + ", ".join(item["nodes"]) + ")"
+        return list(blocked.values())
 
     def record_evidence(self, gate, profile, result, details):
         if result not in {"passed", "failed", "blocked", "not_run"}:

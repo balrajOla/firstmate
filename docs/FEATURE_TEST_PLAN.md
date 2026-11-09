@@ -1391,6 +1391,8 @@ Mapped pytest evidence:
 - `tests/test_runtime_observations.py::test_failed_runtime_moves_request_to_attention_once`
 - `tests/test_runtime_observations.py::test_partial_runtime_refresh_preserves_other_project_nodes`
 - `tests/test_tui_scenarios.py::test_tui_fleet_capacity_keeps_uncertain_work_visible`
+- `tests/test_tui_scenarios.py::test_tui_worker_reported_block_is_in_the_inbox`
+- `tests/test_paperclip_contract.py::test_worker_reported_block_needs_the_operator`
 
 ### PF43
 
