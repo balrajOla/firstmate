@@ -162,8 +162,8 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF29](#pf29) | Detached parallel execution | 14 | `workers`, `gui` |
 | [PF30](#pf30) | Ralph-style fresh-context continuation | 3 | `recovery` |
 | [PF31](#pf31) | Bounded iteration and no-progress detection | 3 | `recovery` |
-| [PF32](#pf32) | Crash and uncertain-effect reconciliation | 21 | `coordinator`, `recovery` |
-| [PF33](#pf33) | Scoped pause/cancel including shared work | 14 | `workers`, `coordinator` |
+| [PF32](#pf32) | Crash and uncertain-effect reconciliation | 27 | `coordinator`, `recovery` |
+| [PF33](#pf33) | Scoped pause/cancel including shared work | 15 | `workers`, `coordinator` |
 | [PF34](#pf34) | Isolated workspaces and shared resource limits | 12 | `isolation`, `capacity` |
 | [PF35](#pf35) | Native WezTerm navigation | 11 | `gui` |
 | [PF36](#pf36) | Persistent requests and obligation progress | 10 | `journey`, `gui` |
@@ -189,7 +189,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF56](#pf56) | One GitHub repository and reproducible packages | 1 | `packages` |
 | [PF57](#pf57) | Harness and linked-project contracts | 32 | `linked_contract`, `models` |
 | [PF58](#pf58) | Doctor, migration, backup, restore and uninstall | 50 | `migration` |
-| [PF59](#pf59) | Authorization, credentials and effect audit | 97 | `isolation` |
+| [PF59](#pf59) | Authorization, credentials and effect audit | 115 | `isolation` |
 | [PF60](#pf60) | Authorized schedules and clear updates | 1 | `journey` |
 | [PF61](#pf61) | Optional OpenViking replacement context backend | 40 | `openviking`, `retention` |
 | [PF62](#pf62) | Optional Hindsight experience memory | 30 | `hindsight`, `retention` |
@@ -1133,6 +1133,12 @@ Mapped pytest evidence:
 - `tests/test_network.py::test_only_recoverable_failures_are_retried[bad-key]`
 - `tests/test_network.py::test_nothing_is_retried_while_offline_or_for_a_sign_in_problem`
 - `tests/test_network.py::test_a_quota_failure_waits_much_longer`
+- `tests/test_network.py::test_a_task_done_before_a_restart_cut_its_report_is_not_left_waiting`
+- `tests/test_network.py::test_a_done_task_whose_worker_is_still_writing_its_report_waits`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[shutdown]`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[orphaned]`
+- `tests/test_network.py::test_a_task_left_in_progress_by_an_orphaned_run_is_retried_after_a_grace_period`
+- `tests/test_network.py::test_a_stalled_task_that_cannot_be_retried_is_listed_for_the_operator`
 
 ### PF33
 
@@ -1164,7 +1170,8 @@ Mapped pytest evidence:
 - `tests/test_runtime_backends.py::test_cli_process_contract_stdin_receipt_and_cancel`
 - `tests/test_engine_preflight.py::test_stale_cancel_job_does_not_cancel_current_issues`
 - `tests/test_engine_preflight.py::test_scope_change_while_reading_agent_pool_prevents_agent_creation`
-- `tests/test_network.py::test_an_outage_pauses_managed_agents_and_reconnecting_retries_what_it_interrupted`
+- `tests/test_network.py::test_an_outage_leaves_workers_alone_and_retries_runs_that_failed_during_it`
+- `tests/test_network.py::test_agents_paused_by_an_earlier_version_are_released`
 - `tests/test_network.py::test_the_bridge_saves_prompts_but_dispatches_nothing_while_offline`
 
 ### PF34
@@ -2060,6 +2067,7 @@ Mapped pytest evidence:
 - `tests/test_paperclip_contract.py::test_api_profiles_keep_their_own_provider_environment`
 - `tests/test_paperclip_contract.py::test_subscription_profile_passing_a_provider_key_is_refused`
 - `tests/test_runtime_backends.py::test_claude_worker_runs_isolated_with_edit_permission_and_profile_grants`
+- `tests/test_paperclip_contract.py::test_a_profile_can_set_its_own_claude_exit_grace`
 
 ### PF60
 

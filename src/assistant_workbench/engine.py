@@ -17,7 +17,9 @@ from .util import WorkbenchError, canonical, digest, now, uid
 # Task failures retried automatically: a run lost to a restart, a provider's
 # temporary failure or quota, or a network error. A sign-in or permission
 # problem is never retried; it waits for the operator.
-RESUMABLE_CODES = {"process_lost", "claude_transient_upstream", "codex_transient_upstream", "provider_quota"}
+RESUMABLE_CODES = {"process_lost", "server_shutdown_interrupted", "orphaned_running_run",
+                   "claude_transient_upstream", "codex_transient_upstream", "provider_quota"}
+STALL_GRACE = 90  # seconds Paperclip's own recovery gets before the bridge retries
 NETWORK_ERROR = re.compile(
     r"ENOTFOUND|EAI_AGAIN|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|socket hang up|"
     r"fetch failed|network (?:error|is unreachable)|connection (?:error|reset|refused|closed)|getaddrinfo",
@@ -26,6 +28,15 @@ NETWORK_ERROR = re.compile(
 SIGN_IN_ERROR = re.compile(r"log ?in|sign ?in|credential|api key|unauthori[sz]ed|forbidden|permission", re.I)
 RESUME_DELAYS = [0, 120, 600]
 QUOTA_DELAYS = [900, 1800, 3600]
+
+
+def _epoch(stamp):
+    from datetime import datetime
+
+    try:
+        return datetime.fromisoformat(str(stamp).replace("Z", "+00:00")).timestamp() if stamp else None
+    except ValueError:
+        return None
 
 
 def resumable(failure):
@@ -52,6 +63,10 @@ CLAUDE_WORKER_ARGS = [
     "--permission-mode", "acceptEdits", "--allowedTools",
     "Bash(git status:*)", "Bash(git diff:*)", "Bash(git add:*)", "Bash(git commit:*)",
 ]
+# Paperclip stops a Claude CLI still running this long after its final
+# message and records the finished run as failed. Managed hooks or plugins
+# can keep the CLI open for several seconds; Paperclip's default is 5.
+CLAUDE_EXIT_GRACE_MS = 30_000
 BYPASS_KEYS = {
     "claude": "dangerouslySkipPermissions",
     "codex": "dangerouslyBypassApprovalsAndSandbox",
@@ -225,6 +240,7 @@ class Engine:
             adapter_config["extraArgs"] = claude_args(model) + CLAUDE_WORKER_ARGS + [
                 "--allowedTools", "Bash(" + disposition_command() + ":*)"
             ] + list(adapter_config.get("extraArgs", []))
+            adapter_config.setdefault("terminalResultCleanupGraceMs", CLAUDE_EXIT_GRACE_MS)
         field = {"claude": "effort", "codex": "modelReasoningEffort"}.get(
             model["harness"]
         )
@@ -424,31 +440,9 @@ class Engine:
             raise WorkbenchError("Unexpected Paperclip agent-list contract")
         return [a for a in agents if (a.get("metadata") or {}).get("workbenchKey") and a.get("status") != "terminated"]
 
-    def pause_for_network(self):
-        """Pause managed agents while their providers are unreachable, so no run
-        starts only to fail. Pausing cancels a running task's run, so the tasks
-        running now are remembered and retried on reconnecting."""
-        held = self._cache("network-paused") or {"agents": [], "issues": {}}
-        for req in self.store.rows("SELECT * FROM requests WHERE status='running'"):
-            for node, identity in (self._cache("issues:" + req["id"]) or {}).items():
-                if node.startswith(str(req["revision"]) + ":") and identity not in held["issues"]:
-                    issue = self.api.issue(identity)
-                    if issue.get("executionRunId") and issue.get("status") not in {"done", "cancelled"}:
-                        held["issues"][identity] = {"request": req["id"], "node": node}
-        for agent in self._managed_agents():
-            if agent.get("status") != "paused" and agent["id"] not in held["agents"]:
-                self.api.pause_agent(agent["id"])
-                held["agents"].append(agent["id"])
-                self._cache("network-paused", held)
-        self._cache("network-paused", held)
-        with self.store.transaction() as db:
-            self.store.event(db, "coordinator.paused_for_network", "network",
-                             {"agents": len(held["agents"]), "interrupted": sorted(held["issues"])})
-        return held
-
     def resume_after_network(self):
-        """Resume exactly the agents the outage paused and retry the tasks it
-        interrupted."""
+        """Resume the agents an earlier version paused for an outage and retry
+        the tasks that pause interrupted."""
         held = self._cache("network-paused") or {"agents": [], "issues": {}}
         live = {a["id"] for a in self._managed_agents()}
         for identity in held["agents"]:
@@ -468,11 +462,39 @@ class Engine:
                              {"agents": len(held["agents"]), "retried": retried})
         return {"agents": held["agents"], "retried": retried}
 
+    def _stalled(self, req, node, issue):
+        """Whether a task sits open with nothing running after its last run
+        failed or was interrupted, for example a run orphaned by a restart,
+        which Paperclip does not queue again by itself. Its failure is listed
+        for the operator and retried like a stopped task."""
+        if issue.get("status") not in {"todo", "in_progress"} or issue.get("executionRunId"):
+            return False
+        runs = self.api.issue_runs(issue["id"])
+        if not isinstance(runs, list) or not runs or any(
+                r.get("status") in {"queued", "running", "scheduled_retry"} for r in runs):
+            return False
+        latest = max(runs, key=lambda r: r.get("createdAt") or "")
+        finished = _epoch(latest.get("finishedAt"))
+        if latest.get("status") not in {"failed", "interrupted", "timed_out"} or (
+                finished is not None and time.time() - finished < STALL_GRACE):
+            return False
+        self._note_failure("failure:" + req["id"] + ":" + node, issue, runs)
+        self._maybe_resume(req, node, issue)
+        return True
+
     def _maybe_resume(self, req, node, issue):
         """Retry a task the coordinator stopped for a recoverable reason, at most
         three times per revision with growing delays, never while offline."""
+        from .network import outages
+
         failure = self._cache("failure:" + req["id"] + ":" + node) or {}
-        if not failure.get("run") or not resumable(failure):
+        # A run that failed while the providers were unreachable is retried
+        # whatever its error says; the CLI's message varies with the outage.
+        finished = _epoch(failure.get("finished"))
+        during = finished is not None and any(
+            start - 60 <= finished <= end + 60 for start, end in outages(self.store))
+        if not failure.get("run") or not (resumable(failure) or (during and not SIGN_IN_ERROR.search(
+                str(failure.get("agent_error") or "")))):
             return
         network = self.store.rows("SELECT value FROM meta WHERE key='network'")
         if network and json.loads(network[0]["value"]).get("status") == "offline":
@@ -870,7 +892,8 @@ class Engine:
                 }
                 report = self._capture_report(req, node, issue)
                 items[node.split(":", 1)[1]]["report"] = report
-                if report != "failed" and self._cache("failure:" + req["id"] + ":" + node):
+                stalled = report == "pending" and self._stalled(req, node, issue)
+                if report != "failed" and not stalled and self._cache("failure:" + req["id"] + ":" + node):
                     with self.store.transaction() as db:
                         db.execute("DELETE FROM meta WHERE key=?", ("failure:" + req["id"] + ":" + node,))
             observations[req["id"]] = items
@@ -946,6 +969,12 @@ class Engine:
         unfinished = "pending" if active or issue["status"] != "blocked" else "failed"
         detail = self.api.run(succeeded[0]["runId"]) if succeeded else {}
         text = str((detail.get("resultJson") or {}).get("result") or "").strip()
+        recovered = None
+        if not succeeded and issue["status"] == "done" and not active and runs:
+            # The worker finished and closed its task, but its run did not
+            # succeed, for example a restart cut it before its final message.
+            # Waiting for a report that cannot come would stall the request.
+            succeeded, text, recovered = self._recover_report(req, node, issue, runs)
         if not text:
             if unfinished == "failed":
                 self._note_failure(key.replace("report:", "failure:", 1), issue, runs)
@@ -969,6 +998,7 @@ class Engine:
             "sha256": digest(text),
             "usage": usage,
             "disposition": "blocked" if worker_blocked else "done",
+            **({"recovered": recovered} if recovered else {}),
         }
         if issue["status"] != "done" and not worker_blocked:
             self.api.update_issue(
@@ -994,9 +1024,35 @@ class Engine:
                     "characters": len(text),
                     "runs": len(runs),
                     "disposition": report["disposition"],
+                    **({"recovered": recovered} if recovered else {}),
                 },
             )
         return "blocked" if worker_blocked else "captured"
+
+    def _recover_report(self, req, node, issue, runs):
+        """The report of a done task whose last run did not succeed: the worker's
+        final comment if Paperclip posted one, otherwise a note naming the
+        branch with the work."""
+        latest = max(runs, key=lambda r: r.get("createdAt") or "")
+        ended = latest.get("status", "unknown") + (" (" + latest["errorCode"] + ")" if latest.get("errorCode") else "")
+        comments = self.api.issue_comments(issue["id"])
+        if isinstance(comments, dict):
+            comments = comments.get("items") or comments.get("comments") or []
+        final = [
+            c for c in comments if isinstance(c, dict)
+            and c.get("authorAgentId") == issue.get("assigneeAgentId")
+            and (c.get("createdAt") or "") >= (latest.get("createdAt") or "")
+            and (c.get("body") or "").strip()
+            and not c["body"].lstrip().startswith("## Workspace Ready")
+        ]
+        if final:
+            body = max(final, key=lambda c: c.get("createdAt") or "")["body"].strip()
+            text = body + "\n\n(Recovered from the worker's comment: its run ended " + ended + " after it marked the task done.)"
+            return [latest], text, "comment"
+        branch = task_branch(req["id"], req["revision"], node.split(":", 1)[1])
+        text = ("The worker marked this task done, but its run ended " + ended + " before it reported. "
+                "Its work is on branch " + branch + "; review it there.")
+        return [latest], text, "none"
 
     def _note_failure(self, key, issue, runs):
         """Keep why the coordinator stopped a task that no worker reported
@@ -1007,6 +1063,7 @@ class Engine:
             "agent": latest.get("agentId") or issue.get("assigneeAgentId"),
             "code": latest.get("errorCode"),
             "reason": latest.get("livenessReason") or latest.get("error"),
+            "finished": latest.get("finishedAt"),
         }
         cached = self._cache(key)
         if cached and {k: cached.get(k) for k in failure} == failure:

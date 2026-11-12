@@ -123,6 +123,9 @@ def test_claude_workers_use_the_official_cli_runner_with_isolation(
     assert "--bare" not in config["extraArgs"]
     assert not any("push" in a for a in config["extraArgs"])
     assert config["model"] == "model-from-cli" and config["effort"] == "medium"
+    # Paperclip fails a finished run whose CLI is still open 5 s after its
+    # final message; observed live, managed plugins kept it open about 12 s.
+    assert config["terminalResultCleanupGraceMs"] == 30_000
 
 
 def test_codex_workers_use_the_official_cli_engine(app, project, configured):
@@ -668,3 +671,11 @@ def test_project_history_fits_its_share_of_the_context_budget(app, project, conf
     history = engine._project_history(req, project, 600)
     assert 0 < len(history) - len(history.split("\n- ", 1)[0]) <= 600 + 2
     assert history.count("\n- ") < 8 and "Earlier request 7" in history
+
+
+def test_a_profile_can_set_its_own_claude_exit_grace(app, project, configured):
+    official_cli_profile(app, configured, adapter_config={"terminalResultCleanupGraceMs": 60_000})
+    app.store.submit("Fix bug", "g", project["id"])
+    api = PinnedPaperclip()
+    assert Engine(app.store, api).tick()["status"] == "delivered"
+    assert api.agents_[0]["adapterConfig"]["terminalResultCleanupGraceMs"] == 60_000

@@ -39,7 +39,7 @@ A deliverable from the same run: workers built a small repair-café website and 
 | Teams | Five workflows (`simple`, `code`, `design`, `report`, `research`) compile into small dependency graphs with roles, a qualified model profile and bounded limits. |
 | Coordinators | [Paperclip](https://github.com/paperclipai/paperclip) by default, or Temporal. Workers run the official Claude Code or Codex CLI on the CLI engine, with permission bypass always off and a private branch per task. |
 | Review | Worker reports become one unverified outcome per request. A reviewer agent checks the author's work, and nothing counts as accepted until you accept it. |
-| Resilience | Work runs in services, so a closed terminal loses nothing. When the internet drops, dispatch stops and the managed agents pause; when it returns, they resume and the interrupted tasks are retried. Tasks lost to a restart, reboot or temporary provider failure are retried automatically, a bounded number of times; sign-in problems wait for you. |
+| Resilience | Work runs in services, so a closed terminal loses nothing. When the internet drops, dispatch stops and running workers ride out short interruptions; when it returns, tasks whose runs failed during the outage are retried. Tasks lost to a restart, reboot or temporary provider failure are retried automatically, a bounded number of times; sign-in problems wait for you. |
 | Attention | Requests needing you are listed in one place: delivery failures, worker-reported blocks, and tasks the coordinator stopped (for example, a worker with no sign-in), each with its cause. |
 | Context and memory | Original-source archive with hashes, scoped retrieval and coverage, plus optional LCM, Basic Memory, QMD, Docling, Hindsight, OpenViking and Open Notebook. |
 | Research and writing | Optional GPT Researcher, Superpowers brainstorming and planning, Elements of Style, Humanizer, Vale and Promptfoo checks. |
@@ -79,7 +79,17 @@ From a live run on one Mac (macOS 27, Apple silicon) on 9 November 2026. The rel
 | Routing on 45 held-out cases | right project 45/45, right workflow 44/45 |
 | Live soak | 10 hours with no lost prompts (a 72-hour run was not done) |
 
-Not verified: Codex workers through Paperclip (Paperclip needs a file-based Codex sign-in), mobile builds, two physical hosts, human-calibrated judging, a 72-hour soak, and service start at login.
+Follow-up checks on the same Mac, 9 to 12 November 2026. [Notes](docs/VERIFICATION.md#follow-up-live-checks-9-12-november-2026)
+
+| Check | Result |
+|---|---|
+| `install.sh` from scratch into a temporary prefix (path with spaces, its own ports and service labels), then a real task | passed: Paperclip built and onboarded, profiles probed, services installed, task reached review |
+| `awb open` with a stopped service, and inside a herdr session | passed |
+| Router given work for an existing project, new work and a one-off question | 3 of 3 placed as expected (a new project got its own repository) |
+| Connectivity loss: one drill and four real offline periods | each detected and cleared automatically |
+| Paperclip restarted in the middle of a run, twice | both requests reached review without help, after the fixes in #46 |
+
+Not verified: Codex workers through Paperclip (Paperclip needs a file-based Codex sign-in), a Pro or Max subscription sign-in (the test machine authenticates Claude through a managed `apiKeyHelper`), a worker run failing during a real outage, a real reboot, mobile builds, two physical hosts, human-calibrated judging, a 72-hour soak, and service start at login.
 
 ## Install
 
