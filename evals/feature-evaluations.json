@@ -1640,7 +1640,8 @@
         "tests/test_runtime_backends.py::test_cli_process_contract_stdin_receipt_and_cancel",
         "tests/test_engine_preflight.py::test_stale_cancel_job_does_not_cancel_current_issues",
         "tests/test_engine_preflight.py::test_scope_change_while_reading_agent_pool_prevents_agent_creation",
-        "tests/test_network.py::test_an_outage_pauses_managed_agents_and_reconnecting_retries_what_it_interrupted",
+        "tests/test_network.py::test_an_outage_leaves_workers_alone_and_retries_runs_that_failed_during_it",
+        "tests/test_network.py::test_agents_paused_by_an_earlier_version_are_released",
         "tests/test_network.py::test_the_bridge_saves_prompts_but_dispatches_nothing_while_offline"
       ],
       "required_gates": [

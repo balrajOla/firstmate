@@ -140,10 +140,6 @@ class Paperclip:
             {},
         )
 
-    def pause_agent(self, identity):
-        """Pausing also cancels the agent's active run."""
-        return self.request("POST", "/agents/" + urllib.parse.quote(identity, safe="") + "/pause", {})
-
     def resume_agent(self, identity):
         return self.request("POST", "/agents/" + urllib.parse.quote(identity, safe="") + "/resume", {})
 

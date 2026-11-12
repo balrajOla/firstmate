@@ -22,21 +22,11 @@ class Clock:
 
 
 class Paperclip(PinnedPaperclip):
-    """Adds the pause, resume and retry calls the guard uses."""
+    """Adds the resume and retry calls; it has no pause, so pausing would fail."""
 
     def __init__(self):
         super().__init__()
-        self.paused, self.resumed, self.retries = [], [], []
-
-    def pause_agent(self, identity):
-        self.paused.append(identity)
-        agent = next(a for a in self.agents_ if a["id"] == identity)
-        agent["status"] = "paused"
-        for issue in self.issues_.values():  # Paperclip cancels the active run
-            if issue.get("assigneeAgentId") == identity and issue.get("executionRunId"):
-                self.runs[issue["executionRunId"]]["status"] = "cancelled"
-                issue["executionRunId"] = None
-        return agent
+        self.paused, self.resumed, self.retries = [], [], []  # paused stays empty
 
     def resume_agent(self, identity):
         self.resumed.append(identity)
@@ -78,6 +68,10 @@ def test_offline_needs_two_failed_probes_and_one_success_ends_it(app, online):
     assert guard.update()["status"] == "online"
     kinds = [r["kind"] for r in app.store.rows("SELECT kind FROM events WHERE kind LIKE 'network.%' ORDER BY seq")]
     assert kinds == ["network.offline", "network.online"]
+    from assistant_workbench.network import outages
+
+    [(start, end)] = outages(app.store)
+    assert start < end
 
 
 def test_probe_hosts_follow_the_configured_harnesses(app, configured):
@@ -107,48 +101,59 @@ def test_a_disabled_guard_or_no_hosts_never_reports_offline(app, configured):
     assert guard.update()["status"] == "online"
 
 
-def test_an_outage_pauses_managed_agents_and_reconnecting_retries_what_it_interrupted(
+def test_an_outage_leaves_workers_alone_and_retries_runs_that_failed_during_it(
         app, project, configured, online, monkeypatch):
     request, api, engine, implement, verify = delivered(app, project, configured)
-    # The implement task is running when the connection drops.
-    run_id = implement + "-run-live"
-    api.runs[run_id] = {"runId": run_id, "issueId": implement, "status": "running", "createdAt": "2026-11-09T10:00:00"}
-    api.issue(implement).update(status="in_progress", executionRunId=run_id)
-    api.agents_.append({"id": "someone-elses", "status": "idle", "metadata": {}})
     monkeypatch.setattr(type(app), "_coordinator", lambda self: engine)
     answers, clock = [False, False], Clock()
     monkeypatch.setattr("assistant_workbench.network.reachable", lambda hosts, timeout=3: answers.pop(0))
     monkeypatch.setattr("assistant_workbench.network.time.time", clock)
-    assert app.dispatch("network.check")["status"] == "online"
-    clock.t += 10
-    state = app.dispatch("network.check")
-    assert state["status"] == "offline" and state["paused"] is True
-    managed = sorted(a["id"] for a in api.agents_ if a.get("metadata", {}).get("workbenchKey"))
-    assert sorted(api.paused) == managed and "someone-elses" not in api.paused
-    # Staying offline pauses nothing more.
-    clock.t += 10
-    answers.append(False)
     app.dispatch("network.check")
-    assert sorted(api.paused) == managed
     clock.t += 10
+    assert app.dispatch("network.check")["status"] == "offline"
+    # No agent is paused: Paperclip would block their waiting tasks as stranded.
+    assert api.paused == [] and {a["status"] for a in api.agents_} == {"idle"}
+    # The worker's run fails with a message that names no network error.
+    stopped(api, implement, "adapter_failed", "Process exited with code 1", finished=clock.t + 5)
+    engine.observe()
+    assert api.retries == []  # never while offline
+    clock.t += 30
     answers.append(True)
+    assert app.dispatch("network.check")["status"] == "online"
+    engine.observe()
+    assert [issue for issue, _, _ in api.retries] == [implement]
+    # The same message outside an outage waits for the operator.
+    stopped(api, verify, "adapter_failed", "Process exited with code 1", finished=clock.t + 3600)
+    engine.observe()
+    assert [issue for issue, _, _ in api.retries] == [implement]
+
+
+def test_agents_paused_by_an_earlier_version_are_released(app, project, configured, online, monkeypatch):
+    request, api, engine, implement, verify = delivered(app, project, configured)
+    monkeypatch.setattr(type(app), "_coordinator", lambda self: engine)
+    agent = api.agents_[0]
+    agent["status"] = "paused"
+    with app.store.transaction() as db:
+        db.execute("INSERT OR REPLACE INTO meta VALUES('network', ?)",
+                   (json.dumps({"status": "online", "since": 1.0, "failures": 0, "paused": True}),))
+        db.execute("INSERT OR REPLACE INTO meta VALUES('network-paused', ?)",
+                   (json.dumps({"agents": [agent["id"]], "issues": {}}),))
+    monkeypatch.setattr("assistant_workbench.network.reachable", lambda hosts, timeout=3: True)
     state = app.dispatch("network.check")
-    assert state["status"] == "online" and state["paused"] is False
-    assert sorted(api.resumed) == managed
-    # Only the interrupted task is retried, as its latest (cancelled) run.
-    assert [(issue, observed) for issue, _, observed in api.retries] == [(implement, run_id)]
-    events = {r["kind"]: json.loads(r["payload"]) for r in app.store.rows("SELECT kind, payload FROM events")}
-    assert events["coordinator.paused_for_network"]["interrupted"] == [implement]
-    assert events["coordinator.resumed_after_network"]["retried"][0]["accepted"] is True
+    assert state["paused"] is False and api.resumed == [agent["id"]]
+    assert not app.store.rows("SELECT 1 FROM meta WHERE key='network-paused'")
 
 
-def stopped(api, issue, code, reason, agent_error=None, label="0"):
+def stopped(api, issue, code, reason, agent_error=None, label="0", finished=None):
     """Paperclip failed the task's run and blocked it; no worker reported."""
+    from datetime import datetime, timezone
+
     agent = api.issue(issue)["assigneeAgentId"]
     next(a for a in api.agents_ if a["id"] == agent)["errorReason"] = agent_error
     run_id = issue + "-failed-" + label
     api.runs[run_id] = {"runId": run_id, "issueId": issue, "agentId": agent, "status": "failed",
-                        "createdAt": "2026-11-09T10:00:0" + label, "errorCode": code, "livenessReason": reason}
+                        "createdAt": "2026-11-09T10:00:0" + label, "errorCode": code, "livenessReason": reason,
+                        "finishedAt": datetime.fromtimestamp(finished, timezone.utc).isoformat() if finished else None}
     api.issue(issue)["status"] = "blocked"
     return run_id
 

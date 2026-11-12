@@ -28,6 +28,15 @@ RESUME_DELAYS = [0, 120, 600]
 QUOTA_DELAYS = [900, 1800, 3600]
 
 
+def _epoch(stamp):
+    from datetime import datetime
+
+    try:
+        return datetime.fromisoformat(str(stamp).replace("Z", "+00:00")).timestamp() if stamp else None
+    except ValueError:
+        return None
+
+
 def resumable(failure):
     if SIGN_IN_ERROR.search(str(failure.get("agent_error") or "")):
         return False
@@ -424,31 +433,9 @@ class Engine:
             raise WorkbenchError("Unexpected Paperclip agent-list contract")
         return [a for a in agents if (a.get("metadata") or {}).get("workbenchKey") and a.get("status") != "terminated"]
 
-    def pause_for_network(self):
-        """Pause managed agents while their providers are unreachable, so no run
-        starts only to fail. Pausing cancels a running task's run, so the tasks
-        running now are remembered and retried on reconnecting."""
-        held = self._cache("network-paused") or {"agents": [], "issues": {}}
-        for req in self.store.rows("SELECT * FROM requests WHERE status='running'"):
-            for node, identity in (self._cache("issues:" + req["id"]) or {}).items():
-                if node.startswith(str(req["revision"]) + ":") and identity not in held["issues"]:
-                    issue = self.api.issue(identity)
-                    if issue.get("executionRunId") and issue.get("status") not in {"done", "cancelled"}:
-                        held["issues"][identity] = {"request": req["id"], "node": node}
-        for agent in self._managed_agents():
-            if agent.get("status") != "paused" and agent["id"] not in held["agents"]:
-                self.api.pause_agent(agent["id"])
-                held["agents"].append(agent["id"])
-                self._cache("network-paused", held)
-        self._cache("network-paused", held)
-        with self.store.transaction() as db:
-            self.store.event(db, "coordinator.paused_for_network", "network",
-                             {"agents": len(held["agents"]), "interrupted": sorted(held["issues"])})
-        return held
-
     def resume_after_network(self):
-        """Resume exactly the agents the outage paused and retry the tasks it
-        interrupted."""
+        """Resume the agents an earlier version paused for an outage and retry
+        the tasks that pause interrupted."""
         held = self._cache("network-paused") or {"agents": [], "issues": {}}
         live = {a["id"] for a in self._managed_agents()}
         for identity in held["agents"]:
@@ -471,8 +458,16 @@ class Engine:
     def _maybe_resume(self, req, node, issue):
         """Retry a task the coordinator stopped for a recoverable reason, at most
         three times per revision with growing delays, never while offline."""
+        from .network import outages
+
         failure = self._cache("failure:" + req["id"] + ":" + node) or {}
-        if not failure.get("run") or not resumable(failure):
+        # A run that failed while the providers were unreachable is retried
+        # whatever its error says; the CLI's message varies with the outage.
+        finished = _epoch(failure.get("finished"))
+        during = finished is not None and any(
+            start - 60 <= finished <= end + 60 for start, end in outages(self.store))
+        if not failure.get("run") or not (resumable(failure) or (during and not SIGN_IN_ERROR.search(
+                str(failure.get("agent_error") or "")))):
             return
         network = self.store.rows("SELECT value FROM meta WHERE key='network'")
         if network and json.loads(network[0]["value"]).get("status") == "offline":
@@ -1007,6 +1002,7 @@ class Engine:
             "agent": latest.get("agentId") or issue.get("assigneeAgentId"),
             "code": latest.get("errorCode"),
             "reason": latest.get("livenessReason") or latest.get("error"),
+            "finished": latest.get("finishedAt"),
         }
         cached = self._cache(key)
         if cached and {k: cached.get(k) for k in failure} == failure:

@@ -163,7 +163,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF30](#pf30) | Ralph-style fresh-context continuation | 3 | `recovery` |
 | [PF31](#pf31) | Bounded iteration and no-progress detection | 3 | `recovery` |
 | [PF32](#pf32) | Crash and uncertain-effect reconciliation | 21 | `coordinator`, `recovery` |
-| [PF33](#pf33) | Scoped pause/cancel including shared work | 14 | `workers`, `coordinator` |
+| [PF33](#pf33) | Scoped pause/cancel including shared work | 15 | `workers`, `coordinator` |
 | [PF34](#pf34) | Isolated workspaces and shared resource limits | 12 | `isolation`, `capacity` |
 | [PF35](#pf35) | Native WezTerm navigation | 11 | `gui` |
 | [PF36](#pf36) | Persistent requests and obligation progress | 10 | `journey`, `gui` |
@@ -1164,7 +1164,8 @@ Mapped pytest evidence:
 - `tests/test_runtime_backends.py::test_cli_process_contract_stdin_receipt_and_cancel`
 - `tests/test_engine_preflight.py::test_stale_cancel_job_does_not_cancel_current_issues`
 - `tests/test_engine_preflight.py::test_scope_change_while_reading_agent_pool_prevents_agent_creation`
-- `tests/test_network.py::test_an_outage_pauses_managed_agents_and_reconnecting_retries_what_it_interrupted`
+- `tests/test_network.py::test_an_outage_leaves_workers_alone_and_retries_runs_that_failed_during_it`
+- `tests/test_network.py::test_agents_paused_by_an_earlier_version_are_released`
 - `tests/test_network.py::test_the_bridge_saves_prompts_but_dispatches_nothing_while_offline`
 
 ### PF34

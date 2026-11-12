@@ -1,7 +1,8 @@
-"""Connectivity guard: while the agents' providers are unreachable, dispatch
-stops and managed agents are paused; when they are reachable again the
-agents resume and interrupted tasks are retried. An outage costs time, not
-work."""
+"""Connectivity guard: while the agents' providers are unreachable nothing is
+routed or dispatched, and each outage is recorded so tasks whose runs failed
+during it are retried once the providers answer again. Running workers are
+left alone: their CLIs retry short interruptions themselves. An outage costs
+time, not work."""
 
 from __future__ import annotations
 
@@ -14,6 +15,7 @@ from .util import WorkbenchError, now
 # gateway set network.probe_hosts instead.
 DEFAULT_HOSTS = {"claude": ["api.anthropic.com:443"], "codex": ["api.openai.com:443", "chatgpt.com:443"]}
 KEY = "network"
+OUTAGES = "network-outages"
 
 
 def network_settings(settings):
@@ -81,9 +83,14 @@ class Guard:
             if state["failures"] >= 2:
                 state["status"] = "offline"
         if state["status"] != previous:
+            started = state.get("since")
             state["since"] = now()
             with self.store.transaction() as db:
                 self.store.event(db, "network." + state["status"], KEY, {"hosts": self.spec["hosts"]})
+                if state["status"] == "online" and started:
+                    windows = outages(self.store) + [[started, state["since"]]]
+                    db.execute("INSERT OR REPLACE INTO meta(key, value) VALUES (?, ?)",
+                               (OUTAGES, json.dumps(windows[-50:])))
         self.save(state)
         return state
 
@@ -91,3 +98,9 @@ class Guard:
         state = self.state()
         state["paused"] = paused
         self.save(state)
+
+
+def outages(store):
+    """Recorded outages as [start, end] pairs, oldest first."""
+    rows = store.rows("SELECT value FROM meta WHERE key=?", (OUTAGES,))
+    return json.loads(rows[0]["value"]) if rows else []
