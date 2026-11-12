@@ -47,6 +47,23 @@ One Apple-silicon Mac, macOS 27, with the release installed into an independent 
 
 Defects found during this run were fixed with regression tests in #17–#35. Not observed: Codex workers through Paperclip (its CLI engine needs a file-based Codex sign-in that the test machine did not use), a mobile build, two physical hosts, human-calibrated judging, a 72-hour soak and login-time service start.
 
+## Follow-up live checks (9-12 November 2026)
+
+The same Mac and services, covering the one-command install, `awb open`, projects created by the router, and recovery from outages and restarts. Every check ran through public CLI, HTTP or TUI interfaces. None of it is human review.
+
+| Area | Observed | Result |
+|---|---|---|
+| Installer | `install.sh` from scratch into a temporary prefix whose path contains spaces, with its own ports (3199, 8799) and service labels. It installed the pinned toolchain where missing, built and onboarded the pinned Paperclip, created the company, probed the Claude profiles and installed launchd services. A real code request reached review. The test installation was then removed. | passed; with the default grants the reviewer could not run the tests |
+| `awb open` | With one of the configured services unloaded, it loaded it again and waited for the bridge and the coordinator. `--session herdr` started a persistent herdr session running the terminal UI; this was tested in disposable named sessions, which were removed afterwards. | passed |
+| Routing | Three live prompts: one for an existing project, one for new work (the router created a project with its own Git repository) and a one-off question (assigned to General). | 3 of 3 as expected; a small sample |
+| Worker grants | Account sign-in with an unscoped command grant in the local profile: the worker ran the project's tests. | passed |
+| Connectivity | Drill: the probe host was made unreachable, then restored. The bridge reported offline after about 16 s and online about 18 s after the host was restored. Four real offline periods between 9 and 12 November, from about 5 minutes to about 2 days while the Mac slept or was off the network, were each detected and cleared automatically. No worker run failed during an outage, so that retry is covered by tests only. | passed |
+| Restart after a worker closed its task | Paperclip restarted after the worker marked its task done but before its run ended. The run ended interrupted, without a report. | after the fix, the report was recovered from the worker's task comment and the request reached review |
+| Restart early in a run | Paperclip restarted 3 s into a worker's run. Its recovery sweep ended the run as orphaned and left the task in progress with nothing queued, for 12 minutes. | after the fix, the bridge retried the task within seconds of starting. The retry found the work already committed, the reviewer ran the three tests, and the request reached review |
+| Worker exit | On this machine the Claude CLI stays open about 12 s after its final message. Paperclip stops it after 5 s and recorded all four finished runs on 12 November as failed. | reports were still recovered; with `terminalResultCleanupGraceMs` set to 30000 in the local profiles, both runs of the next request succeeded. Claude workers now get 30 s by default |
+
+Defects found during these checks were fixed with regression tests in #41-#46. They were: Paperclip's sign-in check mistaking a skill description for a failed login (#41); pausing workers during an outage, which stranded queued tasks; a task closed just before a restart, which waited forever for its report; a task left in progress by an orphaned run; and finished Claude runs failed by Paperclip's 5-second exit limit (#46). Not observed: Codex workers through Paperclip, a Pro or Max subscription sign-in (the test machine authenticates Claude through a managed `apiKeyHelper`), a worker run failing during a real outage, a real reboot and login-time service start.
+
 ## Required target-machine journeys
 
 | Gate | Required observation |

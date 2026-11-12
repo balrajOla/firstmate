@@ -63,6 +63,10 @@ CLAUDE_WORKER_ARGS = [
     "--permission-mode", "acceptEdits", "--allowedTools",
     "Bash(git status:*)", "Bash(git diff:*)", "Bash(git add:*)", "Bash(git commit:*)",
 ]
+# Paperclip stops a Claude CLI still running this long after its final
+# message and records the finished run as failed. Managed hooks or plugins
+# can keep the CLI open for several seconds; Paperclip's default is 5.
+CLAUDE_EXIT_GRACE_MS = 30_000
 BYPASS_KEYS = {
     "claude": "dangerouslySkipPermissions",
     "codex": "dangerouslyBypassApprovalsAndSandbox",
@@ -236,6 +240,7 @@ class Engine:
             adapter_config["extraArgs"] = claude_args(model) + CLAUDE_WORKER_ARGS + [
                 "--allowedTools", "Bash(" + disposition_command() + ":*)"
             ] + list(adapter_config.get("extraArgs", []))
+            adapter_config.setdefault("terminalResultCleanupGraceMs", CLAUDE_EXIT_GRACE_MS)
         field = {"claude": "effort", "codex": "modelReasoningEffort"}.get(
             model["harness"]
         )

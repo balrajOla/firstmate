@@ -189,7 +189,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF56](#pf56) | One GitHub repository and reproducible packages | 1 | `packages` |
 | [PF57](#pf57) | Harness and linked-project contracts | 32 | `linked_contract`, `models` |
 | [PF58](#pf58) | Doctor, migration, backup, restore and uninstall | 50 | `migration` |
-| [PF59](#pf59) | Authorization, credentials and effect audit | 97 | `isolation` |
+| [PF59](#pf59) | Authorization, credentials and effect audit | 115 | `isolation` |
 | [PF60](#pf60) | Authorized schedules and clear updates | 1 | `journey` |
 | [PF61](#pf61) | Optional OpenViking replacement context backend | 40 | `openviking`, `retention` |
 | [PF62](#pf62) | Optional Hindsight experience memory | 30 | `hindsight`, `retention` |
@@ -2067,6 +2067,7 @@ Mapped pytest evidence:
 - `tests/test_paperclip_contract.py::test_api_profiles_keep_their_own_provider_environment`
 - `tests/test_paperclip_contract.py::test_subscription_profile_passing_a_provider_key_is_refused`
 - `tests/test_runtime_backends.py::test_claude_worker_runs_isolated_with_edit_permission_and_profile_grants`
+- `tests/test_paperclip_contract.py::test_a_profile_can_set_its_own_claude_exit_grace`
 
 ### PF60
 

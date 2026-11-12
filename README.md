@@ -79,7 +79,17 @@ From a live run on one Mac (macOS 27, Apple silicon) on 9 November 2026. The rel
 | Routing on 45 held-out cases | right project 45/45, right workflow 44/45 |
 | Live soak | 10 hours with no lost prompts (a 72-hour run was not done) |
 
-Not verified: Codex workers through Paperclip (Paperclip needs a file-based Codex sign-in), mobile builds, two physical hosts, human-calibrated judging, a 72-hour soak, and service start at login.
+Follow-up checks on the same Mac, 9 to 12 November 2026. [Notes](docs/VERIFICATION.md#follow-up-live-checks-9-12-november-2026)
+
+| Check | Result |
+|---|---|
+| `install.sh` from scratch into a temporary prefix (path with spaces, its own ports and service labels), then a real task | passed: Paperclip built and onboarded, profiles probed, services installed, task reached review |
+| `awb open` with a stopped service, and inside a herdr session | passed |
+| Router given work for an existing project, new work and a one-off question | 3 of 3 placed as expected (a new project got its own repository) |
+| Connectivity loss: one drill and four real offline periods | each detected and cleared automatically |
+| Paperclip restarted in the middle of a run, twice | both requests reached review without help, after the fixes in #46 |
+
+Not verified: Codex workers through Paperclip (Paperclip needs a file-based Codex sign-in), a Pro or Max subscription sign-in (the test machine authenticates Claude through a managed `apiKeyHelper`), a worker run failing during a real outage, a real reboot, mobile builds, two physical hosts, human-calibrated judging, a 72-hour soak, and service start at login.
 
 ## Install
 
