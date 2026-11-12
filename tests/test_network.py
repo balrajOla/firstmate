@@ -192,6 +192,7 @@ def test_a_task_lost_to_a_restart_is_retried_once_per_run_with_growing_delays(ap
 
 @pytest.mark.parametrize("code, reason, agent_error, expected", [
     ("process_lost", "Process lost", None, True),
+    ("server_shutdown_interrupted", "Run interrupted (server_shutdown_interrupted)", None, True),
     ("claude_transient_upstream", "overloaded", None, True),
     ("adapter_failed", "API Error: Connection error (getaddrinfo ENOTFOUND api.anthropic.com)", None, True),
     ("adapter_failed", "fetch failed: ECONNRESET", None, True),
@@ -199,7 +200,7 @@ def test_a_task_lost_to_a_restart_is_retried_once_per_run_with_growing_delays(ap
     ("configuration_incomplete", "Run ended with failed", "no Codex credentials available", False),
     ("process_lost", "Process lost", "Claude CLI is installed, but login is required", False),
     ("adapter_failed", "Invalid API key · Please run /login", None, False),
-], ids=["restart", "transient", "dns", "reset", "plain-failure", "no-credentials", "signed-out", "bad-key"])
+], ids=["restart", "shutdown", "transient", "dns", "reset", "plain-failure", "no-credentials", "signed-out", "bad-key"])
 def test_only_recoverable_failures_are_retried(code, reason, agent_error, expected):
     assert resumable({"run": "r", "code": code, "reason": reason, "agent_error": agent_error}) is expected
 
@@ -273,3 +274,68 @@ def test_the_bridge_saves_prompts_but_dispatches_nothing_while_offline(app, proj
     assert "network.check" in calls
     assert "coordinator.tick" not in calls and "routing.pending" not in calls
     assert app.store.one("SELECT status FROM requests WHERE body='Saved while offline'")["status"] == "queued"
+
+
+class Commented(Paperclip):
+    """Paperclip posts a worker's final message as a task comment."""
+
+    def __init__(self):
+        super().__init__()
+        self.comments = {}
+
+    def issue_comments(self, identity):
+        return list(self.comments.get(identity, []))
+
+
+def ended(api, issue, status, code, created="2026-11-12T18:24:42Z"):
+    """The worker closed its task, then its run ended without succeeding."""
+    agent = api.issue(issue)["assigneeAgentId"]
+    run_id = issue + "-" + status
+    api.runs[run_id] = {"runId": run_id, "issueId": issue, "agentId": agent, "status": status,
+                        "errorCode": code, "createdAt": created}
+    api.issue(issue)["status"] = "done"
+    return agent
+
+
+def test_a_task_done_before_a_restart_cut_its_report_is_not_left_waiting(app, project, configured):
+    # Observed live: a restart interrupted the engineer's run four seconds
+    # after it closed its task; the reviewer's run was marked failed after it
+    # closed its task, and Paperclip posted its final message as a comment.
+    official_cli_profile(app, configured)
+    request = app.store.submit("Add farewell(name)", "r", project["id"])["request_id"]
+    api = Commented()
+    engine = Engine(app.store, api)
+    engine.tick()
+    issues = remote_issues(app, request)
+    implement, verify = issues["1:implement"], issues["1:verify"]
+    ended(api, implement, "interrupted", "server_shutdown_interrupted")
+    reviewer = ended(api, verify, "failed", "adapter_failed", created="2026-11-12T18:25:19Z")
+    api.comments[verify] = [
+        {"authorAgentId": reviewer, "createdAt": "2026-11-12T18:25:19Z", "body": "## Workspace Ready\n\n- Branch: x"},
+        {"authorAgentId": reviewer, "createdAt": "2026-11-12T18:25:40Z",
+         "body": "farewell(name) and its test look right; the test passed."},
+        {"authorAgentId": "someone-else", "createdAt": "2026-11-12T18:26:00Z", "body": "Not the worker."},
+    ]
+    observed = engine.observe()[request]
+    assert observed["implement"]["report"] == "captured" and observed["verify"]["report"] == "captured"
+    reports = {n: json.loads(app.store.one("SELECT value FROM meta WHERE key=?", ("report:" + request + ":1:" + n,))["value"])
+               for n in ("implement", "verify")}
+    assert reports["implement"]["recovered"] == "none"
+    assert "run ended interrupted (server_shutdown_interrupted) before it reported" in reports["implement"]["text"]
+    assert "awb/" + request + "-r1-implement" in reports["implement"]["text"]
+    assert reports["verify"]["recovered"] == "comment"
+    assert reports["verify"]["text"].startswith("farewell(name) and its test look right")
+    assert "Workspace Ready" not in reports["verify"]["text"] and "Not the worker" not in reports["verify"]["text"]
+    # The request reaches review instead of staying "running" with nothing to do.
+    assert app.dispatch("request.get", {"request_id": request})["status"] == "needs_review"
+
+
+def test_a_done_task_whose_worker_is_still_writing_its_report_waits(app, project, configured):
+    official_cli_profile(app, configured)
+    request = app.store.submit("Add farewell(name)", "w", project["id"])["request_id"]
+    api = Commented()
+    engine = Engine(app.store, api)
+    engine.tick()
+    implement = remote_issues(app, request)["1:implement"]
+    ended(api, implement, "running", None)
+    assert engine.observe()[request]["implement"]["report"] == "pending"

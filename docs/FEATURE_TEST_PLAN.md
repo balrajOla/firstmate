@@ -162,7 +162,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF29](#pf29) | Detached parallel execution | 14 | `workers`, `gui` |
 | [PF30](#pf30) | Ralph-style fresh-context continuation | 3 | `recovery` |
 | [PF31](#pf31) | Bounded iteration and no-progress detection | 3 | `recovery` |
-| [PF32](#pf32) | Crash and uncertain-effect reconciliation | 21 | `coordinator`, `recovery` |
+| [PF32](#pf32) | Crash and uncertain-effect reconciliation | 24 | `coordinator`, `recovery` |
 | [PF33](#pf33) | Scoped pause/cancel including shared work | 15 | `workers`, `coordinator` |
 | [PF34](#pf34) | Isolated workspaces and shared resource limits | 12 | `isolation`, `capacity` |
 | [PF35](#pf35) | Native WezTerm navigation | 11 | `gui` |
@@ -1133,6 +1133,9 @@ Mapped pytest evidence:
 - `tests/test_network.py::test_only_recoverable_failures_are_retried[bad-key]`
 - `tests/test_network.py::test_nothing_is_retried_while_offline_or_for_a_sign_in_problem`
 - `tests/test_network.py::test_a_quota_failure_waits_much_longer`
+- `tests/test_network.py::test_a_task_done_before_a_restart_cut_its_report_is_not_left_waiting`
+- `tests/test_network.py::test_a_done_task_whose_worker_is_still_writing_its_report_waits`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[shutdown]`
 
 ### PF33
 

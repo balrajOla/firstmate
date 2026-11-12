@@ -17,7 +17,8 @@ from .util import WorkbenchError, canonical, digest, now, uid
 # Task failures retried automatically: a run lost to a restart, a provider's
 # temporary failure or quota, or a network error. A sign-in or permission
 # problem is never retried; it waits for the operator.
-RESUMABLE_CODES = {"process_lost", "claude_transient_upstream", "codex_transient_upstream", "provider_quota"}
+RESUMABLE_CODES = {"process_lost", "server_shutdown_interrupted", "claude_transient_upstream",
+                   "codex_transient_upstream", "provider_quota"}
 NETWORK_ERROR = re.compile(
     r"ENOTFOUND|EAI_AGAIN|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|socket hang up|"
     r"fetch failed|network (?:error|is unreachable)|connection (?:error|reset|refused|closed)|getaddrinfo",
@@ -941,6 +942,12 @@ class Engine:
         unfinished = "pending" if active or issue["status"] != "blocked" else "failed"
         detail = self.api.run(succeeded[0]["runId"]) if succeeded else {}
         text = str((detail.get("resultJson") or {}).get("result") or "").strip()
+        recovered = None
+        if not succeeded and issue["status"] == "done" and not active and runs:
+            # The worker finished and closed its task, but its run did not
+            # succeed, for example a restart cut it before its final message.
+            # Waiting for a report that cannot come would stall the request.
+            succeeded, text, recovered = self._recover_report(req, node, issue, runs)
         if not text:
             if unfinished == "failed":
                 self._note_failure(key.replace("report:", "failure:", 1), issue, runs)
@@ -964,6 +971,7 @@ class Engine:
             "sha256": digest(text),
             "usage": usage,
             "disposition": "blocked" if worker_blocked else "done",
+            **({"recovered": recovered} if recovered else {}),
         }
         if issue["status"] != "done" and not worker_blocked:
             self.api.update_issue(
@@ -989,9 +997,35 @@ class Engine:
                     "characters": len(text),
                     "runs": len(runs),
                     "disposition": report["disposition"],
+                    **({"recovered": recovered} if recovered else {}),
                 },
             )
         return "blocked" if worker_blocked else "captured"
+
+    def _recover_report(self, req, node, issue, runs):
+        """The report of a done task whose last run did not succeed: the worker's
+        final comment if Paperclip posted one, otherwise a note naming the
+        branch with the work."""
+        latest = max(runs, key=lambda r: r.get("createdAt") or "")
+        ended = latest.get("status", "unknown") + (" (" + latest["errorCode"] + ")" if latest.get("errorCode") else "")
+        comments = self.api.issue_comments(issue["id"])
+        if isinstance(comments, dict):
+            comments = comments.get("items") or comments.get("comments") or []
+        final = [
+            c for c in comments if isinstance(c, dict)
+            and c.get("authorAgentId") == issue.get("assigneeAgentId")
+            and (c.get("createdAt") or "") >= (latest.get("createdAt") or "")
+            and (c.get("body") or "").strip()
+            and not c["body"].lstrip().startswith("## Workspace Ready")
+        ]
+        if final:
+            body = max(final, key=lambda c: c.get("createdAt") or "")["body"].strip()
+            text = body + "\n\n(Recovered from the worker's comment: its run ended " + ended + " after it marked the task done.)"
+            return [latest], text, "comment"
+        branch = task_branch(req["id"], req["revision"], node.split(":", 1)[1])
+        text = ("The worker marked this task done, but its run ended " + ended + " before it reported. "
+                "Its work is on branch " + branch + "; review it there.")
+        return [latest], text, "none"
 
     def _note_failure(self, key, issue, runs):
         """Keep why the coordinator stopped a task that no worker reported

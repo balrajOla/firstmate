@@ -154,6 +154,11 @@ class Paperclip:
     def experimental_settings(self):
         return self.request("GET", "/instance/settings/experimental")
 
+    def issue_comments(self, identity):
+        return self.request(
+            "GET", "/issues/" + urllib.parse.quote(identity, safe="") + "/comments"
+        )
+
     def issue_activity(self, identity):
         return self.request(
             "GET", "/issues/" + urllib.parse.quote(identity, safe="") + "/activity"
