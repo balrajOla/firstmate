@@ -193,6 +193,7 @@ def test_a_task_lost_to_a_restart_is_retried_once_per_run_with_growing_delays(ap
 @pytest.mark.parametrize("code, reason, agent_error, expected", [
     ("process_lost", "Process lost", None, True),
     ("server_shutdown_interrupted", "Run interrupted (server_shutdown_interrupted)", None, True),
+    ("orphaned_running_run", "process and sandbox gone while heartbeat_runs.status stayed live", None, True),
     ("claude_transient_upstream", "overloaded", None, True),
     ("adapter_failed", "API Error: Connection error (getaddrinfo ENOTFOUND api.anthropic.com)", None, True),
     ("adapter_failed", "fetch failed: ECONNRESET", None, True),
@@ -200,7 +201,7 @@ def test_a_task_lost_to_a_restart_is_retried_once_per_run_with_growing_delays(ap
     ("configuration_incomplete", "Run ended with failed", "no Codex credentials available", False),
     ("process_lost", "Process lost", "Claude CLI is installed, but login is required", False),
     ("adapter_failed", "Invalid API key · Please run /login", None, False),
-], ids=["restart", "shutdown", "transient", "dns", "reset", "plain-failure", "no-credentials", "signed-out", "bad-key"])
+], ids=["restart", "shutdown", "orphaned", "transient", "dns", "reset", "plain-failure", "no-credentials", "signed-out", "bad-key"])
 def test_only_recoverable_failures_are_retried(code, reason, agent_error, expected):
     assert resumable({"run": "r", "code": code, "reason": reason, "agent_error": agent_error}) is expected
 
@@ -339,3 +340,59 @@ def test_a_done_task_whose_worker_is_still_writing_its_report_waits(app, project
     implement = remote_issues(app, request)["1:implement"]
     ended(api, implement, "running", None)
     assert engine.observe()[request]["implement"]["report"] == "pending"
+
+
+def orphaned(api, issue, finished, label="0", status="interrupted", code="orphaned_running_run"):
+    """A restart orphaned the task's run; Paperclip ended the run and left the
+    task in progress with nothing queued."""
+    from datetime import datetime, timezone
+
+    agent = api.issue(issue)["assigneeAgentId"]
+    run_id = issue + "-orphaned-" + label
+    api.runs[run_id] = {"runId": run_id, "issueId": issue, "agentId": agent, "status": status,
+                        "createdAt": "2026-11-12T18:34:2" + label, "errorCode": code,
+                        "error": "run terminalized by recovery backstop: process and sandbox gone",
+                        "finishedAt": datetime.fromtimestamp(finished, timezone.utc).isoformat()}
+    api.issue(issue).update({"status": "in_progress", "executionRunId": None})
+    return run_id
+
+
+def test_a_task_left_in_progress_by_an_orphaned_run_is_retried_after_a_grace_period(
+        app, project, configured, monkeypatch):
+    # Observed live: Paperclip restarted three seconds into a run; it marked
+    # the run interrupted (orphaned_running_run) and queued nothing more, so
+    # the task stayed in progress and the request stayed running.
+    request, api, engine, implement, verify = delivered(app, project, configured)
+    clock = Clock()
+    monkeypatch.setattr(engine_module.time, "time", clock)
+    first = orphaned(api, implement, finished=clock.t)
+    clock.t += 30
+    engine.observe()
+    assert api.retries == []  # Paperclip's own recovery goes first
+    clock.t += 61
+    observed = engine.observe()[request]
+    assert [observed_run for _, _, observed_run in api.retries] == [first]
+    assert observed["implement"]["report"] == "pending"
+    event = app.store.rows("SELECT payload FROM events WHERE kind='execution.node_resumed'")
+    assert json.loads(event[0]["payload"])["code"] == "orphaned_running_run"
+    # The retried run is active: nothing more is retried and nothing is listed.
+    api.runs[implement + "-retry"] = {"runId": implement + "-retry", "issueId": implement, "status": "running",
+                                      "createdAt": "2026-11-12T18:40:00"}
+    engine.observe()
+    assert len(api.retries) == 1
+    assert not app.store.rows("SELECT 1 FROM meta WHERE key LIKE 'failure:%'")
+    assert app.store.snapshot()["attention"] == []
+
+
+def test_a_stalled_task_that_cannot_be_retried_is_listed_for_the_operator(app, project, configured, monkeypatch):
+    request, api, engine, implement, verify = delivered(app, project, configured)
+    clock = Clock()
+    monkeypatch.setattr(engine_module.time, "time", clock)
+    orphaned(api, implement, finished=clock.t - 600, status="failed", code="adapter_failed")
+    engine.observe()
+    assert api.retries == []
+    attention = app.store.snapshot()["attention"]
+    assert attention[0]["status"] == "execution_failed" and "adapter_failed" in attention[0]["error"]
+    # A task merely waiting for its first run is not stalled.
+    assert all(i["report"] == "pending" for i in engine.observe()[request].values())
+    assert [i["nodes"] for i in app.store.snapshot()["attention"]] == [["implement"]]

@@ -162,7 +162,7 @@ The count is a count of mapped assertions, not a percentage of functionality imp
 | [PF29](#pf29) | Detached parallel execution | 14 | `workers`, `gui` |
 | [PF30](#pf30) | Ralph-style fresh-context continuation | 3 | `recovery` |
 | [PF31](#pf31) | Bounded iteration and no-progress detection | 3 | `recovery` |
-| [PF32](#pf32) | Crash and uncertain-effect reconciliation | 24 | `coordinator`, `recovery` |
+| [PF32](#pf32) | Crash and uncertain-effect reconciliation | 27 | `coordinator`, `recovery` |
 | [PF33](#pf33) | Scoped pause/cancel including shared work | 15 | `workers`, `coordinator` |
 | [PF34](#pf34) | Isolated workspaces and shared resource limits | 12 | `isolation`, `capacity` |
 | [PF35](#pf35) | Native WezTerm navigation | 11 | `gui` |
@@ -1136,6 +1136,9 @@ Mapped pytest evidence:
 - `tests/test_network.py::test_a_task_done_before_a_restart_cut_its_report_is_not_left_waiting`
 - `tests/test_network.py::test_a_done_task_whose_worker_is_still_writing_its_report_waits`
 - `tests/test_network.py::test_only_recoverable_failures_are_retried[shutdown]`
+- `tests/test_network.py::test_only_recoverable_failures_are_retried[orphaned]`
+- `tests/test_network.py::test_a_task_left_in_progress_by_an_orphaned_run_is_retried_after_a_grace_period`
+- `tests/test_network.py::test_a_stalled_task_that_cannot_be_retried_is_listed_for_the_operator`
 
 ### PF33
 

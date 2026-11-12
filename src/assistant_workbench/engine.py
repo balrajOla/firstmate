@@ -17,8 +17,9 @@ from .util import WorkbenchError, canonical, digest, now, uid
 # Task failures retried automatically: a run lost to a restart, a provider's
 # temporary failure or quota, or a network error. A sign-in or permission
 # problem is never retried; it waits for the operator.
-RESUMABLE_CODES = {"process_lost", "server_shutdown_interrupted", "claude_transient_upstream",
-                   "codex_transient_upstream", "provider_quota"}
+RESUMABLE_CODES = {"process_lost", "server_shutdown_interrupted", "orphaned_running_run",
+                   "claude_transient_upstream", "codex_transient_upstream", "provider_quota"}
+STALL_GRACE = 90  # seconds Paperclip's own recovery gets before the bridge retries
 NETWORK_ERROR = re.compile(
     r"ENOTFOUND|EAI_AGAIN|ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENETUNREACH|EHOSTUNREACH|socket hang up|"
     r"fetch failed|network (?:error|is unreachable)|connection (?:error|reset|refused|closed)|getaddrinfo",
@@ -456,6 +457,26 @@ class Engine:
                              {"agents": len(held["agents"]), "retried": retried})
         return {"agents": held["agents"], "retried": retried}
 
+    def _stalled(self, req, node, issue):
+        """Whether a task sits open with nothing running after its last run
+        failed or was interrupted, for example a run orphaned by a restart,
+        which Paperclip does not queue again by itself. Its failure is listed
+        for the operator and retried like a stopped task."""
+        if issue.get("status") not in {"todo", "in_progress"} or issue.get("executionRunId"):
+            return False
+        runs = self.api.issue_runs(issue["id"])
+        if not isinstance(runs, list) or not runs or any(
+                r.get("status") in {"queued", "running", "scheduled_retry"} for r in runs):
+            return False
+        latest = max(runs, key=lambda r: r.get("createdAt") or "")
+        finished = _epoch(latest.get("finishedAt"))
+        if latest.get("status") not in {"failed", "interrupted", "timed_out"} or (
+                finished is not None and time.time() - finished < STALL_GRACE):
+            return False
+        self._note_failure("failure:" + req["id"] + ":" + node, issue, runs)
+        self._maybe_resume(req, node, issue)
+        return True
+
     def _maybe_resume(self, req, node, issue):
         """Retry a task the coordinator stopped for a recoverable reason, at most
         three times per revision with growing delays, never while offline."""
@@ -866,7 +887,8 @@ class Engine:
                 }
                 report = self._capture_report(req, node, issue)
                 items[node.split(":", 1)[1]]["report"] = report
-                if report != "failed" and self._cache("failure:" + req["id"] + ":" + node):
+                stalled = report == "pending" and self._stalled(req, node, issue)
+                if report != "failed" and not stalled and self._cache("failure:" + req["id"] + ":" + node):
                     with self.store.transaction() as db:
                         db.execute("DELETE FROM meta WHERE key=?", ("failure:" + req["id"] + ":" + node,))
             observations[req["id"]] = items
